@@ -1,7 +1,7 @@
 from basic import Basic
 from singleton import Singleton, S
 from evalf import EvalfMixin
-from numbers import Float
+from numbers import Float, Integer
 from sympify import _sympify, sympify
 from sympy.mpmath import mpi, mpf
 from containers import Tuple
@@ -176,6 +176,10 @@ class Set(Basic):
 
     def __mul__(self, other):
         return ProductSet(self, other)
+    def __pow__(self, exp):
+        if not isinstance(sympify(exp), Integer) and exp>=0:
+            raise ValueError("%s: Exponent must be a positive Integer"%exp)
+        return ProductSet([self]*exp)
 
     def __sub__(self, other):
         return self.intersect(other.complement)
@@ -249,9 +253,18 @@ class ProductSet(Set):
         >>> Interval(0,1) * Interval(0,1) # The unit square
         [0, 1] x [0, 1]
 
+        >>> coin = FiniteSet('H','T')
+        >>> for pair in coin**2: print pair
+        (H, H)
+        (H, T)
+        (T, H)
+        (T, T)
+
+
     Notes:
         - Passes most operations down to the argument sets
         - Flattens Products of ProductSets
+        - Produces IterableProductSet if all sets iterable
     """
 
     def __new__(cls, *sets, **assumptions):
@@ -265,15 +278,13 @@ class ProductSet(Set):
             raise TypeError("Input must be Sets or Iterables of Sets")
         sets = flatten(sets)
 
-        if EmptySet() in sets:
+        if EmptySet() in sets or len(sets)==0:
             return EmptySet()
-        return Basic.__new__(cls, *sets, **assumptions)
 
-    def __iter__(self):
-        if not all(isinstance(set, Iterable) for set in self.sets):
-            raise NotImplementedError("Some constituent sets not iterable")
-        import itertools
-        return itertools.product(*self.sets)
+        if all(isinstance(set, Iterable) for set in sets):
+            return Basic.__new__(IterableProductSet, *sets, **assumptions)
+
+        return Basic.__new__(cls, *sets, **assumptions)
 
     def _contains(self, element):
         if len(element) != len(self.args):
@@ -296,7 +307,31 @@ class ProductSet(Set):
 
     @property
     def _complement(self):
-        return ProductSet([set.complement for set in self])
+        return ProductSet([set.complement for set in self.sets])
+
+
+
+class IterableProductSet(ProductSet):
+    """
+    Represents the Cartesian Product of iterable sets
+
+    Example:
+    >>> from sympy import FiniteSet
+
+    >>> coin = FiniteSet('H', 'T')
+    >>> two_coins = coin * coin
+    >>> for pair in two_coins: print pair
+    (H, H)
+    (H, T)
+    (T, H)
+    (T, T)
+
+    See ProductSet for more details
+    """
+
+    def __iter__(self):
+        import itertools
+        return itertools.product(*self.sets)
 
 class CountableSet(Set):
     """

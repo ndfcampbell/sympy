@@ -356,4 +356,30 @@ def test_supinf():
     assert FiniteSet(5,1,x,y,S.Infinity, S.NegativeInfinity).inf == S.NegativeInfinity
     assert FiniteSet('Ham', 'Eggs').sup == Max('Ham', 'Eggs')
 
+def test_product_basic():
+    H,T = 'H', 'T'
+    unit_line = Interval(0,1)
+    die = FiniteSet(1,2,3,4,5,6)
+    d4 = FiniteSet(1,2,3,4)
+    coin = FiniteSet(H, T)
+
+    square = unit_line * unit_line
+
+    assert (0,0) in square
+    assert (H, T) in coin ** 2
+    assert (.5,.5,.5) in square * unit_line
+    assert (H, 3, 3) in coin * die * die
+    assert set(coin**2) == set((H, H), (H, T), (T, H), (T, T))
+
+    assert (d6*d6).subset(d4*d4)
+    assert square.complement == (
+            (Interval(S.NegativeInfinity, 0, True, True)+Interval(1, S.Infinity, True, True)) *
+            (Interval(S.NegativeInfinity, 0, True, True)+Interval(1, S.Infinity, True, True)))
+
+    assert (Interval(-10,10)**3).subset(Interval(-5,5)**3)
+    assert not (Interval(-5,5)**3).subset(Interval(-10,10)**3)
+    raises(ValueError, "(Interval(-10,10)**2).subset(Interval(-5,5)**3)")
+
+    assert square.subset(Interval(.2,.5)*FiniteSet(.5)) # segment in square
+
 
