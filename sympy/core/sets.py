@@ -273,20 +273,34 @@ class ProductSet(Set):
                 return [arg]
             if isinstance(arg,ProductSet):
                 return sum(map(flatten, arg.args), [])
-            if isinstance(arg, Iterable) and not isinstance(arg,Set):
+            if is_iterable(arg) and not isinstance(arg,Set):
                 return sum(map(flatten, arg), [])
-            raise TypeError("Input must be Sets or Iterables of Sets")
+            raise TypeError("Input must be Sets or iterables of Sets")
         sets = flatten(sets)
 
         if EmptySet() in sets or len(sets)==0:
             return EmptySet()
 
-        if all(isinstance(set, Iterable) for set in sets):
+        if all(is_iterable(set) for set in sets):
             return Basic.__new__(IterableProductSet, *sets, **assumptions)
 
         return Basic.__new__(cls, *sets, **assumptions)
 
     def _contains(self, element):
+        """
+        in operator for ProductSets
+
+        >>> from sympy import Interval
+
+        >>> (2,3) in Interval(0,5) * Interval(0,5)
+        True
+
+        >>> (10,10) in Interval(0,5) * Interval(0,5)
+        False
+
+        Passes operation on to constitent sets
+        """
+
         if len(element) != len(self.args):
             raise ValueError("%s\nExpected tuple of size %d, not %d"
                     %(str(element), len(self.args), len(element)))
@@ -307,7 +321,7 @@ class ProductSet(Set):
 
     @property
     def _complement(self):
-        return ProductSet([set.complement for set in self.sets])
+        return ProductSet(set.complement for set in self.sets)
 
 
 
@@ -319,8 +333,7 @@ class IterableProductSet(ProductSet):
     >>> from sympy import FiniteSet
 
     >>> coin = FiniteSet('H', 'T')
-    >>> two_coins = coin * coin
-    >>> for pair in two_coins: print pair
+    >>> for pair in coin * coin: print pair
     (H, H)
     (H, T)
     (T, H)
@@ -1032,6 +1045,16 @@ class RealFiniteSet(FiniteSet, RealSet):
             intervals.append(Interval(a,b, True, True)) # open intervals
         intervals.append(Interval(sorted_elements[-1], S.Infinity, True, True))
         return Union(*intervals)
+
+    def as_relational(self, symbol):
+        """Rewrite a FiniteSet in terms of equalities and logic operators.
+        """
+        from sympy.core.relational import Eq
+        from sympy.logic.boolalg import Or
+        return Or(*[Eq(symbol, elem) for elem in self])
+
+    def _eval_evalf(self, prec):
+        return FiniteSet(elem.evalf(prec) for elem in self)
 
 genclass = (1 for i in xrange(2)).__class__
 def is_flattenable(obj):
