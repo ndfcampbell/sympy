@@ -221,6 +221,9 @@ class Set(Basic):
     @property
     def is_interval(self):
         return False
+    @property
+    def is_iterable(self):
+        return False
 
 class RealSet(Set, EvalfMixin):
     """
@@ -264,7 +267,6 @@ class ProductSet(Set):
     Notes:
         - Passes most operations down to the argument sets
         - Flattens Products of ProductSets
-        - Produces IterableProductSet if all sets iterable
     """
 
     def __new__(cls, *sets, **assumptions):
@@ -280,9 +282,6 @@ class ProductSet(Set):
 
         if EmptySet() in sets or len(sets)==0:
             return EmptySet()
-
-        if all(is_iterable(set) for set in sets):
-            return Basic.__new__(IterableProductSet, *sets, **assumptions)
 
         return Basic.__new__(cls, *sets, **assumptions)
 
@@ -323,33 +322,33 @@ class ProductSet(Set):
     @property
     def _complement(self):
         return ProductSet(set.complement for set in self.sets)
+
     @property
     def is_finite(self):
         return all(set.is_finite for set in self.sets)
+
     @property
     def is_real(self):
         return all(set.is_real for set in self.sets)
 
-class IterableProductSet(ProductSet):
-    """
-    Represents the Cartesian Product of iterable sets
-
-    Example:
-    >>> from sympy import FiniteSet
-
-    >>> coin = FiniteSet('H', 'T')
-    >>> for pair in coin * coin: print pair
-    (H, H)
-    (H, T)
-    (T, H)
-    (T, T)
-
-    See ProductSet for more details
-    """
+    @property
+    def is_iterable(self):
+        return all(set.is_iterable for set in self.sets)
 
     def __iter__(self):
-        import itertools
-        return itertools.product(*self.sets)
+        if self.is_iterable:
+            import itertools
+            return itertools.product(*self.sets)
+        else:
+            raise TypeError("Not all constituent sets are iterable")
+
+class RealSet(Set, EvalfMixin):
+    """
+    A set of real values
+    """
+    @property
+    def is_real(self):
+        return True
 
 class CountableSet(Set):
     """
@@ -358,7 +357,9 @@ class CountableSet(Set):
     @property
     def _measure(self):
         return 0
-
+    @property
+    def is_iterable(self):
+        return True
     def __iter__(self):
         raise NotImplementedError("Iteration not yet implemented")
 
@@ -740,6 +741,13 @@ class Union(Set):
         from sympy.logic.boolalg import Or
         return Or(*[set.as_relational(symbol) for set in self.args])
 
+    @property
+    def is_finite(self):
+        return all(arg.is_finite for arg in self.args)
+    @property
+    def is_iterable(self):
+        return all(arg.is_iterable for arg in self.args)
+
 class RealUnion(Union, RealSet):
     """
     Represents a union of Real Sets (Intervals, RealFiniteSets)
@@ -850,7 +858,7 @@ class RealUnion(Union, RealSet):
 
     def __iter__(self):
         import itertools
-        if all(isinstance(set, Iterable) for set in self.args):
+        if all(set.is_iterable for set in self.args):
             return itertools.chain(*(iter(arg) for arg in self.args))
         else:
             raise TypeError("Not all constituent sets are iterable")
