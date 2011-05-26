@@ -302,11 +302,12 @@ class ProductSet(Set):
         """
 
         if len(element) != len(self.args):
-            raise ValueError("%s\nExpected tuple of size %d, not %d"
-                    %(str(element), len(self.args), len(element)))
+            return False
         return all(elem in set for elem, set in zip(element, self.sets))
 
     def _intersect(self, other):
+        if isinstance(other, Union):
+            return Union(self.intersect(set) for set in other.args)
         if not isinstance(other, ProductSet):
             raise TypeError("%s is not a Product Set."%str(other))
         if len(other.args) != len(self.args):
@@ -846,6 +847,13 @@ class RealUnion(Union, RealSet):
     def _eval_evalf(self, prec):
         return RealUnion(set.evalf() for set in self.args)
 
+
+    def __iter__(self):
+        import itertools
+        if all(isinstance(set, Iterable) for set in self.args):
+            return itertools.chain(*(iter(arg) for arg in self.args))
+        else:
+            raise TypeError("Not all constituent sets are iterable")
 
 class EmptySet(Set):
     """
