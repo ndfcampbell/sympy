@@ -322,8 +322,12 @@ class ProductSet(Set):
     @property
     def _complement(self):
         return ProductSet(set.complement for set in self.sets)
-
-
+    @property
+    def is_finite(self):
+        return all(set.is_finite for set in self.sets)
+    @property
+    def is_real(self):
+        return all(set.is_real for set in self.sets)
 
 class IterableProductSet(ProductSet):
     """
