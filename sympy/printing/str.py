@@ -92,6 +92,9 @@ class StrPrinter(Printer):
     def _print_EulerGamma(self, expr):
         return 'EulerGamma'
 
+    def _print_Event(self, event):
+        return self._print(event.pspace) + ' in ' + self._print(event.set)
+
     def _print_Exp1(self, expr):
         return 'E'
 
@@ -338,6 +341,9 @@ class StrPrinter(Printer):
         else:
             return '%s**%s'%(self.parenthesize(expr.base, PREC),
                              self.parenthesize(expr.exp, PREC))
+
+    def _print_ProbabilitySpace(self, pspace):
+        return self._print(pspace.name)
 
     def _print_Integer(self, expr):
         return str(expr.p)

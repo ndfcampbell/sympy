@@ -564,7 +564,8 @@ class PrettyPrinter(Printer):
 
         D = prettyForm(*D.parens('{',''))
         return D
-
+    def _print_Event(self, e):
+        return self._print_seq((e.pspace, e.set), '','', ' in ')
     def _print_exp(self, e):
         base = prettyForm(pretty_atom('Exp1', 'e'))
         return base ** self._print(e.args[0])
@@ -899,6 +900,9 @@ class PrettyPrinter(Printer):
         pform = prettyForm(*pform.left('RootSum'))
 
         return pform
+
+    def _print_ProbabilitySpace(self, pspace):
+        return self._print(pspace.name)
 
     def _print_Pure(self, e):
         if self._use_unicode:

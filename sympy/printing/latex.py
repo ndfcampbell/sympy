@@ -292,6 +292,9 @@ class LatexPrinter(Printer):
                 return tex % (self._print(expr.base),
                               self._print(expr.exp))
 
+    def _print_ProbabilitySpace(self, pspace):
+        return self._print(pspace.name)
+
     def _print_Sum(self, expr):
         if len(expr.limits) == 1:
             tex = r"\sum_{%s=%s}^{%s} " % \
@@ -551,6 +554,9 @@ class LatexPrinter(Printer):
 
     def _print_Pi(self, expr):
         return r"\pi"
+
+    def _print_Event(self, event):
+        return self._print(event.pspace) + r" \in " + self._print(event.set)
 
     def _print_Exp1(self, expr):
         return r"e"
