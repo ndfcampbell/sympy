@@ -1,5 +1,6 @@
 from sympy import Basic
 from sympy.core.sympify import sympify
+from sympy.core.sets import Set, ProductSet
 
 #from sympy.core import sympify, Integer, Rational, oo, Float, pi, Set, Basic
 #from sympy.functions import sqrt, exp, erf
@@ -26,6 +27,34 @@ class ProbabilitySpace(Basic):
     def probability_measure(self):
         return self.args[2]
 
+    def __mul__(self, other):
+        return ProductProbabilitySpace(self, other)
+
+class ProductProbabilitySpace(ProbabilitySpace):
+    def __new__(cls, *args):
+        return Basic.__new__(cls, *args)
+
+    @property
+    def constituent_spaces(self):
+        return self.args
+    @property
+    def name(self):
+        return [pspace.name for pspace in self.constituent_spaces]
+    @property
+    def sample_space(self):
+        return ProductSet(pspace.sample_space
+                for pspace in self.constituent_spaces)
+    @property
+    def probability_measure(self):
+        def measure(event):
+            # Assuming event.set is a productset
+            p = 1
+            for pspace, event in zip(self.constituent_spaces, event.sets):
+                p *= pspace.probability_measure(event)
+            return p
+        return measure
+
+
 class ProbabilityMeasure(Basic):
     """
     A Probability Measure is a function from Events to Real numbers.
@@ -35,7 +64,7 @@ class ProbabilityMeasure(Basic):
     def __call__(self, event):
         return self._call(event)
 
-class Event(Basic):
+class Event(Set):
     """
     A subset of the possible outcomes of a random process.
     """
@@ -69,9 +98,11 @@ class Event(Basic):
         return Event(self.pspace, self.pspace.sample_space - self.set)
 
     def __add__(self, other):
-        if other.pspace != self.pspace:
-            raise ValueError("Cannot add two events from different spaces")
-        return Event(self.pspace, self.set + other.set)
+        if other.pspace == self.pspace:
+            return Event(self.pspace, self.set + other.set)
+        else:
+            return Event(self.pspace*other.pspace, self.set * other.set)
+
 
     def __iter__(self):
         return self.set.__iter__()
