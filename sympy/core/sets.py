@@ -321,7 +321,16 @@ class ProductSet(Set):
 
     @property
     def _complement(self):
-        return ProductSet(set.complement for set in self.sets)
+        # For each set consider it or it's complement
+        # We need at least one of the sets to be complemented
+        # Consider all 2^n combinations.
+        # We can conveniently represent these options easily using a ProductSet
+        switch_sets = ProductSet([FiniteSet(set, set.complement)
+                for set in self.sets])
+        # Take all but the first one (which has no complements)
+        switch_sets = list(switch_sets)[1:]
+        # Return the union of the rest
+        return Union(ProductSet(s) for s in switch_sets)
 
     @property
     def is_finite(self):
