@@ -155,5 +155,18 @@ class FiniteProbabilityMeasure(ProbabilityMeasure):
     def _call(self, event):
         return sum( self.pdf(element) for element in event )
 
+class ProductProbabilityMeasure(ProbabilityMeasure):
+    def __new__(cls, *measures):
+        return Basic.__new__(cls, *measures)
+
+    @property
+    def _measures(self):
+        return self.args
+
+    def _call(self, event):
+        return reduce(lambda a,b:a*b, (M(e)
+            for M,e in zip(self._measures, event.sets)), 1)
+
+
 
 
