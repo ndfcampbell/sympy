@@ -326,11 +326,10 @@ class ProductSet(Set):
         # Consider all 2^n combinations.
         # We can conveniently represent these options easily using a ProductSet
         switch_sets = ProductSet([FiniteSet(set, set.complement)
-                for set in self.sets])
-        # Take all but the first one (which has no complements)
-        switch_sets = list(switch_sets)[1:]
-        # Return the union of the rest
-        return Union(ProductSet(s) for s in switch_sets)
+            for set in self.sets])
+        product_sets = (ProductSet(set) for set in switch_sets)
+        # Union of all combinations but this one
+        return Union(p for p in product_sets if p != self)
 
     @property
     def is_finite(self):
