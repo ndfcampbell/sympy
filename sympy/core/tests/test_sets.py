@@ -347,6 +347,15 @@ def test_product_basic():
 
     assert (d6*d6).subset(d4*d4)
 
+    inf, neginf = S.Infinity, S.NegativeInfinity
+    assert square.complement == Union(
+       Interval(0,1) * (Interval(neginf,0,True,True)+Interval(1,inf,True,True)),
+       (Interval(neginf,0,True,True)+Interval(1,inf,True,True))*Interval(0,1),
+       ((Interval(neginf,0,True,True) + Interval(1,inf, True, True))
+                * (Interval(neginf,0,True,True) + Interval(1,inf, True,True))))
+
+
+
     assert (Interval(-10,10)**3).subset(Interval(-5,5)**3)
     assert not (Interval(-5,5)**3).subset(Interval(-10,10)**3)
     raises(ValueError, "(Interval(-10,10)**2).subset(Interval(-5,5)**3)")
@@ -405,9 +414,6 @@ def test_product_basic():
     assert set(coin**2) == set(((HH, HH), (HH, TT), (TT, HH), (TT, TT)))
 
     assert (d6*d6).subset(d4*d4)
-    assert square.complement == (
-            (Interval(S.NegativeInfinity, 0, True, True)+Interval(1, S.Infinity, True, True)) *
-            (Interval(S.NegativeInfinity, 0, True, True)+Interval(1, S.Infinity, True, True)))
 
     assert (Interval(-10,10)**3).subset(Interval(-5,5)**3)
     assert not (Interval(-5,5)**3).subset(Interval(-10,10)**3)
