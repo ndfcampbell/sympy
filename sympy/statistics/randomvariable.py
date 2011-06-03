@@ -389,7 +389,7 @@ class Die(FiniteProbabilitySpace):
 class Bernoulli(FiniteProbabilitySpace):
     _numcount = 0
     _name = 'bernoulli'
-    def __new__(cls, p=.5, a=0, b=1, name=None):
+    def __new__(cls, p=S.Half, a=0, b=1, name=None):
         pdf = {a:p, b:(1-p)}
         return FiniteProbabilitySpace.__new__(cls, pdf, name)
 
