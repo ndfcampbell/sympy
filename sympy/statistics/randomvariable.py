@@ -156,17 +156,39 @@ class FiniteProbabilityMeasure(ProbabilityMeasure):
         return sum( self.pdf(element) for element in event )
 
 class ProductProbabilityMeasure(ProbabilityMeasure):
-    def __new__(cls, *measures):
-        return Basic.__new__(cls, *measures)
+    """ProductProbabilityMeasures measure the probability of a ProductEvent.
+    In essense they are very simple. It simply calls the measures of the
+    constituent events.
+
+    For internal use only.
+    """
+    def __new__(cls):
+        return Basic.__new__(cls)
+
+    def _call(self, productevent):
+        prob = 1
+        for event in productevent:
+            prob *= event.measure
+        return prob
+
+class ProductEvent(Event):
+    def __new__(cls, *events):
+        events = [ProductEvent(event) for event in events
+                if event.is_productevent == False]
+
+        return Basic.__new__(cls, events)
 
     @property
-    def _measures(self):
+    def events(self):
         return self.args
 
-    def _call(self, event):
-        return reduce(lambda a,b:a*b, (M(e)
-            for M,e in zip(self._measures, event.sets)), 1)
+    @property
+    def pspace(self):
+        return FiniteSet(e.pspace for e in self.events)
 
+    @property
+    def set(self):
+        return ProductSet(e.set for e in self.events)
 
 
 
