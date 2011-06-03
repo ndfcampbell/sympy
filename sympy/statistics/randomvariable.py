@@ -1,4 +1,4 @@
-from sympy import Basic, S
+from sympy import Basic, S, Rational
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union
 
@@ -358,4 +358,39 @@ class UnionEvent(Event):
     @property
     def is_union(self):
         return True
+
+
+#====================================================================
+#=== Example Spaces =================================================
+#====================================================================
+class FiniteProbabilitySpace(ProbabilitySpace):
+    _count = 0
+    _name = 'space'
+
+    def __new__(cls, pdf, name=None):
+        if not name:
+            name = cls.create_name()
+        M = FiniteProbabilityMeasure(pdf)
+        sample_space = FiniteSet(pdf.keys())
+        return Basic.__new__(cls, name, sample_space, M)
+
+    @classmethod
+    def create_name(cls):
+        cls._count += 1
+        return '%s%d'%(cls._name, cls._count)
+
+class Die(FiniteProbabilitySpace):
+    _count = 0
+    _name = 'die'
+    def __new__(cls, sides=6, name=None):
+        pdf = dict((i,Rational(1,sides)) for i in range(1,sides+1))
+        return FiniteProbabilitySpace.__new__(cls, pdf, name)
+
+class Bernoulli(FiniteProbabilitySpace):
+    _numcount = 0
+    _name = 'bernoulli'
+    def __new__(cls, p=.5, a=0, b=1, name=None):
+        pdf = {a:p, b:(1-p)}
+        return FiniteProbabilitySpace.__new__(cls, pdf, name)
+
 
