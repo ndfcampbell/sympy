@@ -57,11 +57,6 @@ class Event(Set):
     def __new__(cls, pspace, a_set):
         obj = Basic.__new__(cls, pspace, a_set)
 
-        #setattrs = dir(a_set)
-        #selfattrs = dir(obj)
-        #new_attr_names = (name for name in setattrs if name not in selfattrs)
-        #for attr_name in new_attr_names:
-        #    setattr(obj, attr_name, getattr(obj.set, attr_name))
         return obj
 
     @property
@@ -77,12 +72,21 @@ class Event(Set):
         return self.args[1]
 
     def intersect(self, other):
+        """
+        Returns the event that occurs if both the events occur.
+        May be a ProductEvent if the events come from different ProbSpaces
+        """
         if other.pspace == self.pspace:
             return Event(self.pspace, self.set.intersect(other.set))
         else:
             return ProductEvent(self).intersect(ProductEvent(other))
 
     def union(self, other):
+        """
+        Returns the event that occurs if either of the events occur.
+        May be a UnionEvent if the events come from different ProbabilitySpaces
+        """
+
         if other.pspace == self.pspace and not self.is_union:
             return Event(self.pspace, self.set + other.set)
         else:
@@ -138,7 +142,10 @@ class RandomVariable(Basic):
 
 
 class FiniteProbabilityMeasure(ProbabilityMeasure):
-
+    """
+    An easy to create probability Measure
+    Constructor takes either a dict or a function
+    """
     def __new__(cls, pdf):
 
         # Is dict-like
@@ -163,6 +170,15 @@ class FiniteProbabilityMeasure(ProbabilityMeasure):
 #====================================================================
 
 class ProductProbabilitySpace(ProbabilitySpace):
+    """
+    Cartesian Product of ProbabilitySpaces
+
+    >>> from sympy.statistics.randomvariables import Coin
+    >>> print (Coin(name='coin1') * Coin(name='coin2')).sample_space_event
+    {coin1, coin2} in {H, T} x {H, T}
+
+    """
+
     def __new__(cls, *args):
         args = list(args)
         def flatten(arg):
@@ -183,7 +199,7 @@ class ProductProbabilitySpace(ProbabilitySpace):
 
     @property
     def name(self):
-        return [pspace.name for pspace in self.constituent_spaces]
+        return FiniteSet(pspace.name for pspace in self.constituent_spaces)
 
     @property
     def sample_space(self):
@@ -204,9 +220,10 @@ class ProductProbabilitySpace(ProbabilitySpace):
         return True
 
 class ProductProbabilityMeasure(ProbabilityMeasure):
-    """ProductProbabilityMeasures measure the probability of a ProductEvent.
-    In essense they are very simple. It simply calls the measures of the
-    constituent events.
+    """
+    ProductProbabilityMeasures measure the probability of a ProductEvent.
+    In essense they are very simple. It simply calls and multiplies the
+    measures of the constituent events.
 
     For internal use only.
     """
@@ -220,6 +237,11 @@ class ProductProbabilityMeasure(ProbabilityMeasure):
         return prob
 
 class ProductEvent(Event):
+    """
+    An intersection of events across different probability spaces
+    The event that die1 is even and die2 is odd is a ProductEvent
+    """
+
     def __new__(cls, *events):
         if len(events)==1 and isinstance(events[0], ProductEvent):
             return events[0]
@@ -248,6 +270,11 @@ class ProductEvent(Event):
         return ProductSet(e.set for e in self.events)
 
     def intersect(self, other):
+        """
+        Intersect this ProductEvent with another (possibly Product) event
+        Returns a ProductEvent in all cases
+        """
+
         # Consider all probability spaces in either of the events
         pspace = self.pspace * other.pspace
         # Cast each event up to the product subspace
@@ -258,7 +285,7 @@ class ProductEvent(Event):
                 for a,b in zip(A.events, B.events))
 
     def getevent(self, pspace):
-        """Get event associated with particular probability space"""
+        """Get event associated with a particular probability space"""
         for event in self.events:
             if event.pspace == pspace:
                 return event
@@ -269,9 +296,13 @@ class ProductEvent(Event):
         return True
 
 def cast_event(event, productspace):
-    """Casts an event into a particular ProductProbabilitySpace
+    """
+    Casts an event into a particular ProductProbabilitySpace
     If ProbabilitySpaces are requested which are not in the event then the
-    entire sample space is taken instead"""
+    entire sample space is taken instead
+
+    For internal use only.
+    """
 
     if not event.is_product:
         event = ProductEvent(event)
@@ -284,6 +315,12 @@ def cast_event(event, productspace):
     return ProductEvent(*events)
 
 class UnionEvent(Event):
+    """
+    Union of events, possibly across different ProbabilitySpaces
+    Represents events like "die1 is odd or die2 is even"
+
+    Creates ProductEvents on the fly if necessary
+    """
     def __new__(cls, *events):
         events = list(events)
         def flatten(arg):
@@ -364,6 +401,31 @@ class UnionEvent(Event):
 #=== Example Spaces =================================================
 #====================================================================
 class FiniteProbabilitySpace(ProbabilitySpace):
+    """
+    A ProbabilitySpace on a finite countable sample space
+
+    Creates a ProbabilitySpace given a probability density function encoded in
+    a dictionary like {'H':1/2 , 'T':1/2}
+
+    See also:
+        Die
+        Bernoulli
+        Coin
+
+    >>> from sympy.statistics.randomvariables import FiniteProbabilitySpace
+    >>> from sympy.statistics.randomvariables import Event
+    >>> from sympy import S, FiniteSet
+
+    >>> sixth = S(1)/6
+    >>> pdf = {1:sixth, 2:sixth, 3:sixth, 4:sixth, 5:sixth, 6:sixth}
+    >>> die = FiniteProbabilitySpace(pdf, name='die')
+
+    >>> print die.sample_space_event
+    die in {1, 2, 3, 4, 5, 6}
+
+    >>> print Event(die, FiniteSet(2,4,6)).measure
+    1/2
+"""
     _count = 0
     _name = 'space'
 
@@ -380,6 +442,22 @@ class FiniteProbabilitySpace(ProbabilitySpace):
         return '%s%d'%(cls._name, cls._count)
 
 class Die(FiniteProbabilitySpace):
+    """
+    Represents a die of arbitrary number of sides.
+    Implementation of FiniteProbabilitySpace
+
+    >>> from sympy.statistics.randomvariables import Die, Event
+    >>> from sympy import FiniteSet
+    >>> die = Die(6)
+
+    >>> print die.sample_space_event
+    die1 in {1, 2, 3, 4, 5, 6}
+
+    >>> print Event(die, FiniteSet(2,4,6)).measure
+    1/2
+
+    """
+
     _count = 0
     _name = 'die'
     def __new__(cls, sides=6, name=None):
@@ -387,10 +465,47 @@ class Die(FiniteProbabilitySpace):
         return FiniteProbabilitySpace.__new__(cls, pdf, name)
 
 class Bernoulli(FiniteProbabilitySpace):
+    """
+    Represents a Bernoulli Event with probability p.
+    Inherits from FiniteProbabilitySpace
+
+    >>> from sympy.statistics.randomvariables import Bernoulli, Event
+    >>> from sympy import S, FiniteSet
+
+    >>> coin = Bernoulli(S.Half, 'H', 'T', name='coin')
+    >>> print coin.sample_space_event
+    coin in {H, T}
+
+    >>> print Event(coin, FiniteSet('T')).measure
+    1/2
+
+    """
     _numcount = 0
     _name = 'bernoulli'
     def __new__(cls, p=S.Half, a=0, b=1, name=None):
         pdf = {a:p, b:(1-p)}
         return FiniteProbabilitySpace.__new__(cls, pdf, name)
 
+class Coin(Bernoulli):
+    """
+    Represents a coin flip Event with probability p.
+    Inherits from Bernoulli
+
+    >>> from sympy.statistics.randomvariables import Coin, Event
+    >>> from sympy import FiniteSet
+
+    >>> coin = Coin(name='coin')
+    >>> print coin.sample_space_event
+    coin in {H, T}
+
+    >>> print Event(coin, FiniteSet('T')).measure
+    1/2
+
+    >>> print Event(Coin(p=1), FiniteSet('T')).measure # Trick coin
+    0
+    """
+    _numcount = 0
+    _name = 'coin'
+    def __new__(cls, p=S.Half, name=None):
+        return Bernoulli.__new__(cls, p=p, a='H', b='T', name=name)
 

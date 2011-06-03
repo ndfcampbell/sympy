@@ -1,5 +1,5 @@
 from sympy import EmptySet, FiniteSet, S
-from sympy.statistics.randomvariable import (ProbabilitySpace,
+from sympy.statistics.randomvariables import (ProbabilitySpace,
         Event, Die, Bernoulli)
 
 def test_finite_events():
