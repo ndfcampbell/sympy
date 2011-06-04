@@ -103,7 +103,10 @@ class Event(Set):
         return self.intersect(other)
 
     def __iter__(self):
-        return self.set.__iter__()
+        return self._iter_events()
+
+    def _iter_events(self):
+        return (Event(self.pspace, FiniteSet(item)) for item in self.set)
 
     @property
     def is_product(self):
@@ -112,6 +115,14 @@ class Event(Set):
     @property
     def is_union(self):
         return False
+
+    @property
+    def is_iterable(self):
+        return self.set.is_iterable
+
+    @property
+    def is_real(self):
+        return self.set.is_real
 
 class RandomVariable(Basic):
     """
@@ -163,7 +174,7 @@ class FiniteProbabilityMeasure(ProbabilityMeasure):
         return self.args[0]
 
     def _call(self, event):
-        return sum( self.pdf(element) for element in event )
+        return sum( self.pdf(element) for element in event.set )
 
 #====================================================================
 #=== Product Spaces =================================================
@@ -205,6 +216,12 @@ class ProductProbabilitySpace(ProbabilitySpace):
     def sample_space(self):
         return ProductSet(pspace.sample_space
                 for pspace in self.constituent_spaces)
+
+    @property
+    def sample_space_event(self):
+        return ProductEvent(pspace.sample_space_event
+                for pspace in self.constituent_spaces)
+
     @property
     def probability_measure(self):
         return ProductProbabilityMeasure()
@@ -290,6 +307,16 @@ class ProductEvent(Event):
             if event.pspace == pspace:
                 return event
         raise ValueError("Probability Space not found in Event")
+
+    def _iter_events(self):
+        if self.is_iterable:
+            import itertools
+            event_iterators = [event._iter_events() for event in self.events]
+            return (ProductEvent(atomic_events)
+                    for atomic_events in itertools.product(*event_iterators))
+        else:
+            raise TypeError("Not all constituent sets are iterable")
+
 
     @property
     def is_product(self):
