@@ -227,6 +227,12 @@ class Set(Basic):
     @property
     def is_iterable(self):
         return False
+    @property
+    def is_product(self):
+        return False
+    @property
+    def is_union(self):
+        return False
 
 class RealSet(Set, EvalfMixin):
     """
@@ -359,6 +365,10 @@ class ProductSet(Set):
         for set in self.sets:
             measure *= set.measure
         return measure
+
+    @property
+    def is_product(self):
+        return True
 class RealSet(Set, EvalfMixin):
     """
     A set of real values
@@ -801,6 +811,9 @@ class Union(Set):
     @property
     def is_iterable(self):
         return all(arg.is_iterable for arg in self.args)
+    @property
+    def is_union(self):
+        return True
 
 class RealUnion(Union, RealSet):
     """
