@@ -1,7 +1,8 @@
-from sympy import Basic, S, Rational
+from sympy import Basic, S, Rational, Expr, integrate
 from sympy.core.sympify import sympify
-from sympy.core.sets import Set, ProductSet, FiniteSet, Union
+from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
 
+oo = S.Infinity
 
 #from sympy.core import sympify, Integer, Rational, oo, Float, pi, Set, Basic
 #from sympy.functions import sqrt, exp, erf
@@ -40,6 +41,12 @@ class ProbabilitySpace(Basic):
     @property
     def is_product(self):
         return False
+    _count = 0
+    _name = 'space'
+    @classmethod
+    def create_name(cls):
+        cls._count += 1
+        return '%s%d'%(cls._name, cls._count)
 
 class ProbabilityMeasure(Basic):
     """
@@ -50,7 +57,7 @@ class ProbabilityMeasure(Basic):
     def __call__(self, event):
         return self._call(event)
 
-class Event(Set):
+class Event(Basic):
     """
     A subset of the possible outcomes of a random process.
     """
@@ -106,7 +113,10 @@ class Event(Set):
         return self._iter_events()
 
     def _iter_events(self):
-        return (Event(self.pspace, FiniteSet(item)) for item in self.set)
+        if self.is_iterable:
+            return (Event(self.pspace, FiniteSet(item)) for item in self.set)
+        else:
+            raise TypeError("This Event is not iterable")
 
     @property
     def is_product(self):
@@ -124,7 +134,7 @@ class Event(Set):
     def is_real(self):
         return self.set.is_real
 
-class RandomVariable(Basic):
+class RandomVariable(Expr):
     """
     Represents a Random Variable.
     A function on a ProbabilitySpace's Sample Space
@@ -142,7 +152,7 @@ class RandomVariable(Basic):
     def fn(self):
         return args[1]
 
-    def __add__(self, other):
+    def _add(self, other):
         if self.pspace == other.pspace:
             pspace = self.pspace
         else:
@@ -372,8 +382,7 @@ class UnionEvent(Event):
 
     @property
     def set(self):
-        pspace = self.pspace
-        return Union(cast_event(e, pspace).set for e in self.events)
+        return Union(cast_event(e, self.pspace).set for e in self.events)
 
     @property
     def measure(self):
@@ -425,7 +434,7 @@ class UnionEvent(Event):
 
 
 #====================================================================
-#=== Example Spaces =================================================
+#=== Finite Example Spaces ==========================================
 #====================================================================
 class FiniteProbabilitySpace(ProbabilitySpace):
     """
@@ -453,8 +462,6 @@ class FiniteProbabilitySpace(ProbabilitySpace):
     >>> print Event(die, FiniteSet(2,4,6)).measure
     1/2
 """
-    _count = 0
-    _name = 'space'
 
     def __new__(cls, pdf, name=None):
         if not name:
@@ -462,11 +469,6 @@ class FiniteProbabilitySpace(ProbabilitySpace):
         M = FiniteProbabilityMeasure(pdf)
         sample_space = FiniteSet(pdf.keys())
         return Basic.__new__(cls, name, sample_space, M)
-
-    @classmethod
-    def create_name(cls):
-        cls._count += 1
-        return '%s%d'%(cls._name, cls._count)
 
 class Die(FiniteProbabilitySpace):
     """
@@ -536,3 +538,71 @@ class Coin(Bernoulli):
     def __new__(cls, p=S.Half, name=None):
         return Bernoulli.__new__(cls, p=p, a='H', b='T', name=name)
 
+#====================================================================
+#=== Continuous Example Spaces ======================================
+#====================================================================
+
+
+class ContinuousProbabilityMeasure(ProbabilityMeasure):
+    """
+    An easy to create probability Measure
+    Constructor takes either a dict or a function
+    """
+    def __new__(cls, symbol, pdf=None, cdf=None):
+        obj = Basic.__new__(cls, symbol, pdf, cdf)
+        obj.symbol = symbol
+        obj._pdf = pdf
+        obj._cdf = cdf
+        return obj
+
+    @property
+    def pdf(self):
+        if self._pdf:
+            return self._pdf
+        elif self._cdf:
+            return self._cdf.diff(symbol)
+        else:
+            return None
+
+    @property
+    def cdf(self):
+        if self._cdf:
+            return self._cdf
+        elif self._pdf:
+            return integrate(self._pdf,
+                    (self.symbol, Interval(-oo, self.symbol)))
+        else:
+            raise ValueError("CDF and PDF not defined")
+
+    def _call(self, event):
+        if event.set.is_interval:
+            if self._cdf:
+                return self._cdf(event.set.end) - self._cdf(event.set.start)
+            else:
+                return integrate(self._pdf, (self.symbol, event.set))
+        elif event.set.is_union:
+            intervals = [s for s in event.set.args if s.is_interval]
+            assert all(s.measure==0 for s in event.set.args
+                    if not s.is_interval)
+            return sum(self(Event(event.pspace, i)) for i in intervals)
+        else:
+            raise NotImplementedError(
+            "Measuing sets other than unions or intervals is not yet supported")
+
+class ContinuousProbabilitySpace(ProbabilitySpace):
+    """
+    A ProbabilitySpace on the real line
+
+    Creates a ProbabilitySpace given ...
+
+    See also:
+        FiniteProbabilitySpace
+
+    """
+
+    def __new__(cls, symbol, pdf=None, cdf=None, name=None):
+        if not name:
+            name = cls.create_name()
+        M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
+        sample_space = Interval(-oo, oo)
+        return Basic.__new__(cls, name, sample_space, M)
