@@ -284,10 +284,10 @@ class ProductSet(Set):
                 return [arg]
             if isinstance(arg,ProductSet):
                 return sum(map(flatten, arg.args), [])
-            if is_iterable(arg) and not isinstance(arg,Set):
+            if is_flattenable(arg) and not isinstance(arg,Set):
                 return sum(map(flatten, arg), [])
             raise TypeError("Input must be Sets or iterables of Sets")
-        sets = flatten(sets)
+        sets = flatten(list(sets))
 
         if EmptySet() in sets or len(sets)==0:
             return EmptySet()
@@ -336,7 +336,7 @@ class ProductSet(Set):
         # We can conveniently represent these options easily using a ProductSet
         switch_sets = ProductSet([FiniteSet(set, set.complement)
             for set in self.sets])
-        product_sets = (ProductSet(set) for set in switch_sets)
+        product_sets = (ProductSet(*set) for set in switch_sets)
         # Union of all combinations but this one
         return Union(p for p in product_sets if p != self)
 
@@ -768,7 +768,7 @@ class Union(Set):
 
         # Start with just elementary sets (  ({A}, A), ({B}, B), ... )
         # Then get and subtract (  ({A,B}, (A int B), ... ) while non-zero
-        sets = [(FiniteSet((s,)), s) for s in self.args]
+        sets = [(FiniteSet(s), s) for s in self.args]
         measure = 0
         parity = 1
         while sets:
@@ -777,7 +777,7 @@ class Union(Set):
 
             # For each intersection in sets, compute the intersection with every
             # other set not already part of the intersection.
-            sets = ((sos + FiniteSet((newset,)), newset.intersect(intersection))
+            sets = ((sos + FiniteSet(newset), newset.intersect(intersection))
                     for sos, intersection in sets for newset in self.args
                     if newset not in sos)
 
