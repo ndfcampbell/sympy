@@ -242,7 +242,7 @@ class ProductProbabilitySpace(ProbabilitySpace):
 
     @property
     def constituent_spaces(self):
-        return FiniteSet(self.args)
+        return FiniteSet(*self.args)
 
     @property
     def name(self):
@@ -434,7 +434,7 @@ class UnionEvent(Event):
 
         # Start with just elementary sets (  ({A}, A), ({B}, B), ... )
         # Then get and subtract (  ({A,B}, (A int B), ... ) while non-zero
-        sets = [(FiniteSet((s,)), s) for s in self.events]
+        sets = [(FiniteSet(s), s) for s in self.events]
         measure = 0
         parity = 1
         while sets:
@@ -443,7 +443,7 @@ class UnionEvent(Event):
 
             # For each intersection in sets, compute the intersection with every
             # other set not already part of the intersection.
-            sets = ((sos + FiniteSet((newset,)), newset.intersect(intersection))
+            sets = ((sos + FiniteSet(newset), newset.intersect(intersection))
                     for sos, intersection in sets for newset in self.args
                     if newset not in sos)
 
