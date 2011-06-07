@@ -1,4 +1,4 @@
-from sympy import Basic, S, Rational, Expr, integrate
+from sympy import Basic, S, Rational, Expr, integrate, cacheit
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
 
@@ -55,14 +55,23 @@ class ProbabilityMeasure(Basic):
     P(A) >= 0 , P(SampleSpace) == 1 , P(A + B) == P(A) + P(B) - P(A intersect B)
     """
     def __call__(self, event):
+        if not event.is_union and event.set.is_union:
+            return UnionEvent(Event(event.pspace, set)
+                    for set in event.set.args).measure
         return self._call(event)
 
 class Event(Basic):
     """
     A subset of the possible outcomes of a random process.
     """
-    def __new__(cls, pspace, a_set):
-        obj = Basic.__new__(cls, pspace, a_set)
+    def __new__(cls, pspace, set):
+        if pspace.is_product and set.is_product and len(pspace)==len(set.sets):
+            obj = ProductEvent(Event(space, s)
+                    for space, s in zip(pspace.constituent_spaces, set.sets))
+        elif set.is_union:
+            obj = UnionEvent(Event(pspace, s) for s in set.args)
+        else:
+            obj = Basic.__new__(cls, pspace, set)
 
         return obj
 
@@ -112,6 +121,15 @@ class Event(Basic):
     def __iter__(self):
         return self._iter_events()
 
+    def __sub__(self, other):
+        return self.intersect(other.complement)
+
+    def __neg__(self):
+        return self.complement
+
+    def __invert__(self):
+        return self.complement
+
     def _iter_events(self):
         if self.is_iterable:
             return (Event(self.pspace, FiniteSet(item)) for item in self.set)
@@ -133,6 +151,14 @@ class Event(Basic):
     @property
     def is_real(self):
         return self.set.is_real
+
+    def __contains__(self, other):
+        if isinstance(other, Event):
+            return other.pspace == self.pspace and self.set.subset(other.set)
+        else:
+            return other in self.set
+
+
 
 class RandomVariable(Expr):
     """
@@ -245,6 +271,9 @@ class ProductProbabilitySpace(ProbabilitySpace):
     @property
     def is_product(self):
         return True
+
+    def __len__(self):
+        return len(self.constituent_spaces)
 
 class ProductProbabilityMeasure(ProbabilityMeasure):
     """
@@ -378,11 +407,19 @@ class UnionEvent(Event):
 
     @property
     def pspace(self):
+        # If events have homogenous ProbabilitySpace then return that
+        first_pspace = self.events[0].pspace
+        if all(e.pspace == first_pspace for e in self.events):
+            return first_pspace
+        # Otherwise return ProductProbabilitySpace
         return ProductProbabilitySpace(e.pspace for e in self.events)
 
     @property
     def set(self):
-        return Union(cast_event(e, self.pspace).set for e in self.events)
+        if not self.pspace.is_product: # Homogenous ProbSpace Events
+            return Union(e.set for e in self.events)
+        else: # Heterogeneous ProductSpace Events
+            return Union(cast_event(e, self.pspace).set for e in self.events)
 
     @property
     def measure(self):
@@ -585,9 +622,11 @@ class ContinuousProbabilityMeasure(ProbabilityMeasure):
             assert all(s.measure==0 for s in event.set.args
                     if not s.is_interval)
             return sum(self(Event(event.pspace, i)) for i in intervals)
+        # FiniteSet or EmptySet
+        elif event.set.measure == 0:
+            return 0
         else:
-            raise NotImplementedError(
-            "Measuing sets other than unions or intervals is not yet supported")
+            raise NotImplementedError("Can not integrate over %s."%event.set)
 
 class ContinuousProbabilitySpace(ProbabilitySpace):
     """
@@ -600,9 +639,11 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
 
     """
 
-    def __new__(cls, symbol, pdf=None, cdf=None, name=None):
+    def __new__(cls, symbol, pdf=None, cdf=None, name=None,
+                sample_space = Interval(-oo, oo)):
         if not name:
             name = cls.create_name()
         M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
-        sample_space = Interval(-oo, oo)
-        return Basic.__new__(cls, name, sample_space, M)
+        obj = Basic.__new__(cls, name, sample_space, M, symbol)
+        obj.symbol = symbol
+        return obj

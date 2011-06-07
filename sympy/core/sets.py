@@ -51,6 +51,8 @@ class Set(Basic):
         [1, 2]
 
         """
+        if other==S.EmptySet or self==S.EmptySet:
+            return S.EmptySet
         return self._intersect(other)
 
     def _intersect(self, other):
