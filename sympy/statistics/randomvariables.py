@@ -289,7 +289,7 @@ class ProductProbabilitySpace(ProbabilitySpace):
 
     >>> from sympy.statistics.randomvariables import Coin
     >>> print (Coin(symbol='coin1') * Coin(symbol='coin2')).sample_space_event
-    {coin1, coin2} in {H, T} x {H, T}
+    (coin1, coin2) in {H, T} x {H, T}
 
     """
 
@@ -656,6 +656,7 @@ class Coin(Bernoulli):
     def __new__(cls, p=S.Half, symbol=None):
         return Bernoulli.__new__(cls, p=p, a='H', b='T', symbol=symbol)
 
+@cacheit
 def pdf(expr):
     rvs = [s for s in expr.free_symbols if is_random(s)]
     crvs = [rv for rv in rvs if not rv.is_finite]
