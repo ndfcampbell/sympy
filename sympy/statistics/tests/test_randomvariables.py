@@ -41,6 +41,7 @@ def test_finite_events():
 
 def test_continuous_events():
     x = Symbol('x', real=True)
+    y = Symbol('y', real=True)
     pdf = exp(-x**2/2) / sqrt(2*S.Pi)
     C = ContinuousProbabilitySpace(x, pdf = pdf)
     e1, e2 = Event(C,Interval(-1,1)), Event(C,Interval(-2,2))
@@ -50,7 +51,8 @@ def test_continuous_events():
 
     e1 & e2 == e1
 
-    D = ContinuousProbabilitySpace(x, pdf = pdf)
+    pdf = exp(-y**2/2) / sqrt(2*S.Pi)
+    D = ContinuousProbabilitySpace(y, pdf = pdf)
     f1, f2 = Event(D,Interval(-1,1)), Event(D,Interval(-2,2))
 
     assert C != D

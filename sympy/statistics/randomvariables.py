@@ -1,4 +1,4 @@
-from sympy import Basic, S, Rational, Expr, integrate, cacheit
+from sympy import Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add, Tuple
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
 
@@ -15,12 +15,12 @@ class ProbabilitySpace(Basic):
         A Probability Measure on subsets of the sample space
     """
 
-    def __new__(cls, name, sample_space, probability_measure):
-        name = sympify(name)
-        return Basic.__new__(cls, name, sample_space, probability_measure)
+    def __new__(cls, symbol, sample_space, probability_measure):
+        symbol = sympify(symbol)
+        return Basic.__new__(cls, symbol, sample_space, probability_measure)
 
     @property
-    def name(self):
+    def symbol(self):
         return self.args[0]
 
     @property
@@ -35,18 +35,27 @@ class ProbabilitySpace(Basic):
     def probability_measure(self):
         return self.args[2]
 
+    @property
+    def value(self):
+        return RandomVariable(self, self.symbol)
+
     def __mul__(self, other):
         return ProductProbabilitySpace(self, other)
 
     @property
     def is_product(self):
         return False
+
+    @property
+    def is_finite(self):
+        return all(p.is_finite for p in self.constituent_spaces)
+
     _count = 0
     _name = 'space'
     @classmethod
-    def create_name(cls):
+    def create_symbol(cls):
         cls._count += 1
-        return '%s%d'%(cls._name, cls._count)
+        return Symbol('%s%d'%(cls._name, cls._count), real=True)
 
 class ProbabilityMeasure(Basic):
     """
@@ -76,6 +85,7 @@ class Event(Basic):
         return obj
 
     @property
+    @cacheit
     def measure(self):
         return self.pspace.probability_measure(self)
 
@@ -158,33 +168,86 @@ class Event(Basic):
         else:
             return other in self.set
 
+def is_random(x):
+    return isinstance(x, RandomVariable)
+def is_random_expr(expr):
+    return any(is_random(sym) for sym in expr.free_symbols)
 
-
-class RandomVariable(Expr):
+class RandomVariable(Symbol):
     """
     Represents a Random Variable.
     A function on a ProbabilitySpace's Sample Space
     """
 
-    def __new__(cls, pspace, fn):
-        args = [pspace, fn]
-        return Basic.__new__(cls, *args)
+    def __new__(cls, pspace, expr):
+
+        # For convenience turn pspace into a product space temporarily
+#        if not pspace.is_product:
+#            pspace = ProductProbabilitySpace(pspace)
+
+        # Clear out any probability space
+        # upon which the expression does not depend
+#        pspaces = [el for el in pspace.constituent_spaces
+#                if el.symbol in expr.free_symbols]
+#        if not pspaces: # Nothing left? Return the non-random expression
+#            return expr
+#        pspace = ProductProbabilitySpace(*pspaces) # Redefine pspace
+
+#        if len(pspace.constituent_spaces)==1: # Only one pspace?
+#            pspace = tuple(pspace.constituent_spaces)[0] # Return normal pspace
+
+#        if pspace.is_finite:
+#            cls = FiniteRandomVariable
+
+        return Basic.__new__(cls, pspace, expr)
 
     @property
     def pspace(self):
-        return args[0]
+        return self.args[0]
 
     @property
-    def fn(self):
-        return args[1]
+    def expr(self):
+        return self.args[1]
 
-    def _add(self, other):
-        if self.pspace == other.pspace:
-            pspace = self.pspace
-        else:
-            pspace = self.pspace * other.space
-        return RandomVariable(pspace,
-                lambda *args : self.fn(*args) + other.fn(*args))
+#    def _op(self, other, op):
+#        cls = self.__class__
+#        if is_random(other):
+#            if self.pspace == other.pspace:
+#                return cls(self.pspace, op(self.expr, other.expr))
+#            else:
+#                return cls(self.pspace*other.pspace,op(self.expr, other.expr))
+#        else:
+#            return cls(self.pspace, op(self.expr, other))
+
+#    def __add__(self, other):
+#        return self._op(other, lambda a,b: a+b)
+#    def __radd__(self, other):
+#        return self._op(other, lambda a,b: b+a)
+#    def __mul__(self, other):
+#        return self._op(other, lambda a,b: a*b)
+#    def __rmul__(self, other):
+#        return self._op(other, lambda a,b: b*a)
+#    def __pow__(self, other):
+#        return self._op(other, lambda a,b: a**b)
+#    def __sub__(self, other):
+#        return self._op(other, lambda a,b: a-b)
+#    def __rsub__(self, other):
+#        return self._op(other, lambda a,b: b-a)
+
+#    def applyfunc(self, fn):
+#        return self.__class__(self.pspace, fn(self.expr))
+
+    @property
+    def is_commutative(self):
+        self.pspace.symbol.is_commutative
+    @property
+    def name(self):
+        return self.pspace.symbol.name
+    @property
+    def is_finite(self):
+        return self.pspace.is_finite
+
+
 
 
 
@@ -200,14 +263,18 @@ class FiniteProbabilityMeasure(ProbabilityMeasure):
             # Sympify the dict's keys/values
             pdf_input = dict((sympify(key), sympify(value))
                 for key, value in pdf.items())
+
             # Wrap a function around the dict, defaulting to zero
             pdf = lambda x : pdf_input.get(x,0)
 
-        return Basic.__new__(cls, pdf)
-
-    @property
-    def pdf(self):
-        return self.args[0]
+            # pdf is either represented as a lambda or a dict.
+            # Neither is an effective arg for Basic comparisons
+            # We store the key:value pairs as an arg for comparison purposes
+            # and set a field pdf to be the lambda
+            obj = Basic.__new__(cls,
+                    Tuple(*[Tuple(k,v) for k,v in pdf_input.items()]))
+            obj.pdf = pdf
+            return obj
 
     def _call(self, event):
         return sum( self.pdf(element) for element in event.set )
@@ -221,7 +288,7 @@ class ProductProbabilitySpace(ProbabilitySpace):
     Cartesian Product of ProbabilitySpaces
 
     >>> from sympy.statistics.randomvariables import Coin
-    >>> print (Coin(name='coin1') * Coin(name='coin2')).sample_space_event
+    >>> print (Coin(symbol='coin1') * Coin(symbol='coin2')).sample_space_event
     {coin1, coin2} in {H, T} x {H, T}
 
     """
@@ -236,17 +303,25 @@ class ProductProbabilitySpace(ProbabilitySpace):
             if hasattr(arg, '__iter__') and not isinstance(arg, ProbabilitySpace):
                 return sum(map(flatten, arg), [])
             raise TypeError("Inputs must be (iterable of) ProductSpace")
-        spaces = set(flatten(args))
+        spaces = flatten(args)
+
+        # If there are repeat spaces remove them while preserving order
+        if len(set(spaces)) != len(spaces):
+            s = {}
+            for i, space in enumerate(spaces):
+                if space in s:
+                    spaces.pop(i)
+                s.add(space)
 
         return Basic.__new__(cls, *spaces)
 
     @property
     def constituent_spaces(self):
-        return FiniteSet(*self.args)
+        return self.args
 
     @property
-    def name(self):
-        return FiniteSet(pspace.name for pspace in self.constituent_spaces)
+    def symbol(self):
+        return tuple(pspace.symbol for pspace in self.constituent_spaces)
 
     @property
     def sample_space(self):
@@ -356,6 +431,8 @@ class ProductEvent(Event):
         else:
             raise TypeError("Not all constituent sets are iterable")
 
+    def subset(self, other):
+        self.intersect(other) == other
 
     @property
     def is_product(self):
@@ -491,7 +568,7 @@ class FiniteProbabilitySpace(ProbabilitySpace):
 
     >>> sixth = S(1)/6
     >>> pdf = {1:sixth, 2:sixth, 3:sixth, 4:sixth, 5:sixth, 6:sixth}
-    >>> die = FiniteProbabilitySpace(pdf, name='die')
+    >>> die = FiniteProbabilitySpace(pdf, symbol='die')
 
     >>> print die.sample_space_event
     die in {1, 2, 3, 4, 5, 6}
@@ -500,12 +577,16 @@ class FiniteProbabilitySpace(ProbabilitySpace):
     1/2
 """
 
-    def __new__(cls, pdf, name=None):
-        if not name:
-            name = cls.create_name()
+    def __new__(cls, pdf, symbol=None):
+        if not symbol:
+            symbol = cls.create_symbol()
         M = FiniteProbabilityMeasure(pdf)
         sample_space = FiniteSet(pdf.keys())
-        return Basic.__new__(cls, name, sample_space, M)
+        return Basic.__new__(cls, symbol, sample_space, M)
+
+    @property
+    def is_finite(self):
+        return True
 
 class Die(FiniteProbabilitySpace):
     """
@@ -526,9 +607,9 @@ class Die(FiniteProbabilitySpace):
 
     _count = 0
     _name = 'die'
-    def __new__(cls, sides=6, name=None):
+    def __new__(cls, sides=6, symbol=None):
         pdf = dict((i,Rational(1,sides)) for i in range(1,sides+1))
-        return FiniteProbabilitySpace.__new__(cls, pdf, name)
+        return FiniteProbabilitySpace.__new__(cls, pdf, symbol)
 
 class Bernoulli(FiniteProbabilitySpace):
     """
@@ -538,7 +619,7 @@ class Bernoulli(FiniteProbabilitySpace):
     >>> from sympy.statistics.randomvariables import Bernoulli, Event
     >>> from sympy import S, FiniteSet
 
-    >>> coin = Bernoulli(S.Half, 'H', 'T', name='coin')
+    >>> coin = Bernoulli(S.Half, 'H', 'T', symbol='coin')
     >>> print coin.sample_space_event
     coin in {H, T}
 
@@ -548,9 +629,9 @@ class Bernoulli(FiniteProbabilitySpace):
     """
     _numcount = 0
     _name = 'bernoulli'
-    def __new__(cls, p=S.Half, a=0, b=1, name=None):
+    def __new__(cls, p=S.Half, a=0, b=1, symbol=None):
         pdf = {a:p, b:(1-p)}
-        return FiniteProbabilitySpace.__new__(cls, pdf, name)
+        return FiniteProbabilitySpace.__new__(cls, pdf, symbol)
 
 class Coin(Bernoulli):
     """
@@ -560,7 +641,7 @@ class Coin(Bernoulli):
     >>> from sympy.statistics.randomvariables import Coin, Event
     >>> from sympy import FiniteSet
 
-    >>> coin = Coin(name='coin')
+    >>> coin = Coin(symbol='coin')
     >>> print coin.sample_space_event
     coin in {H, T}
 
@@ -572,8 +653,81 @@ class Coin(Bernoulli):
     """
     _numcount = 0
     _name = 'coin'
-    def __new__(cls, p=S.Half, name=None):
-        return Bernoulli.__new__(cls, p=p, a='H', b='T', name=name)
+    def __new__(cls, p=S.Half, symbol=None):
+        return Bernoulli.__new__(cls, p=p, a='H', b='T', symbol=symbol)
+
+def pdf(expr):
+    rvs = [s for s in expr.free_symbols if is_random(s)]
+    crvs = [rv for rv in rvs if not rv.is_finite]
+
+    # Handle Continuous Random Variables
+
+    frvs = [rv for rv in rvs if rv.is_finite]
+    if not frvs:
+        return {expr:1}
+
+    # Handle Discrete Random Variables
+    d = {}
+    rv = frvs[0] # Take first random variable
+
+    # For each possibility of the value of rv
+    for elem in rv.pspace.sample_space_event:
+        # Compute the pdf of the rest of the expression recursively
+        sub_pdf = pdf(expr.subs(rv, tuple(elem.set)[0]))
+        # For each value with probability P in that pdf
+        for val, prob in sub_pdf.items():
+            # Add the probability of P * probability of this value of rv
+            d[val] = d.get(val,0) + elem.measure * prob
+
+    return d
+
+def expectation(expr):
+    expr = sympify(expr)
+    if isinstance(expr, dict):
+        return Add(*[p*expectation(e) for e,p in expr.items()])
+    if is_random_expr(expr):
+        return expectation(pdf(expr))
+    else:
+        return expr
+
+E = expectation
+
+class FiniteRandomVariable(RandomVariable):
+
+    @property
+    @cacheit
+    def pdf(self):
+        d = {}
+        for elem in self.pspace.sample_space_event:
+            if elem.is_product:
+                subdict = dict( (event.pspace.symbol, tuple(event.set)[0])
+                        for event in elem.events )
+            else:
+                subdict = {self.pspace.symbol : tuple(elem.set)[0]}
+            val = self.expr.subs(subdict)
+            d[val] = d.get(val,0) + elem.measure
+        return d
+
+    @property
+    def cdf(self):
+        vals, probs = zip(*sorted(self.pdf.items()))
+
+        if not all(val.is_number for val in vals):
+            raise TypeError("Not all values are numeric")
+
+        d = {}
+        probability = 0
+        for val, p in zip(vals, probs):
+            probability += p
+            d[val] = probability
+
+        return d
+
+    @property
+    def expectation(self):
+        return Add(*[key*value for key,value in self.pdf.items()])
+
+
 
 #====================================================================
 #=== Continuous Example Spaces ======================================
@@ -602,6 +756,7 @@ class ContinuousProbabilityMeasure(ProbabilityMeasure):
             return None
 
     @property
+    @cacheit
     def cdf(self):
         if self._cdf:
             return self._cdf
@@ -614,9 +769,9 @@ class ContinuousProbabilityMeasure(ProbabilityMeasure):
     def _call(self, event):
         if event.set.is_interval:
             if self._cdf:
-                return self._cdf(event.set.end) - self._cdf(event.set.start)
+                return self.cdf(event.set.end) - self.cdf(event.set.start)
             else:
-                return integrate(self._pdf, (self.symbol, event.set))
+                return integrate(self.pdf, (self.symbol, event.set))
         elif event.set.is_union:
             intervals = [s for s in event.set.args if s.is_interval]
             assert all(s.measure==0 for s in event.set.args
@@ -639,11 +794,8 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
 
     """
 
-    def __new__(cls, symbol, pdf=None, cdf=None, name=None,
-                sample_space = Interval(-oo, oo)):
-        if not name:
-            name = cls.create_name()
+    def __new__(cls, symbol, pdf=None, cdf=None,
+            sample_space = Interval(-oo, oo)):
         M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
-        obj = Basic.__new__(cls, name, sample_space, M, symbol)
-        obj.symbol = symbol
+        obj = Basic.__new__(cls, symbol, sample_space, M)
         return obj

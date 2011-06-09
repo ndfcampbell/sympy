@@ -343,7 +343,10 @@ class StrPrinter(Printer):
                              self.parenthesize(expr.exp, PREC))
 
     def _print_ProbabilitySpace(self, pspace):
-        return self._print(pspace.name)
+        return self._print(pspace.symbol)
+
+    def _print_RandomVariable(self, rv):
+        return self._print(rv.expr)
 
     def _print_Integer(self, expr):
         return str(expr.p)

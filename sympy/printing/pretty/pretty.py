@@ -902,7 +902,10 @@ class PrettyPrinter(Printer):
         return pform
 
     def _print_ProbabilitySpace(self, pspace):
-        return self._print(pspace.name)
+        return self._print(pspace.symbol)
+
+    def _print_RandomVariable(self, rv):
+        return self._print(rv.expr)
 
     def _print_Pure(self, e):
         if self._use_unicode:

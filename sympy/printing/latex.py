@@ -295,6 +295,9 @@ class LatexPrinter(Printer):
     def _print_ProbabilitySpace(self, pspace):
         return self._print(pspace.name)
 
+    def _print_RandomVariable(self, rv):
+        return self._print(rv.expr)
+
     def _print_Sum(self, expr):
         if len(expr.limits) == 1:
             tex = r"\sum_{%s=%s}^{%s} " % \
