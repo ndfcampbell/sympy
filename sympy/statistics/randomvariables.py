@@ -1,4 +1,5 @@
-from sympy import Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add, Tuple
+from sympy import (Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add,
+        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy)
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
 
@@ -48,7 +49,7 @@ class ProbabilitySpace(Basic):
 
     @property
     def is_finite(self):
-        return all(p.is_finite for p in self.constituent_spaces)
+        return self.sample_space.is_finite
 
     _count = 0
     _name = 'space'
@@ -239,7 +240,8 @@ class RandomVariable(Symbol):
 
     @property
     def is_commutative(self):
-        self.pspace.symbol.is_commutative
+        return True
+        return self.pspace.symbol.is_commutative
     @property
     def name(self):
         return self.pspace.symbol.name
@@ -656,25 +658,65 @@ class Coin(Bernoulli):
     def __new__(cls, p=S.Half, symbol=None):
         return Bernoulli.__new__(cls, p=p, a='H', b='T', symbol=symbol)
 
+def random_symbols(expr):
+    return [s for s in expr.free_symbols if is_random(s)]
+
+def det(expr):
+    crvs = [s for s in expr.free_symbols if is_random(s) and not s.is_finite]
+    dexprdrv = [expr.diff(rv) for rv in crvs]
+    return Mul(*dexprdrv)
+
+def symbol_subs(expr):
+    return expr.subs({rv:rv.pspace.symbol for rv in random_symbols(expr)})
+
 @cacheit
-def pdf(expr):
-    rvs = [s for s in expr.free_symbols if is_random(s)]
-    crvs = [rv for rv in rvs if not rv.is_finite]
+def PDF(expr):
+    try:
+        rvs = [s for s in expr.free_symbols if is_random(s)]
+    except:
+        rvs = []
+    if not rvs:
+        return {expr:1}
 
     # Handle Continuous Random Variables
 
-    frvs = [rv for rv in rvs if rv.is_finite]
-    if not frvs:
-        return {expr:1}
+    crvs = [rv for rv in rvs if not rv.is_finite]
+    if crvs:
+        # We allow all but one crv to float. The last needs to enforce the condition
+        # That expr = Q for some value Q. We then compute the probability density
+        # Around of expr around Q
+        head, tail = crvs[0], crvs[1:]
+        # We'll use head to select Q given all other crvs
+        y = Dummy('x', real=True)
+        # Solve expr == Q for a variable in expr
+        constraint = solve(expr - y, head)
+        # Convert the expression in RVs to one in RV.symbols
+        constraint = [symbol_subs(cons) for cons in constraint]
+        # Compute PDF of (X,Y,Z, ...) the crvs
+        fullpdf = Mul(*[crv.pspace.probability_measure.pdf for crv in crvs]) # Compute PDF of (X,Y,Z,...)
+        # Divide by the determinant
+        fullpdf = (fullpdf / symbol_subs(det(expr)))
+        # Substitute the constraint computed above into the PDF
+        newpdf = (Add(*[fullpdf.subs(head.pspace.symbol, cons) for cons in constraint]))
+        # Marginalize over extra symbols in tail
+        if tail:
+            newpdf= integrate(newpdf,
+                    *[(crv.pspace.symbol, crv.pspace.sample_space) for crv in tail])
+
+        if crvs:
+            return newpdf
+
 
     # Handle Discrete Random Variables
+    frvs = [rv for rv in rvs if rv.is_finite]
+
     d = {}
     rv = frvs[0] # Take first random variable
 
     # For each possibility of the value of rv
     for elem in rv.pspace.sample_space_event:
         # Compute the pdf of the rest of the expression recursively
-        sub_pdf = pdf(expr.subs(rv, tuple(elem.set)[0]))
+        sub_pdf = PDF(expr.subs(rv, tuple(elem.set)[0]))
         # For each value with probability P in that pdf
         for val, prob in sub_pdf.items():
             # Add the probability of P * probability of this value of rv
@@ -687,11 +729,14 @@ def expectation(expr):
     if isinstance(expr, dict):
         return Add(*[p*expectation(e) for e,p in expr.items()])
     if is_random_expr(expr):
-        return expectation(pdf(expr))
+        return expectation(PDF(expr))
     else:
         return expr
 
 E = expectation
+var = lambda X: E(X**2) - E(X)**2
+std = lambda X: sqrt(var(X))
+covar = lambda X,Y: E( (X-E(X)) * (Y-E(Y)) )
 
 class FiniteRandomVariable(RandomVariable):
 
