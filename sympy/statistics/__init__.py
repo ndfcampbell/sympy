@@ -3,4 +3,4 @@ SymPy statistics module
 """
 
 from distributions import Normal, Uniform
-from randomvariables import Event, FiniteProbabilitySpace, Die, Bernoulli
+from randomvariables import * # Just while developing

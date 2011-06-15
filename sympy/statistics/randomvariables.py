@@ -658,6 +658,95 @@ class Coin(Bernoulli):
     def __new__(cls, p=S.Half, symbol=None):
         return Bernoulli.__new__(cls, p=p, a='H', b='T', symbol=symbol)
 
+#====================================================================
+#=== Continuous Example Spaces ======================================
+#====================================================================
+
+class ContinuousProbabilityMeasure(ProbabilityMeasure):
+    """
+    An easy to create probability Measure
+    Constructor takes either a dict or a function
+    """
+    def __new__(cls, symbol, pdf=None, cdf=None):
+        obj = Basic.__new__(cls, symbol, pdf, cdf)
+        obj.symbol = symbol
+        obj._pdf = pdf
+        obj._cdf = cdf
+        return obj
+
+    @property
+    def pdf(self):
+        if self._pdf:
+            return self._pdf
+        elif self._cdf:
+            return self._cdf.diff(symbol)
+        else:
+            return None
+
+    @property
+    @cacheit
+    def cdf(self):
+        if self._cdf:
+            return self._cdf
+        elif self._pdf:
+            return integrate(self._pdf,
+                    (self.symbol, Interval(-oo, self.symbol)))
+        else:
+            raise ValueError("CDF and PDF not defined")
+
+    def _call(self, event):
+        if event.set.is_interval:
+            if self._cdf:
+                return self.cdf(event.set.end) - self.cdf(event.set.start)
+            else:
+                return integrate(self.pdf, (self.symbol, event.set))
+        elif event.set.is_union:
+            intervals = [s for s in event.set.args if s.is_interval]
+            assert all(s.measure==0 for s in event.set.args
+                    if not s.is_interval)
+            return sum(self(Event(event.pspace, i)) for i in intervals)
+        # FiniteSet or EmptySet
+        elif event.set.measure == 0:
+            return 0
+        else:
+            raise NotImplementedError("Can not integrate over %s."%event.set)
+
+class ContinuousProbabilitySpace(ProbabilitySpace):
+    """
+    A ProbabilitySpace on the real line
+
+    Creates a ProbabilitySpace given ...
+
+    See also:
+        FiniteProbabilitySpace
+
+    """
+
+    def __new__(cls, symbol, pdf=None, cdf=None,
+            sample_space = Interval(-oo, oo)):
+        M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
+        obj = Basic.__new__(cls, symbol, sample_space, M)
+        return obj
+
+class UniformProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, start, end, symbol = None):
+        x = symbol or Dummy('x', real=True)
+        pdf = Piecewise( (0, x<start), (0, x>end), (S(1)/(end-start), True) )
+        return ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
+
+class NormalProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, mean, variance, symbol = None):
+        x = symbol or Dummy('x', real=True)
+        pdf = exp(-(x)**2 / (2*variance)) / (sqrt(2*pi) * sqrt(variance))
+        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
+        obj.mean = mean
+        obj.variance = variance
+        return obj
+
+#=========================================
+#=== Random Expression Functions =========
+#=========================================
+
 def det(expr):
     crvs = [s for s in expr.free_symbols if is_random(s) and not s.is_finite]
     dexprdrv = [expr.diff(rv) for rv in crvs]
@@ -678,9 +767,12 @@ def _remove_continuous_random_variables_pdf(fullpdf):
     # remove continuous random variables from expression side
     newpdf = {}
     val = Dummy('val', real=True, finite=True)
-    for ex,p in fullpdf.items():
-        val, pdf = _continuous_pdf(ex, val=val) # ex == val with prob pdf
-        newpdf[val] = newpdf.get(val,0) + pdf * p
+    for expr,p in fullpdf.items():
+        if any(not s.is_finite for s in random_symbols(expr)):
+            val, pdf = _continuous_pdf(expr, val=val) # ex == val with prob pdf
+            newpdf[val] = newpdf.get(val,0) + pdf * p
+        else: # just pass old value through
+            newpdf[expr] = newpdf.get(expr,0) + p
     # Assume for now that continuous random variables do not end up
     # on the probability side
     assert (not any(s.is_finite for s in random_symbols(newpdf.keys()))
@@ -688,8 +780,8 @@ def _remove_continuous_random_variables_pdf(fullpdf):
     return newpdf
 
 def _continuous_pdf(expr, val=None):
-    rvs = random_symbols(expr)
-    crvs = [rv for rv in rvs if not rv.is_finite]
+    # Gather continuous random variables from expression
+    crvs = [rv for rv in random_symbols(expr) if not rv.is_finite]
 
     if not crvs:
         return expr, 1
@@ -797,92 +889,11 @@ def pspace(expr):
     return ProductProbabilitySpace(*[rv.pspace for rv in rvs])
 
 def independent(X,Y):
+    # Independent if their ProbabilitySpaces do not overlap
     return (len(set(pspace(X).constituent_spaces)
             & set(pspace(Y).constituent_spaces))
             == 0)
+def dependent(X,Y):
+    return not independent(X,Y)
 
-#====================================================================
-#=== Continuous Example Spaces ======================================
-#====================================================================
-
-class ContinuousProbabilityMeasure(ProbabilityMeasure):
-    """
-    An easy to create probability Measure
-    Constructor takes either a dict or a function
-    """
-    def __new__(cls, symbol, pdf=None, cdf=None):
-        obj = Basic.__new__(cls, symbol, pdf, cdf)
-        obj.symbol = symbol
-        obj._pdf = pdf
-        obj._cdf = cdf
-        return obj
-
-    @property
-    def pdf(self):
-        if self._pdf:
-            return self._pdf
-        elif self._cdf:
-            return self._cdf.diff(symbol)
-        else:
-            return None
-
-    @property
-    @cacheit
-    def cdf(self):
-        if self._cdf:
-            return self._cdf
-        elif self._pdf:
-            return integrate(self._pdf,
-                    (self.symbol, Interval(-oo, self.symbol)))
-        else:
-            raise ValueError("CDF and PDF not defined")
-
-    def _call(self, event):
-        if event.set.is_interval:
-            if self._cdf:
-                return self.cdf(event.set.end) - self.cdf(event.set.start)
-            else:
-                return integrate(self.pdf, (self.symbol, event.set))
-        elif event.set.is_union:
-            intervals = [s for s in event.set.args if s.is_interval]
-            assert all(s.measure==0 for s in event.set.args
-                    if not s.is_interval)
-            return sum(self(Event(event.pspace, i)) for i in intervals)
-        # FiniteSet or EmptySet
-        elif event.set.measure == 0:
-            return 0
-        else:
-            raise NotImplementedError("Can not integrate over %s."%event.set)
-
-class ContinuousProbabilitySpace(ProbabilitySpace):
-    """
-    A ProbabilitySpace on the real line
-
-    Creates a ProbabilitySpace given ...
-
-    See also:
-        FiniteProbabilitySpace
-
-    """
-
-    def __new__(cls, symbol, pdf=None, cdf=None,
-            sample_space = Interval(-oo, oo)):
-        M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
-        obj = Basic.__new__(cls, symbol, sample_space, M)
-        return obj
-
-class UniformProbabilitySpace(ContinuousProbabilitySpace):
-    def __new__(cls, start, end, symbol = None):
-        x = symbol or Dummy('x', real=True)
-        pdf = Piecewise( (0, x<start), (0, x>end), (S(1)/(end-start), True) )
-        return ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
-
-class NormalProbabilitySpace(ContinuousProbabilitySpace):
-    def __new__(cls, mean, variance, symbol = None):
-        x = symbol or Dummy('x', real=True)
-        pdf = exp(-(x)**2 / (2*variance)) / (sqrt(2*pi) * sqrt(variance))
-        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
-        obj.mean = mean
-        obj.variance = variance
-        return obj
 
