@@ -640,6 +640,9 @@ class Interval(RealSet):
             return left
         else:
             return And(left, right)
+    @property
+    def is_bounded(self):
+        return self.left.is_bounded and self.right.is_bounded
 
 class Union(Set):
     """
@@ -822,6 +825,9 @@ class Union(Set):
     @property
     def is_union(self):
         return True
+    @property
+    def is_bounded(self):
+        return all(set.is_bounded for set in self.args)
 
 class RealUnion(Union, RealSet):
     """
@@ -1103,9 +1109,15 @@ class FiniteSet(CountableSet):
     @property
     def is_real(self):
         return all(el.is_real for el in self)
-
+    @property
     def is_finite_set(self):
         return True
+    @property
+    def is_positive(self):
+        return all(el.is_positive for el in self)
+    @property
+    def is_bounded(self):
+        return all(el.is_bounded for el in self)
 
 class RealFiniteSet(FiniteSet, RealSet):
     """

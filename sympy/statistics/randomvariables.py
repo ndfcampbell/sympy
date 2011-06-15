@@ -52,6 +52,13 @@ class ProbabilitySpace(Basic):
     def is_finite(self):
         return self.sample_space.is_finite
 
+    @property
+    def is_bounded(self):
+        if self.sample_space.is_bounded:
+            return True
+        # Even if sample_space is unbounded the value may be bounded if
+        # Probability is zero on that part of the space
+
     _count = 0
     _name = 'space'
     @classmethod
@@ -144,7 +151,7 @@ class Event(Basic):
 
     def _iter_events(self):
         if self.is_iterable:
-            return (Event(self.pspace, FiniteSet(item)) for item in self.set)
+            return (AtomicEvent(self.pspace, FiniteSet(item)) for item in self.set)
         else:
             raise TypeError("This Event is not iterable")
 
@@ -169,6 +176,13 @@ class Event(Basic):
             return other.pspace == self.pspace and self.set.subset(other.set)
         else:
             return other in self.set
+
+class AtomicEvent(Event):
+    @property
+    def value(self):
+        return tuple(self.set)[0]
+    def dict(self):
+        return {self.pspace.symbol:self.value}
 
 def is_random(x):
     return isinstance(x, RandomVariable)
@@ -248,6 +262,15 @@ class RandomVariable(Symbol):
     @property
     def is_finite(self):
         return self.pspace.is_finite
+    @property
+    def is_real(self):
+        return self.pspace.sample_space.is_real
+    @property
+    def is_positive(self):
+        return self.pspace.sample_space.is_positive
+    @property
+    def is_bounded(self):
+        return self.pspace.is_bounded
 
     def _hashable_content(self):
         return self._args
@@ -409,6 +432,13 @@ class ProductEvent(Event):
     @property
     def is_product(self):
         return True
+
+class AtomicProductEvent(ProductEvent):
+    @property
+    def value(self):
+        return tuple(self.set)[0]
+    def dict(self):
+        return {ev.pspace.symbol:ev.value for ev in self.events}
 
 def cast_event(event, productspace):
     """
@@ -729,18 +759,23 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
 
 class UniformProbabilitySpace(ContinuousProbabilitySpace):
     def __new__(cls, start, end, symbol = None):
-        x = symbol or Dummy('x', real=True)
+        x = symbol or Dummy('x', real=True, finite=True)
         pdf = Piecewise( (0, x<start), (0, x>end), (S(1)/(end-start), True) )
         return ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
 
 class NormalProbabilitySpace(ContinuousProbabilitySpace):
     def __new__(cls, mean, variance, symbol = None):
-        x = symbol or Dummy('x', real=True)
-        pdf = exp(-(x)**2 / (2*variance)) / (sqrt(2*pi) * sqrt(variance))
+        x = symbol or Dummy('x', real=True, finite=True)
+        pdf = exp(-(x-mean)**2 / (2*variance)) / (sqrt(2*pi) * sqrt(variance))
         obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
         obj.mean = mean
         obj.variance = variance
         return obj
+
+    @property
+    def is_bounded(self):
+        return self.variance != S.Zero
+
 
 #=========================================
 #=== Random Expression Functions =========
@@ -861,14 +896,21 @@ def _finite_pdf(expr):
 
     return d
 
+def marginalize(expr, *rvs):
+    for rv in rvs:
+        if rv not in random_symbols(expr):
+            continue
+        expr = expr.subs(rv, rv.symbol)
+        if rv.is_finite:
+            expr = Add(*[expr.subs(atomic_event.dict())*P(atomic_event)
+                for atomic_event in rv.pspace.sample_space_event])
+        if not rv.is_finite:
+            expr = integrate(expr * rv.pdf, (rv.symbol, rv.pspace.sample_space))
+    return expr
+
+@cacheit
 def expectation(expr):
-    expr = sympify(expr)
-    if isinstance(expr, dict):
-        return Add(*[p*expectation(e) for e,p in expr.items()])
-    if is_random_expr(expr):
-        return expectation(PDF(expr))
-    else:
-        return expr
+    return marginalize(expr, *random_symbols(expr))
 E = expectation
 
 def variance(X):
