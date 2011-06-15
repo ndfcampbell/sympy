@@ -1,9 +1,9 @@
 from sympy import (Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add,
-        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi)
+        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi, Piecewise)
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
 from sympy.core.relational import Lt, Gt, Eq, Relational, Inequality
-
+from sympy.solvers.inequalities import reduce_poly_inequalities
 oo = S.Infinity
 
 #from sympy.core import sympify, Integer, Rational, oo, Float, pi, Set, Basic
@@ -906,6 +906,14 @@ def P(arg):
         return arg.measure
 
 def _rel_to_event(rel):
+    rvs = random_symbols(rel)
+    if all(rv.is_finite for rv in rvs):
+        return _rel_to_event_finite(rel)
+    elif not any(rv.is_finite for rv in rvs) and len(rvs)==1:
+        return _rel_to_event_continuous(rel)
+    raise NotImplementedError("Events of complex Relationals not implemented")
+
+def _rel_to_event_finite(rel):
     ps = pspace(rel)
     if ps.is_product and len(ps.constituent_spaces)==1:
         ps = ps.constituent_spaces[0]
@@ -923,4 +931,16 @@ def _rel_to_event(rel):
             elif val != False:
                 raise ValueError("Relational did not evaluate to True/False")
         return UnionEvent(events)
+
+def _rel_to_event_continuous(rel):
+    rvs = random_symbols(rel)
+    if len(rvs)!=1 or rvs[0].is_finite:
+        raise "Not implemented for multiple or finite random variables"
+    if not rel.is_Relational:
+        raise "Argument is not a Relational"
+
+    interval = reduce_poly_inequalities([[rel]], rvs[0], relational=False)
+    event = Event(rvs[0].pspace, interval)
+
+    return event
 
