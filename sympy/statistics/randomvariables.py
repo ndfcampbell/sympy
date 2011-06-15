@@ -2,6 +2,7 @@ from sympy import (Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add,
         Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi)
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
+from sympy.core.relational import Lt, Gt, Eq, Relational, Inequality
 
 oo = S.Infinity
 
@@ -279,14 +280,12 @@ class ProductProbabilitySpace(ProbabilitySpace):
         spaces = flatten(args)
 
         # If there are repeat spaces remove them while preserving order
-        if len(set(spaces)) != len(spaces):
-            s = {}
-            for i, space in enumerate(spaces):
-                if space in s:
-                    spaces.pop(i)
-                s.add(space)
+        s = []
+        for space in spaces:
+            if space not in s:
+                s.append(space)
 
-        return Basic.__new__(cls, *spaces)
+        return Basic.__new__(cls, *s)
 
     @property
     def constituent_spaces(self):
@@ -896,4 +895,32 @@ def independent(X,Y):
 def dependent(X,Y):
     return not independent(X,Y)
 
+#===================================
+#===== Event Creation ==============
+#===================================
+
+def P(arg):
+    if arg.is_Relational:
+        return P(_rel_to_event(arg))
+    if isinstance(arg, Event):
+        return arg.measure
+
+def _rel_to_event(rel):
+    ps = pspace(rel)
+    if ps.is_product and len(ps.constituent_spaces)==1:
+        ps = ps.constituent_spaces[0]
+    testrel = rel.subs({rv:rv.symbol for rv in random_symbols(rel)})
+    if ps.is_finite:
+        events = []
+        for event in ps.sample_space_event:
+            if ps.is_product:
+                subsdict={e.pspace.symbol:tuple(e.set)[0] for e in event.events}
+            else:
+                subsdict = {event.pspace.symbol:tuple(event.set)[0]}
+            val = testrel.subs(subsdict)
+            if val == True:
+                events.append(event)
+            elif val != False:
+                raise ValueError("Relational did not evaluate to True/False")
+        return UnionEvent(events)
 
