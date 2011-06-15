@@ -1,5 +1,5 @@
 from sympy import (Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add,
-        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy)
+        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi)
 from sympy.core.sympify import sympify
 from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
 
@@ -173,6 +173,13 @@ def is_random(x):
     return isinstance(x, RandomVariable)
 def is_random_expr(expr):
     return any(is_random(sym) for sym in expr.free_symbols)
+def random_symbols(expr):
+    if is_random(expr):
+        return [expr]
+    try:
+        return [s for s in expr.free_symbols if is_random(s)]
+    except:
+        return []
 
 class RandomVariable(Symbol):
     """
@@ -181,25 +188,6 @@ class RandomVariable(Symbol):
     """
 
     def __new__(cls, pspace, expr):
-
-        # For convenience turn pspace into a product space temporarily
-#        if not pspace.is_product:
-#            pspace = ProductProbabilitySpace(pspace)
-
-        # Clear out any probability space
-        # upon which the expression does not depend
-#        pspaces = [el for el in pspace.constituent_spaces
-#                if el.symbol in expr.free_symbols]
-#        if not pspaces: # Nothing left? Return the non-random expression
-#            return expr
-#        pspace = ProductProbabilitySpace(*pspaces) # Redefine pspace
-
-#        if len(pspace.constituent_spaces)==1: # Only one pspace?
-#            pspace = tuple(pspace.constituent_spaces)[0] # Return normal pspace
-
-#        if pspace.is_finite:
-#            cls = FiniteRandomVariable
-
         return Basic.__new__(cls, pspace, expr)
 
     @property
@@ -209,6 +197,17 @@ class RandomVariable(Symbol):
     @property
     def expr(self):
         return self.args[1]
+
+    @property
+    def symbol(self):
+        return self.pspace.symbol
+
+    @property
+    def pdf(self):
+        if self.expr == self.pspace.symbol:
+            return self.pspace.probability_measure.pdf
+        else:
+            return PDF(self)
 
 #    def _op(self, other, op):
 #        cls = self.__class__
@@ -241,45 +240,17 @@ class RandomVariable(Symbol):
     @property
     def is_commutative(self):
         return True
-        return self.pspace.symbol.is_commutative
+        return self.symbol.is_commutative
     @property
     def name(self):
-        return self.pspace.symbol.name
+        return self.symbol.name
     @property
     def is_finite(self):
         return self.pspace.is_finite
 
+    def _hashable_content(self):
+        return self._args
 
-
-
-
-class FiniteProbabilityMeasure(ProbabilityMeasure):
-    """
-    An easy to create probability Measure
-    Constructor takes either a dict or a function
-    """
-    def __new__(cls, pdf):
-
-        # Is dict-like
-        if hasattr(pdf, '__getitem__') and not hasattr(pdf, '__call__'):
-            # Sympify the dict's keys/values
-            pdf_input = dict((sympify(key), sympify(value))
-                for key, value in pdf.items())
-
-            # Wrap a function around the dict, defaulting to zero
-            pdf = lambda x : pdf_input.get(x,0)
-
-            # pdf is either represented as a lambda or a dict.
-            # Neither is an effective arg for Basic comparisons
-            # We store the key:value pairs as an arg for comparison purposes
-            # and set a field pdf to be the lambda
-            obj = Basic.__new__(cls,
-                    Tuple(*[Tuple(k,v) for k,v in pdf_input.items()]))
-            obj.pdf = pdf
-            return obj
-
-    def _call(self, event):
-        return sum( self.pdf(element) for element in event.set )
 
 #====================================================================
 #=== Product Spaces =================================================
@@ -552,6 +523,35 @@ class UnionEvent(Event):
 #====================================================================
 #=== Finite Example Spaces ==========================================
 #====================================================================
+
+class FiniteProbabilityMeasure(ProbabilityMeasure):
+    """
+    An easy to create probability Measure
+    Constructor takes either a dict or a function
+    """
+    def __new__(cls, pdf):
+
+        # Is dict-like
+        if hasattr(pdf, '__getitem__') and not hasattr(pdf, '__call__'):
+            # Sympify the dict's keys/values
+            pdf_input = dict((sympify(key), sympify(value))
+                for key, value in pdf.items())
+
+            # Wrap a function around the dict, defaulting to zero
+            pdf = lambda x : pdf_input.get(x,0)
+
+            # pdf is either represented as a lambda or a dict.
+            # Neither is an effective arg for Basic comparisons
+            # We store the key:value pairs as an arg for comparison purposes
+            # and set a field pdf to be the lambda
+            obj = Basic.__new__(cls,
+                    Tuple(*[Tuple(k,v) for k,v in pdf_input.items()]))
+            obj.pdf = pdf
+            return obj
+
+    def _call(self, event):
+        return sum( self.pdf(element) for element in event.set )
+
 class FiniteProbabilitySpace(ProbabilitySpace):
     """
     A ProbabilitySpace on a finite countable sample space
@@ -658,57 +658,103 @@ class Coin(Bernoulli):
     def __new__(cls, p=S.Half, symbol=None):
         return Bernoulli.__new__(cls, p=p, a='H', b='T', symbol=symbol)
 
-def random_symbols(expr):
-    return [s for s in expr.free_symbols if is_random(s)]
-
 def det(expr):
     crvs = [s for s in expr.free_symbols if is_random(s) and not s.is_finite]
     dexprdrv = [expr.diff(rv) for rv in crvs]
     return Mul(*dexprdrv)
 
 def symbol_subs(expr):
-    return expr.subs({rv:rv.pspace.symbol for rv in random_symbols(expr)})
+    return expr.subs({rv:rv.symbol for rv in random_symbols(expr)})
 
 @cacheit
 def PDF(expr):
-    try:
-        rvs = [s for s in expr.free_symbols if is_random(s)]
-    except:
-        rvs = []
-    if not rvs:
-        return {expr:1}
+    pdf = {expr:1}
+    pdf = _remove_continuous_random_variables_pdf(pdf)
+    pdf = _remove_finite_random_variables_pdf(pdf)
+
+    return pdf
+
+def _remove_continuous_random_variables_pdf(fullpdf):
+    # remove continuous random variables from expression side
+    newpdf = {}
+    val = Dummy('val', real=True, finite=True)
+    for ex,p in fullpdf.items():
+        val, pdf = _continuous_pdf(ex, val=val) # ex == val with prob pdf
+        newpdf[val] = newpdf.get(val,0) + pdf * p
+    # Assume for now that continuous random variables do not end up
+    # on the probability side
+    assert (not any(s.is_finite for s in random_symbols(newpdf.keys()))
+            and not any(s.is_finite for s in random_symbols(newpdf.values())))
+    return newpdf
+
+def _continuous_pdf(expr, val=None):
+    rvs = random_symbols(expr)
+    crvs = [rv for rv in rvs if not rv.is_finite]
+
+    if not crvs:
+        return expr, 1
 
     # Handle Continuous Random Variables
 
-    crvs = [rv for rv in rvs if not rv.is_finite]
     if crvs:
-        # We allow all but one crv to float. The last needs to enforce the condition
-        # That expr = Q for some value Q. We then compute the probability density
+        # We allow all but one crv to float.
+        # The last crv needs to enforce the condition that expr = Q
+        # for some value Q. We then compute the probability density
         # Around of expr around Q
         head, tail = crvs[0], crvs[1:]
         # We'll use head to select Q given all other crvs
-        y = Dummy('x', real=True)
+        val = val or Dummy('y', real=True, finite=True)
         # Solve expr == Q for a variable in expr
-        constraint = solve(expr - y, head)
+        constraint = solve(expr - val, head)
         # Convert the expression in RVs to one in RV.symbols
-        constraint = [symbol_subs(cons) for cons in constraint]
-        # Compute PDF of (X,Y,Z, ...) the crvs
-        fullpdf = Mul(*[crv.pspace.probability_measure.pdf for crv in crvs]) # Compute PDF of (X,Y,Z,...)
-        # Divide by the determinant
-        fullpdf = (fullpdf / symbol_subs(det(expr)))
+        constraint = [cons.subs({rv:rv.symbol for rv in crvs})
+                for cons in constraint]
+        # Compute PDF of the full vector space (X,Y,Z, ...) of the crvs
+        fullpdf = Mul(*[crv.pdf for crv in crvs])
+        # Divide by the determinant to rescale the dxdydz
+        fullpdf = fullpdf / det(expr).subs({rv:rv.symbol for rv in crvs})
         # Substitute the constraint computed above into the PDF
-        newpdf = (Add(*[fullpdf.subs(head.pspace.symbol, cons) for cons in constraint]))
+        # Make sure to account for multiple solutions if they exist
+        newpdf = (Add(*[fullpdf.subs(head.symbol, cons)
+            for cons in constraint]))
         # Marginalize over extra symbols in tail
         if tail:
             newpdf= integrate(newpdf,
-                    *[(crv.pspace.symbol, crv.pspace.sample_space) for crv in tail])
+                    *[(crv.symbol, crv.pspace.sample_space)
+                        for crv in tail])
 
-        if crvs:
-            return newpdf
+        return val, newpdf
 
+def _remove_finite_random_variables_pdf(fullpdf):
+    newpdf = {}
+    # remove finite random variables from the expression side
+    for expr, bigprob in fullpdf.items():
+        # If any finite symbols in expression
+        if any(s.is_finite for s in random_symbols(expr)):
+            smallpdf = _finite_pdf(expr)
+            for ex, littleprob in smallpdf.items():
+                newpdf[ex] = newpdf.get(ex,0) + bigprob*littleprob
+        else:
+            newpdf[expr] = newpdf.get(expr,0) + bigprob # just propagate
+    # remove finite random variables from the probability side
+    for expr, bigprob in newpdf.items():
+        # If any finite symbols in expression
+        if any(s.is_finite for s in random_symbols(bigprob)):
+            probpdf = _finite_pdf(bigprob)
+            sumprob = sum(ex*p for ex, p in probpdf.items())
+            newpdf[expr] = sumprob
+    assert (not any(s.is_finite for s in random_symbols(newpdf.keys()))
+            and not any(s.is_finite for s in random_symbols(newpdf.values())))
 
+    return newpdf
+
+def _finite_pdf(expr):
+    rvs = random_symbols(expr)
     # Handle Discrete Random Variables
     frvs = [rv for rv in rvs if rv.is_finite]
+
+    if not frvs:
+        return {expr:1}
 
     d = {}
     rv = frvs[0] # Take first random variable
@@ -716,7 +762,7 @@ def PDF(expr):
     # For each possibility of the value of rv
     for elem in rv.pspace.sample_space_event:
         # Compute the pdf of the rest of the expression recursively
-        sub_pdf = PDF(expr.subs(rv, tuple(elem.set)[0]))
+        sub_pdf = _finite_pdf(expr.subs(rv, tuple(elem.set)[0]))
         # For each value with probability P in that pdf
         for val, prob in sub_pdf.items():
             # Add the probability of P * probability of this value of rv
@@ -732,53 +778,32 @@ def expectation(expr):
         return expectation(PDF(expr))
     else:
         return expr
-
 E = expectation
-var = lambda X: E(X**2) - E(X)**2
-std = lambda X: sqrt(var(X))
-covar = lambda X,Y: E( (X-E(X)) * (Y-E(Y)) )
 
-class FiniteRandomVariable(RandomVariable):
+def variance(X):
+    return E(X**2) - E(X)**2
+var = variance
 
-    @property
-    @cacheit
-    def pdf(self):
-        d = {}
-        for elem in self.pspace.sample_space_event:
-            if elem.is_product:
-                subdict = dict( (event.pspace.symbol, tuple(event.set)[0])
-                        for event in elem.events )
-            else:
-                subdict = {self.pspace.symbol : tuple(elem.set)[0]}
-            val = self.expr.subs(subdict)
-            d[val] = d.get(val,0) + elem.measure
-        return d
+def standard_deviation(X):
+    return sqrt(variance(X))
+std = standard_deviation
 
-    @property
-    def cdf(self):
-        vals, probs = zip(*sorted(self.pdf.items()))
+def covariance(X, Y):
+    return E( (X-E(X)) * (Y-E(Y)) )
+covar = covariance
 
-        if not all(val.is_number for val in vals):
-            raise TypeError("Not all values are numeric")
+def pspace(expr):
+    rvs = random_symbols(expr)
+    return ProductProbabilitySpace(*[rv.pspace for rv in rvs])
 
-        d = {}
-        probability = 0
-        for val, p in zip(vals, probs):
-            probability += p
-            d[val] = probability
-
-        return d
-
-    @property
-    def expectation(self):
-        return Add(*[key*value for key,value in self.pdf.items()])
-
-
+def independent(X,Y):
+    return (len(set(pspace(X).constituent_spaces)
+            & set(pspace(Y).constituent_spaces))
+            == 0)
 
 #====================================================================
 #=== Continuous Example Spaces ======================================
 #====================================================================
-
 
 class ContinuousProbabilityMeasure(ProbabilityMeasure):
     """
@@ -845,3 +870,19 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
         M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
         obj = Basic.__new__(cls, symbol, sample_space, M)
         return obj
+
+class UniformProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, start, end, symbol = None):
+        x = symbol or Dummy('x', real=True)
+        pdf = Piecewise( (0, x<start), (0, x>end), (S(1)/(end-start), True) )
+        return ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
+
+class NormalProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, mean, variance, symbol = None):
+        x = symbol or Dummy('x', real=True)
+        pdf = exp(-(x)**2 / (2*variance)) / (sqrt(2*pi) * sqrt(variance))
+        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
+        obj.mean = mean
+        obj.variance = variance
+        return obj
+
