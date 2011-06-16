@@ -1,6 +1,6 @@
 from sympy import (Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add,
         Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi, Piecewise,
-        And, Or)
+        And, Or, gamma)
 from sympy.core.sympify import sympify
 from sympy.core.sets import (Set, ProductSet, FiniteSet, Union, Interval,
         is_flattenable)
@@ -731,12 +731,17 @@ class ContinuousProbabilityMeasure(ProbabilityMeasure):
     An easy to create probability Measure
     Constructor takes either a dict or a function
     """
-    def __new__(cls, symbol, pdf=None, cdf=None):
-        obj = Basic.__new__(cls, symbol, pdf, cdf)
+    def __new__(cls, symbol, pdf=None, cdf=None, sample_space=None):
+        sample_space = sample_space or Interval(-oo,oo)
+        obj = Basic.__new__(cls, symbol, pdf, cdf, sample_space)
         obj.symbol = symbol
         obj._pdf = pdf
         obj._cdf = cdf
         return obj
+
+    @property
+    def sample_space(self):
+        return self.args[3]
 
     @property
     def pdf(self):
@@ -753,8 +758,8 @@ class ContinuousProbabilityMeasure(ProbabilityMeasure):
         if self._cdf:
             return self._cdf
         elif self._pdf:
-            return integrate(self._pdf,
-                    (self.symbol, Interval(-oo, self.symbol)))
+            return integrate(self._pdf, (self.symbol,
+                    self.sample_space.intersect(Interval(-oo, self.symbol))))
         else:
             raise ValueError("CDF and PDF not defined")
 
@@ -763,7 +768,8 @@ class ContinuousProbabilityMeasure(ProbabilityMeasure):
             if self._cdf:
                 return self.cdf(event.set.end) - self.cdf(event.set.start)
             else:
-                return integrate(self.pdf, (self.symbol, event.set))
+                return integrate(self.pdf,
+                        (self.symbol, self.sample_space.intersect(event.set)))
         elif event.set.is_union:
             intervals = [s for s in event.set.args if s.is_interval]
             assert all(s.measure==0 for s in event.set.args
@@ -788,7 +794,8 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
 
     def __new__(cls, symbol, pdf=None, cdf=None,
             sample_space = Interval(-oo, oo)):
-        M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf)
+        M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf,
+                sample_space = sample_space)
         obj = Basic.__new__(cls, symbol, sample_space, M)
         return obj
 
@@ -799,9 +806,9 @@ class UniformProbabilitySpace(ContinuousProbabilitySpace):
         return ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
 
 class NormalProbabilitySpace(ContinuousProbabilitySpace):
-    def __new__(cls, mean, variance, symbol = None):
+    def __new__(cls, mean, sigma, symbol = None):
         x = symbol or Dummy('x', real=True, finite=True)
-        pdf = exp(-(x-mean)**2 / (2*variance)) / (sqrt(2*pi) * sqrt(variance))
+        pdf = exp(-(x-mean)**2 / (2*sigma**2)) / (sqrt(2*pi) * sigma)
         obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
         obj.mean = mean
         obj.variance = variance
@@ -810,6 +817,54 @@ class NormalProbabilitySpace(ContinuousProbabilitySpace):
     @property
     def is_bounded(self):
         return self.variance != S.Zero
+
+class ParetoProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, xm, alpha, symbol=None):
+        assert xm>0, "Xm must be positive"
+        assert alpha>0, "Alpha must be positive"
+
+        x = symbol or Dummy('x', real=True, finite=True)
+        pdf = alpha * xm**alpha / x**(alpha+1)
+        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf,
+                sample_space=Interval(xm, oo))
+        obj.xm = xm
+        obj.alpha = alpha
+        return obj
+
+class ExponentialProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, rate, symbol=None):
+        x = symbol or Dummy('x', real=True, finite=True, positive=True)
+        pdf = rate * exp(-rate*x)
+        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf,
+                sample_space = Interval(0, oo))
+        obj.rate = rate
+        return obj
+
+class BetaProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, alpha, beta, symbol=None):
+        assert alpha>0, "Alpha must be positive"
+        assert beta>0, "Beta must be positive"
+        x = symbol or Dummy('x', real=True, finite=True, positive=True)
+        pdf = x**(alpha-1) * (1-x)**(beta-1)
+        pdf = pdf / integrate(pdf, (x, 0,1))
+        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf,
+                sample_space = Interval(0, 1))
+        obj.alpha = alpha
+        obj.beta = beta
+        return obj
+
+class GammaProbabilitySpace(ContinuousProbabilitySpace):
+    def __new__(cls, k, theta, symbol=None):
+        assert k>0, "k must be positive"
+        assert theta>0, "theta must be positive"
+        x = symbol or Dummy('x', real=True, finite=True, positive=True)
+        pdf = x**(k-1) * exp(-x/theta) / (gamma(k)*theta**k)
+
+        obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf,
+                sample_space = Interval(0, oo))
+        obj.k = k
+        obj.theta = theta
+        return obj
 
 
 #=========================================
@@ -825,12 +880,18 @@ def symbol_subs(expr):
     return expr.subs({rv:rv.symbol for rv in random_symbols(expr)})
 
 @cacheit
-def PDF(expr):
-    pdf = {expr:1}
-    pdf = _remove_continuous_random_variables_pdf(pdf)
-    pdf = _remove_finite_random_variables_pdf(pdf)
+def PMF(expr):
+#    pmf = _remove_finite_random_variables_pdf({expr:1})
 
-    return pdf
+    pmf = _finite_pdf(expr)
+    return pmf
+
+@cacheit
+def PDF(expr):
+    var, pdf = _continuous_pdf(expr)
+    # If finite RVs occur in the pdf marginalize them out (Mixed case)
+    pdf = marginalize(pdf, *[rv for rv in random_symbols(pdf) if rv.is_finite])
+    return var, pdf
 
 def _remove_continuous_random_variables_pdf(fullpdf):
     # remove continuous random variables from expression side
@@ -952,6 +1013,7 @@ def variance(X):
     return E(X**2) - E(X)**2
 var = variance
 
+
 def standard_deviation(X):
     return sqrt(variance(X))
 std = standard_deviation
@@ -959,6 +1021,11 @@ std = standard_deviation
 def covariance(X, Y):
     return E( (X-E(X)) * (Y-E(Y)) )
 covar = covariance
+
+def skewness(X):
+    mu = E(X)
+    sigma = std(X)
+    return E( ((X-mu)/sigma) ** 3 )
 
 def pspace(expr):
     rvs = random_symbols(expr)

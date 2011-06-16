@@ -2,7 +2,8 @@ from sympy import (EmptySet, FiniteSet, S, Symbol, Interval, exp, erf, sqrt,
         symbols, simplify, Eq, cos, And)
 from sympy.statistics.randomvariables import (ProbabilitySpace,
         NormalProbabilitySpace, ContinuousProbabilitySpace, Event, Die,
-        Bernoulli, PDF, E, _rel_to_event, var, covar, independent, P, dependent)
+        Bernoulli, PDF, PMF, E, _rel_to_event, var, covar, skewness,
+        independent, P, dependent, ExponentialProbabilitySpace)
 
 oo = S.Infinity
 
@@ -95,11 +96,11 @@ def test_complement():
     assert elements[1] in (deven & center).complement
     assert elements[2] not in (deven & center).complement
 
-def test_finite_pdf():
+def test_finite_pmf():
     a,b,c = symbols('a,b,c')
     B = Bernoulli(a,b,c, symbol='B')
-    assert PDF(B.value)[c] == 1-a
-    assert PDF(B.value)[b] == a
+    assert PMF(B.value)[c] == 1-a
+    assert PMF(B.value)[b] == a
 
     p = Symbol('p')
     q = 1-p
@@ -120,18 +121,18 @@ def test_finite_pdf():
     assert var(X+X) == 4 * var(X)
     assert covar(X,Y) == S.Zero
     assert covar(X, X+Y) == var(X)
-    assert PDF(Eq(cos(X*S.Pi),1))[True] == S.Half
+    assert PMF(Eq(cos(X*S.Pi),1))[True] == S.Half
 
 def test_normal_properties():
     a = Symbol('alpha', bounded=True)
     b = Symbol('beta', real=True, bounded=True)
     # mu = Symbol('mu', real=True, bounded=True)
     mu = S(0) # Until integration of gaussians get better
-    sigmasquared = Symbol('sigma^2', real=True, bounded=True, positive=True)
-    C,D = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
+    sigma = Symbol('sigma', real=True, bounded=True, positive=True)
+    C,D = NormalProbabilitySpace(mu,sigma), NormalProbabilitySpace(0,1)
     X,Y = C.value, D.value
     assert E(X) == mu
-    assert var(X) == sigmasquared
+    assert var(X) == sigma**2
     assert var(Y) == 1
     assert E(a*X + b) == a*E(X) + b
     assert simplify(var(a*X + b)) == a**2 * var(X)
@@ -142,8 +143,8 @@ def test_mixed():
     b = Symbol('beta', real=True, bounded=True)
     # mu = Symbol('mu', real=True, bounded=True)
     mu = S(0) # Until integration of gaussians get better
-    sigmasquared = Symbol('sigma^2', real=True, bounded=True, positive=True)
-    A,B = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
+    sigma = Symbol('sigma', real=True, bounded=True, positive=True)
+    A,B = NormalProbabilitySpace(mu,sigma), NormalProbabilitySpace(0,1)
     X,Y = A.value, B.value
 
     D = Die().value
@@ -156,8 +157,8 @@ def test_mixed():
 def test_event_generation():
     # mu = Symbol('mu', real=True, bounded=True)
     mu = S(0) # Until integration of gaussians get better
-    sigmasquared = Symbol('sigma^2', real=True, bounded=True, positive=True)
-    A,B = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
+    sigma = Symbol('sigma', real=True, bounded=True, positive=True)
+    A,B = NormalProbabilitySpace(mu,sigma), NormalProbabilitySpace(0,1)
     X,Y = A.value, B.value
 
     d1, d2 = Die(), Die()
@@ -172,5 +173,16 @@ def test_event_generation():
     assert P(D1+D2 > 7) == S(5)/12
 
     assert _rel_to_event(X**2<1).set == Interval(-1,1, True,True)
-    assert P(X**2<1) == erf(sqrt(2)/(2*sqrt(sigmasquared)))
+    assert P(X**2<1) == erf(sqrt(2)/(2*sigma))
+
+def test_exponential_distribution():
+    rate = Symbol('lambda', positive=True, real=True, finite=True)
+    C = ExponentialProbabilitySpace(rate)
+    X = C.value
+    assert E(X) == 1/rate
+    assert var(X) == 1/rate**2
+    assert skewness(X) == 2
+    assert P(X>0) == S(1)
+    assert P(X>1) == exp(-rate)
+    assert P(X>10) == exp(-10*rate)
 
