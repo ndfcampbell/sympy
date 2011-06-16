@@ -129,6 +129,9 @@ class Event(Basic):
         else:
             return UnionEvent(self, other)
 
+    def equals(self, other):
+        return self.intersect(other) == other.intersect(self)
+
     @property
     def complement(self):
         return Event(self.pspace, self.pspace.sample_space - self.set)
@@ -504,6 +507,9 @@ class UnionEvent(Event):
                 return sum(map(flatten, arg), [])
             raise TypeError("Inputs must be (iterable of) Event")
         events = flatten(events)
+
+        # Clear out any emptyset events
+        events = [event for event in events if event.set]
 
         return Basic.__new__(cls, *events)
 

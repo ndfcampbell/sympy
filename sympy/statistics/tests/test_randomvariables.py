@@ -1,5 +1,5 @@
 from sympy import (EmptySet, FiniteSet, S, Symbol, Interval, exp, erf, sqrt,
-        symbols, simplify, Eq, cos)
+        symbols, simplify, Eq, cos, And)
 from sympy.statistics.randomvariables import (ProbabilitySpace,
         NormalProbabilitySpace, ContinuousProbabilitySpace, Event, Die,
         Bernoulli, PDF, E, _rel_to_event, var, covar, independent, P, dependent)
@@ -160,15 +160,17 @@ def test_event_generation():
     A,B = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
     X,Y = A.value, B.value
 
-    D1, D2 = Die().value, Die().value
+    d1, d2 = Die(), Die()
+    D1, D2 = d1.value, d2.value
 
-    _rel_to_event(D1>4).set == FiniteSet(5,6)
-    _rel_to_event(X**2<1).set == Interval(-1,1, True,True)
+    assert _rel_to_event(D1>4).set == FiniteSet(5,6)
+    assert _rel_to_event(And(D1>3, D1+D2<6)).equals(
+            Event(d1, FiniteSet(4)) & Event(d2, FiniteSet(1)) )
 
-    P(Eq(D1,1)) == S(1)/6
-    P(D1>3) == S.Half
-    P(D1+D2 > 7) == S(5)/12
+    assert P(Eq(D1,1)) == S(1)/6
+    assert P(D1>3) == S.Half
+    assert P(D1+D2 > 7) == S(5)/12
 
-
-
+    assert _rel_to_event(X**2<1).set == Interval(-1,1, True,True)
+    assert P(X**2<1) == erf(sqrt(2)/(2*sqrt(sigmasquared)))
 
