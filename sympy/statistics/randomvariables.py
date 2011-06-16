@@ -510,6 +510,8 @@ class UnionEvent(Event):
 
         # Clear out any emptyset events
         events = [event for event in events if event.set]
+        if not events:
+            return None
 
         return Basic.__new__(cls, *events)
 
@@ -799,6 +801,13 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
         obj = Basic.__new__(cls, symbol, sample_space, M)
         return obj
 
+    @property
+    def is_bounded(self):
+        # Probability of being at oo or -oo is zero
+        e = Event(self, FiniteSet(oo, -oo))
+        return self.probability_measure(e) == 0
+
+
 class UniformProbabilitySpace(ContinuousProbabilitySpace):
     def __new__(cls, start, end, symbol = None):
         x = symbol or Dummy('x', real=True, finite=True)
@@ -1025,6 +1034,9 @@ def _rel_to_event(rel):
     elif not any(rv.is_finite for rv in rvs):
         return _rel_to_event_continuous(rel)
     raise NotImplementedError("Events of complex Relationals not implemented")
+
+def eventify(expr):
+    return _rel_to_event(expr)
 
 def _rel_to_event_finite(rel):
     ps = pspace(rel)
