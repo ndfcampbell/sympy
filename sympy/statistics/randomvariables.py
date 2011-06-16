@@ -879,119 +879,6 @@ def det(expr):
 def symbol_subs(expr):
     return expr.subs({rv:rv.symbol for rv in random_symbols(expr)})
 
-@cacheit
-def PMF(expr):
-#    pmf = _remove_finite_random_variables_pdf({expr:1})
-
-    pmf = _finite_pdf(expr)
-    return pmf
-
-@cacheit
-def PDF(expr):
-    var, pdf = _continuous_pdf(expr)
-    # If finite RVs occur in the pdf marginalize them out (Mixed case)
-    pdf = marginalize(pdf, *[rv for rv in random_symbols(pdf) if rv.is_finite])
-    return var, pdf
-
-def _remove_continuous_random_variables_pdf(fullpdf):
-    # remove continuous random variables from expression side
-    newpdf = {}
-    val = Dummy('val', real=True, finite=True)
-    for expr,p in fullpdf.items():
-        if any(not s.is_finite for s in random_symbols(expr)):
-            val, pdf = _continuous_pdf(expr, val=val) # ex == val with prob pdf
-            newpdf[val] = newpdf.get(val,0) + pdf * p
-        else: # just pass old value through
-            newpdf[expr] = newpdf.get(expr,0) + p
-    # Assume for now that continuous random variables do not end up
-    # on the probability side
-    assert (not any(s.is_finite for s in random_symbols(newpdf.keys()))
-            and not any(s.is_finite for s in random_symbols(newpdf.values())))
-    return newpdf
-
-def _continuous_pdf(expr, val=None):
-    # Gather continuous random variables from expression
-    crvs = [rv for rv in random_symbols(expr) if not rv.is_finite]
-
-    if not crvs:
-        return expr, 1
-
-    # Handle Continuous Random Variables
-
-    if crvs:
-        # We allow all but one crv to float.
-        # The last crv needs to enforce the condition that expr = Q
-        # for some value Q. We then compute the probability density
-        # Around of expr around Q
-        head, tail = crvs[0], crvs[1:]
-        # We'll use head to select Q given all other crvs
-        val = val or Dummy('y', real=True, finite=True)
-        # Solve expr == Q for a variable in expr
-        constraint = solve(expr - val, head)
-        # Convert the expression in RVs to one in RV.symbols
-        constraint = [cons.subs({rv:rv.symbol for rv in crvs})
-                for cons in constraint]
-        # Compute PDF of the full vector space (X,Y,Z, ...) of the crvs
-        fullpdf = Mul(*[crv.pdf for crv in crvs])
-        # Divide by the determinant to rescale the dxdydz
-        fullpdf = fullpdf / det(expr).subs({rv:rv.symbol for rv in crvs})
-        # Substitute the constraint computed above into the PDF
-        # Make sure to account for multiple solutions if they exist
-        newpdf = (Add(*[fullpdf.subs(head.symbol, cons)
-            for cons in constraint]))
-        # Marginalize over extra symbols in tail
-        if tail:
-            newpdf= integrate(newpdf,
-                    *[(crv.symbol, crv.pspace.sample_space)
-                        for crv in tail])
-
-        return val, newpdf
-
-def _remove_finite_random_variables_pdf(fullpdf):
-    newpdf = {}
-    # remove finite random variables from the expression side
-    for expr, bigprob in fullpdf.items():
-        # If any finite symbols in expression
-        if any(s.is_finite for s in random_symbols(expr)):
-            smallpdf = _finite_pdf(expr)
-            for ex, littleprob in smallpdf.items():
-                newpdf[ex] = newpdf.get(ex,0) + bigprob*littleprob
-        else:
-            newpdf[expr] = newpdf.get(expr,0) + bigprob # just propagate
-    # remove finite random variables from the probability side
-    for expr, bigprob in newpdf.items():
-        # If any finite symbols in expression
-        if any(s.is_finite for s in random_symbols(bigprob)):
-            probpdf = _finite_pdf(bigprob)
-            sumprob = sum(ex*p for ex, p in probpdf.items())
-            newpdf[expr] = sumprob
-    assert (not any(s.is_finite for s in random_symbols(newpdf.keys()))
-            and not any(s.is_finite for s in random_symbols(newpdf.values())))
-
-    return newpdf
-
-def _finite_pdf(expr):
-    rvs = random_symbols(expr)
-    # Handle Discrete Random Variables
-    frvs = [rv for rv in rvs if rv.is_finite]
-
-    if not frvs:
-        return {expr:1}
-
-    d = {}
-    rv = frvs[0] # Take first random variable
-
-    # For each possibility of the value of rv
-    for elem in rv.pspace.sample_space_event:
-        # Compute the pdf of the rest of the expression recursively
-        sub_pdf = _finite_pdf(expr.subs(rv, tuple(elem.set)[0]))
-        # For each value with probability P in that pdf
-        for val, prob in sub_pdf.items():
-            # Add the probability of P * probability of this value of rv
-            d[val] = d.get(val,0) + elem.measure * prob
-
-    return d
-
 def marginalize(expr, *rvs):
     for rv in rvs:
         if rv not in random_symbols(expr):
@@ -1003,6 +890,75 @@ def marginalize(expr, *rvs):
         if not rv.is_finite:
             expr = integrate(expr * rv.pdf, (rv.symbol, rv.pspace.sample_space))
     return expr
+
+@cacheit
+def PDF(expr):
+    rvs = random_symbols(expr)
+    if rvs and all(rv.is_finite for rv in rvs):
+        raise ValueError("Probability Density Function not defined for finite random variables. Try Probability Mass Funciton (PMF) instead")
+
+    var, pdf = _continuous_pdf(expr)
+    # If finite RVs occur in the pdf marginalize them out (Mixed case)
+    pdf = marginalize(pdf, *[rv for rv in random_symbols(pdf) if rv.is_finite])
+    return var, pdf
+
+def _continuous_pdf(expr, val=None):
+    # Gather continuous random variables from expression
+    crvs = [rv for rv in random_symbols(expr) if not rv.is_finite]
+
+    if not crvs:
+        return expr, 1
+
+    # Handle Continuous Random Variables
+
+    # We allow all but one crv to float.
+    # The last crv needs to enforce the condition that expr = Q
+    # for some value Q. We then compute the probability density
+    # Around of expr around Q
+    head, tail = crvs[0], crvs[1:]
+    # We'll use head to select Q given all other crvs
+    val = val or Dummy('y', real=True, finite=True)
+    # Solve expr == Q for a variable in expr
+    constraint = solve(expr - val, head)
+    # Convert the expression in RVs to one in RV.symbols
+    constraint = [cons.subs({rv:rv.symbol for rv in crvs})
+            for cons in constraint]
+    # Compute PDF of the full vector space (X,Y,Z, ...) of the crvs
+    fullpdf = Mul(*[crv.pdf for crv in crvs])
+    # Divide by the determinant to rescale the dxdydz
+    fullpdf = fullpdf / det(expr).subs({rv:rv.symbol for rv in crvs})
+    # Substitute the constraint computed above into the PDF
+    # Make sure to account for multiple solutions if they exist
+    newpdf = (Add(*[fullpdf.subs(head.symbol, cons)
+        for cons in constraint]))
+    # Marginalize over extra symbols in tail
+    if tail:
+        newpdf= integrate(newpdf,
+                *[(crv.symbol, crv.pspace.sample_space)
+                    for crv in tail])
+    return val, newpdf
+
+@cacheit
+def PMF(expr):
+    # Handle Discrete Random Variables
+    frvs = [rv for rv in random_symbols(expr) if rv.is_finite]
+
+    if not frvs:
+        return {expr:1}
+
+    d = {}
+    rv = frvs[0] # Take first random variable
+
+    # For each possibility of the value of rv
+    for elem in rv.pspace.sample_space_event:
+        # Compute the pdf of the rest of the expression recursively
+        sub_pdf = PMF(expr.subs(rv, tuple(elem.set)[0]))
+        # For each value with probability P in that pdf
+        for val, prob in sub_pdf.items():
+            # Add the probability of P * probability of this value of rv
+            d[val] = d.get(val,0) + elem.measure * prob
+
+    return d
 
 @cacheit
 def expectation(expr):
