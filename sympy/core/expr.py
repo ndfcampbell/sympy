@@ -1185,9 +1185,11 @@ class Expr(Basic, EvalfMixin):
             for i in xrange(len(self.args)):
                 newargs = list(self.args)
                 del(newargs[i])
-                tmp = self._new_rawargs(*newargs).extract_multiplicatively(c)
+                tmp = self.args[i].extract_multiplicatively(c)
                 if tmp != None:
-                    return tmp * self.args[i]
+                    # Note: we cannot use _new_rawargs here, consider
+                    # (I*(1 + sqrt(5))/4).extract_multiplicatively(I)
+                    return tmp * self.func(*newargs)
         elif self.is_Pow:
             if c.is_Pow and c.base == self.base:
                 new_exp = self.exp.extract_additively(c.exp)
