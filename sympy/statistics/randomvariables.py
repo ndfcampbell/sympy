@@ -499,6 +499,8 @@ class UnionEvent(Event):
     def __new__(cls, *events):
         events = list(events)
         def flatten(arg):
+            if not arg: # Empty Event
+                return []
             if isinstance(arg, Event) and not arg.is_union:
                 return [arg]
             if isinstance(arg, Event) and arg.is_union:
