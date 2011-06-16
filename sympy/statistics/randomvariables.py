@@ -41,7 +41,7 @@ class ProbabilitySpace(Basic):
 
     @property
     def value(self):
-        return RandomVariable(self, self.symbol)
+        return RandomSymbol(self)
 
     def __mul__(self, other):
         return ProductProbabilitySpace(self, other)
@@ -190,7 +190,7 @@ class AtomicEvent(Event):
         return {self.pspace.symbol:self.value}
 
 def is_random(x):
-    return isinstance(x, RandomVariable)
+    return isinstance(x, RandomSymbol)
 def is_random_expr(expr):
     return any(is_random(sym) for sym in expr.free_symbols)
 def random_symbols(expr):
@@ -201,22 +201,18 @@ def random_symbols(expr):
     except:
         return []
 
-class RandomVariable(Symbol):
+class RandomSymbol(Symbol):
     """
     Represents a Random Variable.
     A function on a ProbabilitySpace's Sample Space
     """
 
-    def __new__(cls, pspace, expr):
-        return Basic.__new__(cls, pspace, expr)
+    def __new__(cls, pspace):
+        return Basic.__new__(cls, pspace)
 
     @property
     def pspace(self):
         return self.args[0]
-
-    @property
-    def expr(self):
-        return self.args[1]
 
     @property
     def symbol(self):
@@ -224,46 +220,15 @@ class RandomVariable(Symbol):
 
     @property
     def pdf(self):
-        if self.expr == self.pspace.symbol:
-            return self.pspace.probability_measure.pdf
-        else:
-            return PDF(self)
+        return self.pspace.probability_measure.pdf
 
-#    def _op(self, other, op):
-#        cls = self.__class__
-#        if is_random(other):
-#            if self.pspace == other.pspace:
-#                return cls(self.pspace, op(self.expr, other.expr))
-#            else:
-#                return cls(self.pspace*other.pspace,op(self.expr, other.expr))
-#        else:
-#            return cls(self.pspace, op(self.expr, other))
-
-#    def __add__(self, other):
-#        return self._op(other, lambda a,b: a+b)
-#    def __radd__(self, other):
-#        return self._op(other, lambda a,b: b+a)
-#    def __mul__(self, other):
-#        return self._op(other, lambda a,b: a*b)
-#    def __rmul__(self, other):
-#        return self._op(other, lambda a,b: b*a)
-#    def __pow__(self, other):
-#        return self._op(other, lambda a,b: a**b)
-#    def __sub__(self, other):
-#        return self._op(other, lambda a,b: a-b)
-#    def __rsub__(self, other):
-#        return self._op(other, lambda a,b: b-a)
-
-#    def applyfunc(self, fn):
-#        return self.__class__(self.pspace, fn(self.expr))
-
-    @property
-    def is_commutative(self):
-        return True
-        return self.symbol.is_commutative
     @property
     def name(self):
         return self.symbol.name
+
+    @property
+    def is_commutative(self):
+        return self.symbol.is_commutative
     @property
     def is_finite(self):
         return self.pspace.is_finite
@@ -648,11 +613,10 @@ class FiniteProbabilitySpace(ProbabilitySpace):
 """
 
     def __new__(cls, pdf, symbol=None):
-        if not symbol:
-            symbol = cls.create_symbol()
+        symbol = symbol or cls.create_symbol()
         M = FiniteProbabilityMeasure(pdf)
         sample_space = FiniteSet(pdf.keys())
-        return Basic.__new__(cls, symbol, sample_space, M)
+        return ProbabilitySpace.__new__(cls, symbol, sample_space, M)
 
     @property
     def is_finite(self):
@@ -800,7 +764,7 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
             sample_space = Interval(-oo, oo)):
         M = ContinuousProbabilityMeasure(symbol=symbol, pdf=pdf, cdf=cdf,
                 sample_space = sample_space)
-        obj = Basic.__new__(cls, symbol, sample_space, M)
+        obj = ProbabilitySpace.__new__(cls, symbol, sample_space, M)
         return obj
 
     @property
