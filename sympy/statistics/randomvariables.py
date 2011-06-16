@@ -1,7 +1,9 @@
 from sympy import (Basic, S, Rational, Expr, integrate, cacheit, Symbol, Add,
-        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi, Piecewise)
+        Tuple, sqrt, Mul, solve, simplify, powsimp, Dummy, exp, pi, Piecewise,
+        And, Or)
 from sympy.core.sympify import sympify
-from sympy.core.sets import Set, ProductSet, FiniteSet, Union, Interval
+from sympy.core.sets import (Set, ProductSet, FiniteSet, Union, Interval,
+        is_flattenable)
 from sympy.core.relational import Lt, Gt, Eq, Relational, Inequality
 from sympy.solvers.inequalities import reduce_poly_inequalities
 oo = S.Infinity
@@ -376,10 +378,29 @@ class ProductEvent(Event):
             if isinstance(arg, Event) and not arg.is_product:
                 return [arg]
             if isinstance(arg, Event) and arg.is_product:
-                raise TypeError("Inputs must be (iterable of) ProductSpace")
-            if hasattr(arg, '__iter__') and not isinstance(arg, Event):
+                return list(arg.events)
+            if is_flattenable(arg):
                 return sum(map(flatten, arg), [])
+            raise Exception("unhandled input %s"%arg)
         events = flatten(events)
+
+        # If any of the events are union events
+        # Break apart that union into subevents,
+        # Construct a product event with each subevent
+        # Return a Union of ProductEvents
+
+        if any(event.is_union for event in events):
+            for i, unionevent in enumerate(events):
+                if unionevent.is_union: # Find first union event
+                    break
+            prodevents = []
+            for subevent in unionevent.events:
+                prodevents.append(
+                        ProductEvent(*(events[:i]+[subevent]+events[i+1:])) )
+            return UnionEvent(*prodevents)
+
+
+        assert not any(event.is_union for event in events)
 
         return Basic.__new__(cls, *events)
 
@@ -406,6 +427,11 @@ class ProductEvent(Event):
         # Cast each event up to the product subspace
         A = cast_event(self, pspace)
         B = cast_event(other, pspace)
+        # Clear out any unions if they exist
+        if A.is_union:
+            return A.intersect(B)
+        if B.is_union:
+            return B.intersect(A)
         # intersect all of the constituent events
         return ProductEvent(a.intersect(b)
                 for a,b in zip(A.events, B.events))
@@ -421,7 +447,7 @@ class ProductEvent(Event):
         if self.is_iterable:
             import itertools
             event_iterators = [event._iter_events() for event in self.events]
-            return (ProductEvent(atomic_events)
+            return (ProductEvent(*atomic_events)
                     for atomic_events in itertools.product(*event_iterators))
         else:
             raise TypeError("Not all constituent sets are iterable")
@@ -448,7 +474,8 @@ def cast_event(event, productspace):
 
     For internal use only.
     """
-
+    if event.is_union:
+        return UnionEvent(cast_event(e, productspace) for e in event.events)
     if not event.is_product:
         event = ProductEvent(event)
     events = []
@@ -473,7 +500,7 @@ class UnionEvent(Event):
                 return [arg]
             if isinstance(arg, Event) and arg.is_union:
                 return sum(map(flatten, arg.events), [])
-            if hasattr(arg, '__iter__') and not isinstance(arg, Event):
+            if is_flattenable(arg):
                 return sum(map(flatten, arg), [])
             raise TypeError("Inputs must be (iterable of) Event")
         events = flatten(events)
@@ -548,6 +575,8 @@ class UnionEvent(Event):
     def is_union(self):
         return True
 
+    def intersect(self, other):
+        return self.__class__(event.intersect(other) for event in self.events)
 
 #====================================================================
 #=== Finite Example Spaces ==========================================
@@ -942,16 +971,29 @@ def dependent(X,Y):
 #===================================
 
 def P(arg):
-    if arg.is_Relational:
+    if arg.is_Relational or arg.is_Boolean:
         return P(_rel_to_event(arg))
     if isinstance(arg, Event):
         return arg.measure
 
 def _rel_to_event(rel):
     rvs = random_symbols(rel)
+    if not rvs:
+        raise ValueError("No random variables present in %s"%rel)
+
+    if rel.is_Boolean:
+        if rel.__class__ == Or:
+            return UnionEvent(_rel_to_event(arg) for arg in rel.args)
+        if rel.__class__ == And:
+            intersection = _rel_to_event(rel.args[0])
+            for arg in rel.args[1:]:
+                intersection = intersection & _rel_to_event(arg)
+            return intersection
+
+
     if all(rv.is_finite for rv in rvs):
         return _rel_to_event_finite(rel)
-    elif not any(rv.is_finite for rv in rvs) and len(rvs)==1:
+    elif not any(rv.is_finite for rv in rvs):
         return _rel_to_event_continuous(rel)
     raise NotImplementedError("Events of complex Relationals not implemented")
 
@@ -977,7 +1019,8 @@ def _rel_to_event_finite(rel):
 def _rel_to_event_continuous(rel):
     rvs = random_symbols(rel)
     if len(rvs)!=1 or rvs[0].is_finite:
-        raise "Not implemented for multiple or finite random variables"
+        raise NotImplementedError(
+                "Not implemented for multiple continuous random variables")
     if not rel.is_Relational:
         raise "Argument is not a Relational"
 

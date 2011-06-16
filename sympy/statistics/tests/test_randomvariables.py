@@ -1,6 +1,8 @@
-from sympy import EmptySet, FiniteSet, S, Symbol, Interval, exp, erf, sqrt
+from sympy import (EmptySet, FiniteSet, S, Symbol, Interval, exp, erf, sqrt,
+        symbols, simplify, Eq, cos)
 from sympy.statistics.randomvariables import (ProbabilitySpace,
-        ContinuousProbabilitySpace, Event, Die, Bernoulli)
+        NormalProbabilitySpace, ContinuousProbabilitySpace, Event, Die,
+        Bernoulli, PDF, E, _rel_to_event, var, covar, independent, P, dependent)
 
 oo = S.Infinity
 
@@ -92,6 +94,80 @@ def test_complement():
     assert elements[0] in (deven & center).complement
     assert elements[1] in (deven & center).complement
     assert elements[2] not in (deven & center).complement
+
+def test_finite_pdf():
+    a,b,c = symbols('a,b,c')
+    B = Bernoulli(a,b,c, symbol='B')
+    assert PDF(B.value)[c] == 1-a
+    assert PDF(B.value)[b] == a
+
+    p = Symbol('p')
+    q = 1-p
+    B = Bernoulli(p,1,0, symbol='B')
+    X = B.value
+    assert E(X) == p
+    assert simplify(p*q - var(X)) == 0
+
+    d1,d2,d3 = Die(), Die(), Die()
+    X,Y,Z = [d.value for d in [d1,d2,d3]]
+
+    assert E(X) == 3+S.Half
+    assert var(X) == S(35)/12
+    assert E(X+Y) == 7
+    assert E(X+X) == 7
+    assert E(a*X+b) == a*E(X)+b
+    assert var(X+Y) == var(X) + var(Y)
+    assert var(X+X) == 4 * var(X)
+    assert covar(X,Y) == S.Zero
+    assert covar(X, X+Y) == var(X)
+    assert PDF(Eq(cos(X*S.Pi),1))[True] == S.Half
+
+def test_normal_properties():
+    a = Symbol('alpha', bounded=True)
+    b = Symbol('beta', real=True, bounded=True)
+    # mu = Symbol('mu', real=True, bounded=True)
+    mu = S(0) # Until integration of gaussians get better
+    sigmasquared = Symbol('sigma^2', real=True, bounded=True, positive=True)
+    C,D = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
+    X,Y = C.value, D.value
+    assert E(X) == mu
+    assert var(X) == sigmasquared
+    assert var(Y) == 1
+    assert E(a*X + b) == a*E(X) + b
+    assert simplify(var(a*X + b)) == a**2 * var(X)
+    assert covar(X,Y) == S.Zero
+
+def test_mixed():
+    a = Symbol('alpha', bounded=True)
+    b = Symbol('beta', real=True, bounded=True)
+    # mu = Symbol('mu', real=True, bounded=True)
+    mu = S(0) # Until integration of gaussians get better
+    sigmasquared = Symbol('sigma^2', real=True, bounded=True, positive=True)
+    A,B = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
+    X,Y = A.value, B.value
+
+    D = Die().value
+
+    assert E(X+D) == E(X)+E(D)
+    assert simplify(var(X+D)) == var(X) + var(D)
+    assert independent(X,D)
+    assert dependent(X+D, D)
+
+def test_event_generation():
+    # mu = Symbol('mu', real=True, bounded=True)
+    mu = S(0) # Until integration of gaussians get better
+    sigmasquared = Symbol('sigma^2', real=True, bounded=True, positive=True)
+    A,B = NormalProbabilitySpace(mu,sigmasquared), NormalProbabilitySpace(0,1)
+    X,Y = A.value, B.value
+
+    D1, D2 = Die().value, Die().value
+
+    _rel_to_event(D1>4).set == FiniteSet(5,6)
+    _rel_to_event(X**2<1).set == Interval(-1,1, True,True)
+
+    P(Eq(D1,1)) == S(1)/6
+    P(D1>3) == S.Half
+    P(D1+D2 > 7) == S(5)/12
 
 
 
