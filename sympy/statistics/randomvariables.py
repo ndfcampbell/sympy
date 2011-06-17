@@ -87,7 +87,7 @@ class Event(Basic):
     def __new__(cls, pspace, set):
         if pspace.is_product and set.is_product and len(pspace)==len(set.sets):
             obj = ProductEvent(Event(space, s)
-                    for space, s in zip(pspace.constituent_spaces, set.sets))
+                    for space, s in zip(pspace.spaces, set.sets))
         elif set.is_union:
             obj = UnionEvent(Event(pspace, s) for s in set.args)
         else:
@@ -263,10 +263,10 @@ class ProductProbabilitySpace(ProbabilitySpace):
             if isinstance(arg, ProbabilitySpace) and not arg.is_product:
                 return [arg]
             if isinstance(arg, ProbabilitySpace) and arg.is_product:
+                return sum(map(flatten, arg.spaces), [])
+            if is_flattenable(arg):
                 return sum(map(flatten, arg), [])
-            if hasattr(arg, '__iter__') and not isinstance(arg, ProbabilitySpace):
-                return sum(map(flatten, arg), [])
-            raise TypeError("Inputs must be (iterable of) ProductSpace")
+            raise TypeError("Inputs must be (iterables of) ProductSpaces")
         spaces = flatten(args)
 
         # If there are repeat spaces remove them while preserving order
@@ -278,39 +278,37 @@ class ProductProbabilitySpace(ProbabilitySpace):
         return Basic.__new__(cls, *s)
 
     @property
-    def constituent_spaces(self):
+    def spaces(self):
         return self.args
 
     @property
     def symbol(self):
-        return tuple(pspace.symbol for pspace in self.constituent_spaces)
+        return tuple(pspace.symbol for pspace in self.spaces)
 
     @property
     def sample_space(self):
-        return ProductSet(pspace.sample_space
-                for pspace in self.constituent_spaces)
+        return ProductSet(pspace.sample_space for pspace in self.spaces)
 
     @property
     def sample_space_event(self):
-        return ProductEvent(pspace.sample_space_event
-                for pspace in self.constituent_spaces)
+        return ProductEvent(pspace.sample_space_event for pspace in self.spaces)
 
     @property
     def probability_measure(self):
         return ProductProbabilityMeasure()
 
     def __iter__(self):
-        return self.constituent_spaces.__iter__()
+        return self.spaces.__iter__()
 
     def __contains__(self, other):
-        return other in self.constituent_spaces
+        return other in self.spaces
 
     @property
     def is_product(self):
         return True
 
     def __len__(self):
-        return len(self.constituent_spaces)
+        return len(self.spaces)
 
 class ProductProbabilityMeasure(ProbabilityMeasure):
     """
@@ -963,9 +961,7 @@ def pspace(expr):
 
 def independent(X,Y):
     # Independent if their ProbabilitySpaces do not overlap
-    return (len(set(pspace(X).constituent_spaces)
-            & set(pspace(Y).constituent_spaces))
-            == 0)
+    return len( set(pspace(X).spaces) & set(pspace(Y).spaces) ) == 0
 def dependent(X,Y):
     return not independent(X,Y)
 
@@ -1005,8 +1001,8 @@ def eventify(expr):
 
 def _rel_to_event_finite(rel):
     ps = pspace(rel)
-    if ps.is_product and len(ps.constituent_spaces)==1:
-        ps = ps.constituent_spaces[0]
+    if ps.is_product and len(ps.spaces)==1:
+        ps = ps.spaces[0]
     testrel = rel.subs({rv:rv.symbol for rv in random_symbols(rel)})
     if ps.is_finite:
         events = []
