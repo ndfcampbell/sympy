@@ -165,7 +165,7 @@ def test_event_generation():
     D1, D2 = d1.value, d2.value
 
     assert _rel_to_event(D1>4).set == FiniteSet(5,6)
-    assert _rel_to_event(And(D1>3, D1+D2<6)).equals(
+    assert _rel_to_event(And(D1>3, D1+D2<6)) == (
             Event(d1, FiniteSet(4)) & Event(d2, FiniteSet(1)) )
 
     assert P(Eq(D1,1)) == S(1)/6

@@ -129,9 +129,6 @@ class Event(Basic):
         else:
             return UnionEvent(self, other)
 
-    def equals(self, other):
-        return self.intersect(other) == other.intersect(self)
-
     @property
     def complement(self):
         return Event(self.pspace, self.pspace.sample_space - self.set)
@@ -479,6 +476,8 @@ class UnionEvent(Event):
         events = [event for event in events if event.set]
         if not events:
             return None
+        if len(events)==1:
+            return events[0]
 
         return Basic.__new__(cls, *events)
 
