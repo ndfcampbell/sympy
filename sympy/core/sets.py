@@ -2,7 +2,7 @@ from basic import Basic
 from singleton import Singleton, S
 from evalf import EvalfMixin
 from numbers import Float, Integer
-from sympify import _sympify, sympify
+from sympify import _sympify, sympify, SympifyError
 from sympy.mpmath import mpi, mpf
 from containers import Tuple
 
@@ -309,9 +309,13 @@ class ProductSet(Set):
         Passes operation on to constitent sets
         """
 
-        if len(element) != len(self.args):
+        try:
+            assert len(element) == len(self.args)
+        except:
             return False
-        return all(elem in set for elem, set in zip(element, self.sets))
+        from sympy.logic.boolalg import And
+        and_args = [set.contains(item) for set,item in zip(self.sets, element)]
+        return And(*and_args)
 
     def _intersect(self, other):
         if isinstance(other, Union):
@@ -561,8 +565,10 @@ class Interval(RealSet):
         # We use the logic module here so that this method is meaningful
         # when used with symbolic end points.
         from sympy.logic.boolalg import And
-
-        other = _sympify(other)
+        try:
+            other = _sympify(other)
+        except SympifyError:
+            return False
 
         if self.left_open:
             expr = other > self.start
