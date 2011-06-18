@@ -322,6 +322,7 @@ class ProductProbabilityMeasure(ProbabilityMeasure):
         return Basic.__new__(cls)
 
     def _call(self, productevent):
+        # Assuming independence
         prob = 1
         for event in productevent.events:
             prob *= event.measure
@@ -422,10 +423,7 @@ class ProductEvent(Event):
     def is_product(self):
         return True
 
-class AtomicProductEvent(ProductEvent):
-    @property
-    def value(self):
-        return tuple(self.set)[0]
+class AtomicProductEvent(ProductEvent, AtomicEvent):
     def dict(self):
         return {ev.pspace.symbol:ev.value for ev in self.events}
 
@@ -587,7 +585,7 @@ class FiniteProbabilitySpace(ProbabilitySpace):
     A ProbabilitySpace on a finite countable sample space
 
     Creates a ProbabilitySpace given a probability density function encoded in
-    a dictionary like {'H':1/2 , 'T':1/2}
+    a dictionary like {'Heads':1/2 , 'Tails':1/2}
 
     See also:
         Die
@@ -626,7 +624,7 @@ class Die(FiniteProbabilitySpace):
 
     >>> from sympy.statistics.randomvariables import Die, Event
     >>> from sympy import FiniteSet
-    >>> die = Die(6)
+    >>> die = Die(6, symbol='die1')
 
     >>> print die.sample_space_event
     die1 in {1, 2, 3, 4, 5, 6}
@@ -661,6 +659,7 @@ class Bernoulli(FiniteProbabilitySpace):
     _numcount = 0
     _name = 'bernoulli'
     def __new__(cls, p=S.Half, a=0, b=1, symbol=None):
+        a, b, p = map(sympify, (a,b,p))
         pdf = {a:p, b:(1-p)}
         return FiniteProbabilitySpace.__new__(cls, pdf, symbol)
 
@@ -685,6 +684,7 @@ class Coin(Bernoulli):
     _numcount = 0
     _name = 'coin'
     def __new__(cls, p=S.Half, symbol=None):
+        p = sympify(p)
         return Bernoulli.__new__(cls, p=p, a='H', b='T', symbol=symbol)
 
 #====================================================================
@@ -693,8 +693,12 @@ class Coin(Bernoulli):
 
 class ContinuousProbabilityMeasure(ProbabilityMeasure):
     """
-    An easy to create probability Measure
-    Constructor takes either a dict or a function
+    An probability measure over the real line
+
+    Given a symbol and a pdf.
+    Can optionally provide a sample_space, (-oo, oo) assumed by default
+
+    A building block of a ContinuousProbabilitySpace
     """
     def __new__(cls, symbol, pdf=None, cdf=None, sample_space=None):
         sample_space = sample_space or Interval(-oo,oo)
@@ -750,11 +754,23 @@ class ContinuousProbabilitySpace(ProbabilitySpace):
     """
     A ProbabilitySpace on the real line
 
-    Creates a ProbabilitySpace given ...
+    Defined by a pdf or cdf on a sample space over the symbolic variable
+
+    >>> from sympy import exp, pi, Symbol, sqrt
+    >>> from sympy.statistics import ContinuousProbabilitySpace, E
+
+    >>> x = Symbol('x', real=True)
+    >>> pdf = exp(-x**2 / 2) / sqrt(2*pi)
+    >>> X = ContinuousProbabilitySpace(x, pdf).value
+
+    >>> E(5*X + 10)
+    10
 
     See also:
-        FiniteProbabilitySpace
+        NormalProbabilitySpace
+        ExponentialProbabilitySpace
 
+        FiniteProbabilitySpace
     """
 
     def __new__(cls, symbol, pdf=None, cdf=None,
@@ -778,9 +794,26 @@ class UniformProbabilitySpace(ContinuousProbabilitySpace):
         return ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
 
 class NormalProbabilitySpace(ContinuousProbabilitySpace):
-    def __new__(cls, mean, sigma, symbol = None):
+    """
+    Continuous Probability Space with Normal distribution.
+
+    Defined by pdf exp( -(x-mu)**2 / (2*sigma**2) )
+    with mean mu and standard deviation sigma
+
+    >>> from sympy.statistics import NormalProbabilitySpace, PDF, Symbol
+    >>> sigma = Symbol('sigma', real=True, bounded=True, positive=True)
+    >>> mu = Symbol('mu', real=True, finite=True, bounded=True)
+
+    >>> X = NormalProbabilitySpace(mu, sigma).value
+
+    >>> PDF(X)
+    (_y, 2**(1/2)*exp(-(_y - mu)**2/(2*sigma**2))/(2*pi**(1/2)*sigma))
+
+    """
+
+    def __new__(cls, mean, std, symbol = None):
         x = symbol or Dummy('x', real=True, finite=True)
-        pdf = exp(-(x-mean)**2 / (2*sigma**2)) / (sqrt(2*pi) * sigma)
+        pdf = exp(-(x-mean)**2 / (2*std**2)) / (sqrt(2*pi) * std)
         obj = ContinuousProbabilitySpace.__new__(cls, x, pdf=pdf)
         obj.mean = mean
         obj.variance = variance
@@ -912,6 +945,22 @@ def _continuous_pdf(expr, val=None):
 
 @cacheit
 def PMF(expr):
+    """Probability Mass Function of a Finite Random Variable
+
+    Compute the probability mass of each of the possible values
+    of a random expression.
+
+    Returns a dict that maps expression values to probabilities.
+
+    >>> from sympy.statistics import Die, PMF
+    >>> X = Die(6).value
+    >>> PMF(2*X)
+    {2: 1/6, 4: 1/6, 6: 1/6, 8: 1/6, 10: 1/6, 12: 1/6}
+
+    >>> PMF(X>4)
+    {False: 2/3, True: 1/3}
+    """
+
     # Handle Discrete Random Variables
     frvs = [rv for rv in random_symbols(expr) if rv.is_finite]
 
@@ -934,19 +983,82 @@ def PMF(expr):
 
 @cacheit
 def expectation(expr):
+    """Expected value of a random expression.
+
+    Marginalizes over all random_symbols within the expression
+
+    >>> from sympy.statistics import Die, E, Bernoulli, Symbol
+    >>> X = Die(6).value
+    >>> p = Symbol('p')
+    >>> B = Bernoulli(p, 1, 0).value
+
+    >>> E(2*X)
+    7
+
+    >>> E(B)
+    p
+    """
     return marginalize(expr, *random_symbols(expr))
 E = expectation
 
 def variance(X):
+    """Variance of a random expression.
+
+    Expectation of (X-E(X))**2
+
+    >>> from sympy.statistics import Die, E, Bernoulli, Symbol, var, simplify
+    >>> X = Die(6).value
+    >>> p = Symbol('p')
+    >>> B = Bernoulli(p, 1, 0).value
+
+    >>> var(2*X)
+    35/3
+
+    >>> simplify(var(B))
+    p*(-p + 1)
+
+    """
     return E(X**2) - E(X)**2
 var = variance
 
 
 def standard_deviation(X):
+    """Standard Deviation of a random expression.
+
+    Square root of the Expectation of (X-E(X))**2
+
+    >>> from sympy.statistics import Bernoulli, std, Symbol
+    >>> p = Symbol('p')
+    >>> B = Bernoulli(p, 1, 0).value
+
+    >>> std(B)
+    (-p**2 + p)**(1/2)
+
+    """
     return sqrt(variance(X))
 std = standard_deviation
 
 def covariance(X, Y):
+    """Covariance of two random expressions.
+
+    The expectation that the two variables will rise and fall together
+
+    Covariance(X,Y) = E( (X-E(X)) * (Y-E(Y)) )
+
+
+    >>> from sympy.statistics import ExponentialProbabilitySpace, covar, Symbol
+    >>> rate = Symbol('lambda', positive=True, real=True, bounded = True)
+    >>> X = ExponentialProbabilitySpace(rate).value
+    >>> Y = ExponentialProbabilitySpace(rate).value
+
+    >>> covar(X, X)
+    lambda**(-2)
+    >>> covar(X, Y)
+    0
+    >>> covar(X, Y + rate*X)
+    1/lambda
+    """
+
     return E( (X-E(X)) * (Y-E(Y)) )
 covar = covariance
 
@@ -956,6 +1068,9 @@ def skewness(X):
     return E( ((X-mu)/sigma) ** 3 )
 
 def pspace(expr):
+    """
+    The underlying ProbabilitySpace of an expression which holds RandomSymbols
+    """
     rvs = random_symbols(expr)
     return ProductProbabilitySpace(*[rv.pspace for rv in rvs])
 
@@ -970,6 +1085,21 @@ def dependent(X,Y):
 #===================================
 
 def P(arg):
+    """
+    The Probability of an event
+
+    from sympy.statistics import P, Die
+    >>> from sympy import Eq, cos, pi
+    >>> from sympy.statistics import P, Die
+
+    >>> X = Die(6).value
+
+    >>> P(X>4)
+    1/3
+
+    >>> P( Eq(cos(pi*X), 1) )
+    1/2
+    """
     if arg.is_Relational or arg.is_Boolean:
         return P(_rel_to_event(arg))
     if isinstance(arg, Event):
@@ -997,6 +1127,20 @@ def _rel_to_event(rel):
     raise NotImplementedError("Events of complex Relationals not implemented")
 
 def eventify(expr):
+    """
+    Converts a relation on an expression into an event if the expression
+    contains a RandomSymbol
+
+    from sympy.statistics import P, Die
+
+    >>> from sympy.statistics import eventify, Die
+
+    >>> X = Die(6).value
+    >>> eventify(X>4)
+    die1 in {5, 6}
+
+    """
+
     return _rel_to_event(expr)
 
 def _rel_to_event_finite(rel):
