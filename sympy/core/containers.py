@@ -129,7 +129,7 @@ class Dict(Basic):
     """
 
     def __new__(cls, d):
-        items = [Tuple(k,v) for k,v in d.items()]
+        items = [Tuple(k,v) for k, v in d.items()]
         obj = Basic.__new__(cls, *items)
         obj._dict = dict(items) # In case Tuple decides it wants to Sympify
         return obj
@@ -137,12 +137,14 @@ class Dict(Basic):
     def __getitem__(self, key):
         """x.__getitem__(y) <==> x[y]"""
         return self._dict[key]
+
     def __setitem__(self, key, value):
         raise NotImplementedError("SymPy Dicts are Immutable")
 
     def items(self):
         '''D.items() -> list of D's (key, value) pairs, as 2-tuples'''
         return self.args
+
     def iteritems(self):
         '''D.iteritems() -> an iterator over the (key, value) items of D'''
         return self.args.__iter__()
@@ -150,6 +152,7 @@ class Dict(Basic):
     def iterkeys(self):
         '''D.iterkeys() -> an iterator over the keys of D'''
         return (k for k,v in self.iteritems())
+
     def keys(self):
         '''D.keys() -> list of D's keys'''
         return list(self.iterkeys())
@@ -157,6 +160,7 @@ class Dict(Basic):
     def itervalues(self):
         '''D.itervalues() -> an iterator over the values of D'''
         return (v for k,v in self.iteritems())
+
     def values(self):
         '''D.values() -> list of D's values'''
         return list(self.itervalues())
@@ -168,6 +172,7 @@ class Dict(Basic):
     def __len__(self):
         '''x.__len__() <==> len(x)'''
         return self._dict.__len__()
+
     def __repr__(self):
         return self._dict.__repr__()
 
@@ -178,6 +183,7 @@ class Dict(Basic):
     def has_key(self, key):
         '''D.has_key(k) -> True if D has a key k, else False'''
         return self._dict.has_key(key)
+
     def __contains__(self, key):
         '''D.__contains__(k) -> True if D has a key k, else False'''
         return self.has_key(key)
