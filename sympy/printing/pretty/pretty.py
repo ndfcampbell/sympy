@@ -1080,6 +1080,8 @@ class PrettyPrinter(Printer):
 
         return self._print_seq(items, '{', '}')
 
+    _print_Dict = _print_dict
+
     def __print_set(self, set_):
         items = list(set_)
         items.sort( key=cmp_to_key(Basic.compare_pretty) )
