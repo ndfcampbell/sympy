@@ -4,6 +4,7 @@ from sympy.core.sets import FiniteSet
 from rv import (Domain, PSpace, ProductPSpace, ProductDomain, random_symbols,
         sumsets)
 import itertools
+from sympy.core.containers import Dict
 
 class CountableDomain(Domain):
     def __iter__(self):
