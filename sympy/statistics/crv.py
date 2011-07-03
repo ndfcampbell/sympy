@@ -18,24 +18,11 @@ class ContinuousDomain(Domain):
     is_continuous = True
     pass
 
-class SingleContinuousDomain(ContinuousDomain):
+class SingleContinuousDomain(ContinuousDomain, SingleDomain):
     def __new__(cls, symbol, set):
         assert symbol.is_Symbol
         symbols = FiniteSet(symbol)
         return Domain.__new__(cls, symbols, set)
-
-    @property
-    def set(self):
-        return self.args[1]
-    @property
-    def symbol(self):
-        return tuple(self.symbols)[0]
-
-    def __contains__(self, other):
-        if len(other)!=1:
-            return False
-        sym, val = tuple(other)[0]
-        return self.symbol == sym and val in self.set
 
     def integrate(self, expr, variables=None, **kwargs):
         if variables is None:
