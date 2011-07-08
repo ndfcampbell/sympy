@@ -1,4 +1,5 @@
-from rv import Domain, ProductDomain, PSpace, random_symbols, ProductPSpace
+from rv import (Domain, SingleDomain, ProductDomain, PSpace, random_symbols,
+        ProductPSpace)
 from sympy.functions.special.delta_functions import DiracDelta
 from sympy import S, Interval, Dummy, FiniteSet, Mul, Integral
 from sympy.solvers.inequalities import reduce_poly_inequalities
