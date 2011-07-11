@@ -89,6 +89,16 @@ class StrPrinter(Printer):
         return "{%s}"%", ".join(items)
     _print_Dict = _print_dict
 
+    def _print_Domain(self, d):
+        try:
+            return 'Domain: '+self._print(d.as_boolean())
+        except:
+            try:
+                return ('Domain: ' + self._print(d.symbols) + ' in ' +
+                        self._print(d.set))
+            except:
+                return 'Domain on ' + self._print(d.symbols)
+
     def _print_Dummy(self, expr):
         return '_' + expr.name
 
