@@ -80,6 +80,9 @@ class ConditionalFiniteDomain(ConditionalDomain, ProductFiniteDomain):
     def set(self):
         return FiniteSet(elem for elem in self.fulldomain if elem in self)
 
+    def as_boolean(self):
+        return FiniteDomain.as_boolean(self)
+
 #=============================================
 #=========  Probability Space  ===============
 #=============================================
