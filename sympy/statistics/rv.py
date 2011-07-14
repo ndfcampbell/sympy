@@ -136,6 +136,12 @@ class RandomSymbol(Symbol):
 
 
 class ProductPSpace(PSpace):
+    """
+    A probability space resulting from the merger of two independent probability
+    spaces.
+
+    Often created using the function, pspace
+    """
 
     def __new__(cls, *spaces):
         from sympy.statistics.frv import ProductFinitePSpace
@@ -179,6 +185,9 @@ class ProductPSpace(PSpace):
         raise NotImplementedError("Density not available for ProductSpaces")
 
 class ProductDomain(Domain):
+    """
+    A domain resulting from the merger of two independent domains
+    """
     is_ProductDomain = True
     def __new__(cls, *domains):
 
@@ -236,8 +245,6 @@ class ProductDomain(Domain):
 
 def is_random(x):
     return isinstance(x, RandomSymbol)
-def is_random_expr(expr):
-    return any(is_random(sym) for sym in expr.free_symbols)
 def random_symbols(expr):
     """
     Returns all RandomSymbols within a SymPy Expression

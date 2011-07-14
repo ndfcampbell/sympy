@@ -13,6 +13,10 @@ class CountableDomain(Domain):
         other in self.__iter__()
 
 class FiniteDomain(CountableDomain):
+    """
+    A domain with discrete finite support.
+    Represented using a FiniteSet
+    """
     is_finite = True
     def __new__(cls, elements):
         elements = FiniteSet(*elements)
