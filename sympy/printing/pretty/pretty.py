@@ -761,7 +761,7 @@ class PrettyPrinter(Printer):
         return D
 
 
-    def _print_exp(self, e):
+    def _print_ExpBase(self, e):
         base = prettyForm(pretty_atom('Exp1', 'e'))
         return base ** self._print(e.args[0])
 

@@ -9,6 +9,7 @@ from sympy.functions.elementary.miscellaneous import sqrt
 class erf(Function):
 
     nargs = 1
+    unbranched = True
 
     def fdiff(self, argindex=1):
         if argindex == 1:

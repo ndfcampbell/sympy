@@ -496,7 +496,7 @@ class LatexPrinter(Printer):
         else:
             return tex
 
-    def _print_exp(self, expr, exp=None):
+    def _print_ExpBase(self, expr, exp=None):
         tex = r"e^{%s}" % self._print(expr.args[0])
         return self._do_exponent(tex, exp)
 
