@@ -209,6 +209,9 @@ class ProductPSpace(PSpace):
         if all(space.is_Continuous for space in spaces):
             from sympy.stats.crv import ProductContinuousPSpace
             cls = ProductContinuousPSpace
+        if all(space.is_Multivariate for space in spaces):
+            from sympy.stats.mvnrv import ProductMultivariatePSpace
+            cls = ProductMultivariatePSpace
 
         obj = Basic.__new__(cls, symbols, FiniteSet(*spaces))
         obj.rs_space_dict = rs_space_dict
