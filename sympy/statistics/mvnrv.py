@@ -1,5 +1,5 @@
 from rv import Domain, SingleDomain, PSpace
-from sympy import Interval, S, initeSet, Symbol, Tuple
+from sympy import Interval, S, FiniteSet, Symbol, Tuple
 from sympy.matrices import BlockMatrix, BlockDiagMatrix, linear_factors, Transpose
 
 R = Interval(-oo, oo)
@@ -49,7 +49,7 @@ class MultivariatePSpace(PSpace):
 
     def compute_density(self, expr, **kwargs):
 
-        expr = expr.subs({rv:rv.symbol for rv in self.values})
+        expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
 
         d = linear_factors(expr, self.symbols)
 
@@ -72,7 +72,7 @@ class MultivariatePSpace(PSpace):
 
     def conditional_space(self, condition, **kwargs):
 
-        condition = condition.subs({rv:rv.symbol for rv in self.values})
+        condition = condition.subs(dict((rv, rv.symbol) for rv in self.values))
 
         domain = ConditionalMultivariateDomain(self.domain, condition)
         density = self.density
