@@ -2,7 +2,7 @@ from rv import (Domain, SingleDomain, PSpace, ConditionalDomain, ProductPSpace,
         RandomSymbol)
 from sympy import Interval, S, FiniteSet, Symbol, Tuple
 from sympy.matrices import (BlockMatrix, BlockDiagMatrix, linear_factors,
-        Transpose, MatrixSymbol, block_collapse, Inverse, Identity)
+        Transpose, MatrixSymbol, block_collapse, Inverse, Identity, ZeroMatrix)
 
 
 oo = S.Infinity
@@ -29,6 +29,7 @@ class ConditionalMultivariateDomain(MultivariateDomain, ConditionalDomain):
 
 class MultivariatePSpace(PSpace):
     is_Multivariate = True
+
 
     @property
     def symbol(self):
@@ -65,7 +66,8 @@ class MultivariatePSpace(PSpace):
         # Be careful because we may have blocks of blockmatrices in self.symbol
         def access_d(sym):
             if sym.is_Symbol:
-                return d[sym] # Just return the coefficient
+                # Just return the coefficient (or zero if none)
+                return d.get(sym, ZeroMatrix(expr.n, sym.n))
             if sym.is_BlockMatrix: # need to recursively return BlockMatrix
                 return BlockMatrix([[access_d(s) for s in sym]])
 
@@ -132,7 +134,9 @@ class MultivariatePSpace(PSpace):
 class SingleMultivariatePSpace(MultivariatePSpace):
     _count = 0
     _name = 'X'
-    def __new__(cls, symbol, mean, covariance):
+    def __new__(cls, mean, covariance, symbol=None):
+        if not symbol:
+            symbol = cls.create_symbol()
         assert symbol.is_Matrix
         if (symbol.shape!=mean.shape or mean.n != covariance.n
                 or not covariance.is_square):
@@ -147,6 +151,12 @@ class SingleMultivariatePSpace(MultivariatePSpace):
     @property
     def value(self):
         return tuple(self.values)[0]
+
+    @classmethod
+    def create_symbol(cls):
+        cls._count += 1
+        return MatrixSymbol('%s%d'%(cls._name, cls._count),
+                real=True, finite=True, bounded=True)
 
 class ProductMultivariatePSpace(ProductPSpace, MultivariatePSpace):
     @property
