@@ -2,7 +2,7 @@ from rv import (Domain, SingleDomain, PSpace, ConditionalDomain, ProductPSpace,
         RandomSymbol)
 from sympy import Interval, S, FiniteSet, Symbol, Tuple
 from sympy.matrices import (BlockMatrix, BlockDiagMatrix, linear_factors,
-        Transpose, MatrixSymbol, block_collapse)
+        Transpose, MatrixSymbol, block_collapse, Inverse, Identity)
 
 
 oo = S.Infinity
@@ -56,8 +56,7 @@ class MultivariatePSpace(PSpace):
 
         return None
 
-    def compute_density(self, expr, **kwargs):
-
+    def _expr_to_operator(self, expr):
         expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
 
         d = linear_factors(expr, *self.symbols)
@@ -75,8 +74,17 @@ class MultivariatePSpace(PSpace):
             operator = BlockMatrix([[access_d(sym) for sym in self.symbol]])
         else:
             operator = d[self.symbol]
+        return operator
 
-        additive_terms = expr - block_collapse(operator * self.symbol)[0,0]
+    def compute_density(self, expr, **kwargs):
+
+        operator = self._expr_to_operator(expr)
+        expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
+
+        collapsed = block_collapse(operator * self.symbol)
+        if collapsed.is_BlockMatrix:
+            collapsed = collapsed[0]
+        additive_terms = expr - collapsed
         mean = operator * self.mean + additive_terms
         covar = operator * self.covariance * Transpose(operator)
 
@@ -91,11 +99,31 @@ class MultivariatePSpace(PSpace):
                "Operation not implemented for Multivariate case")
 
     def conditional_space(self, condition, **kwargs):
+        assert condition.is_Equality
+        expr = condition.lhs - condition.rhs
+        expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
 
-        condition = condition.subs(dict((rv, rv.symbol) for rv in self.values))
+        operator = self._expr_to_operator(expr)
+        collapsed = block_collapse(operator * self.symbol)
+        if collapsed.is_BlockMatrix:
+            collapsed = collapsed[0]
+        additive_terms = expr - collapsed
 
-        domain = ConditionalMultivariateDomain(self.domain, condition)
-        density = self.density
+        # Kalman Syntax
+        x = self.mean
+        P = self.covariance
+        H = operator
+        z = additive_terms # data
+
+        y = z - H*x
+        S = H*P*Transpose(H)
+        K = P*Transpose(H)*Inverse(S)
+        xx = x + K*y
+        PP = (Identity(P.n) - K*H)*P
+
+        #ConditionalMultivariateDomain(self.domain, condition)
+        domain = self.domain;
+        density = (self.symbol, xx, PP)
 
         return MultivariatePSpace(domain, density)
 
