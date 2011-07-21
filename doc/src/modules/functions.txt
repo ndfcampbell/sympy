@@ -509,6 +509,11 @@ B-Splines
 .. autofunction:: sympy.functions.special.bsplines.bspline_basis
 .. autofunction:: sympy.functions.special.bsplines.bspline_basis_set
 
+Riemann Zeta and Related Functions
+----------------------------------
+.. autoclass:: sympy.functions.special.zeta_functions.zeta
+.. autoclass:: sympy.functions.special.zeta_functions.dirichlet_eta
+
 Hypergeometric Functions
 ------------------------
 .. autoclass:: sympy.functions.special.hyper.hyper
