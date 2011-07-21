@@ -136,7 +136,10 @@ class SingleMultivariatePSpace(MultivariatePSpace):
     _name = 'X'
     def __new__(cls, mean, covariance, symbol=None):
         if not symbol:
-            symbol = cls.create_symbol()
+            symbol = cls._name+str(cls._count)
+            cls._count+=1
+        if isinstance(symbol, str):
+            symbol = MatrixSymbol(symbol, *mean.shape)
         assert symbol.is_Matrix
         if (symbol.shape!=mean.shape or mean.n != covariance.n
                 or not covariance.is_square):
@@ -155,8 +158,7 @@ class SingleMultivariatePSpace(MultivariatePSpace):
     @classmethod
     def create_symbol(cls):
         cls._count += 1
-        return MatrixSymbol('%s%d'%(cls._name, cls._count),
-                real=True, finite=True, bounded=True)
+        return MatrixSymbol('%s%d'%(cls._name, cls._count))
 
 class ProductMultivariatePSpace(ProductPSpace, MultivariatePSpace):
     @property
