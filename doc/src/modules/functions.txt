@@ -513,6 +513,8 @@ Riemann Zeta and Related Functions
 ----------------------------------
 .. autoclass:: sympy.functions.special.zeta_functions.zeta
 .. autoclass:: sympy.functions.special.zeta_functions.dirichlet_eta
+.. autoclass:: sympy.functions.special.zeta_functions.polylog
+.. autoclass:: sympy.functions.special.zeta_functions.lerchphi
 
 Hypergeometric Functions
 ------------------------
