@@ -328,7 +328,7 @@ def heurisch(f, x, **kwargs):
                     return abs(g.exp.p + g.exp.q)
             else:
                 return 1
-        elif not g.is_Atom:
+        elif not g.is_Atom and g.args:
             return max([ exponent(h) for h in g.args ])
         else:
             return 1

@@ -654,3 +654,8 @@ def test_issue_1793b():
 def test_issue_2079():
     assert integrate(sin(x)*f(y, z), (x, 0, pi), (y, 0, pi), (z, 0, pi)) == \
         Integral(2*f(y, z), (y, 0, pi), (z, 0, pi))
+
+def test_atom_bug():
+    from sympy import meijerg
+    assert integrate(meijerg([], [], [1], [], x), x, meijerg=False) == \
+           Integral(meijerg([], [], [1], [], x), x)
