@@ -614,7 +614,9 @@ def test_issue_1418():
         6*x**Rational(7,6)/7 - 3*x**Rational(11,3)/11
 
 def test_issue_1100():
-    assert integrate(exp(-I*2*pi*y*x)*x, (x, -oo, oo)) is S.NaN
+    ypos = Symbol('y', positive=True)
+    assert integrate(exp(-I*2*pi*y*x)*x, (x, -oo, oo)).subs(y, ypos) == \
+           Integral(exp(-I*2*pi*ypos*x)*x, (x, -oo, oo))
 
 def test_issue_841():
     from sympy import factor
