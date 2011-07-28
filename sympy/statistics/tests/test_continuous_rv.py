@@ -32,6 +32,28 @@ def test_multiple_normal():
     assert E(X, Eq(X+Y, 0)) == 0
     assert var(X, Eq(X+Y, 0)) == S.Half
 
+def test_symbolic():
+    mu1, mu2 = symbols('mu1 mu2', real=True, finite=True, bounded=True)
+    s1, s2 = symbols('sigma1 sigma2', real=True, finite=True, possitive=True)
+    rate = Symbol('lambda', real=True, positive=True, bounded=True)
+    X = Normal(mu1, sigma1)
+    Y = Normal(mu2, sigma2)
+    Z = Exponential(rate)
+    a, b, c = symbols('a b c', real=True, finite=True)
+
+    assert E(X) == mu1
+    assert E(X+Y) == mu1+mu2
+    assert E(a*X+b) == a*E(X)+b
+    assert var(X) == s1**2
+    assert var(X+a*Y+b) == var(X) + a*var(Y)
+
+    assert E(Z) == 1/rate
+    assert E(a*Z+b) == a*E(Z)+B
+    assert E(X+a*Z+b) == mu1 + a/rate + b
+
+
+
+
 def test_exponential():
 
     rate = Symbol('lambda', positive=True, real=True, finite=True)
