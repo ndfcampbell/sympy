@@ -68,4 +68,12 @@ def test_exponential():
 
     assert Where(X<=1).set == Interval(0,1)
 
+def test_pareto():
+
+    xm, beta = symbols('xm beta', real=True, positive=True)
+    alpha = beta + 5
+    X = Pareto(xm, alpha)
+
+    assert simplify(E(X)) == alpha*xm/(alpha-1)
+    assert simplify(var(X)) == xm**2*alpha / ((alpha-1)**2*(alpha-2))
 
