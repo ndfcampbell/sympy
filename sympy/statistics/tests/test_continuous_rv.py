@@ -77,3 +77,11 @@ def test_pareto():
     assert simplify(E(X)) == alpha*xm/(alpha-1)
     assert simplify(var(X)) == xm**2*alpha / ((alpha-1)**2*(alpha-2))
 
+def test_gamma():
+    k, theta = symbols('k theta', real=True, finite=True, positive=True)
+    X = Gamma(k, theta)
+
+    assert simplify(E(X)) == k*theta
+    # can't get things to simplify on this one so we use subs
+    assert var(X).subs(k,5) == (k*theta**2).subs(k, 5)
+    assert simplify(skewness(X)).subs(k, 5) == (2/sqrt(k)).subs(k, 5)
