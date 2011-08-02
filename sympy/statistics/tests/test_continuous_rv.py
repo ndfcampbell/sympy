@@ -1,6 +1,7 @@
 from sympy.statistics import (Normal, Exponential, P, E, Where,
-        Density, var, covar, skewness)
-from sympy import Symbol, exp, S, pi, simplify, Interval, erf, Eq
+        Density, var, covar, skewness, Gamma, Pareto)
+from sympy import (Symbol, exp, S, pi, simplify, Interval, erf, Eq, symbols,
+        sqrt)
 
 def test_single_normal():
     mu = Symbol('mu', real=True, bounded=True, finite=True)
@@ -36,8 +37,8 @@ def test_symbolic():
     mu1, mu2 = symbols('mu1 mu2', real=True, finite=True, bounded=True)
     s1, s2 = symbols('sigma1 sigma2', real=True, finite=True, possitive=True)
     rate = Symbol('lambda', real=True, positive=True, bounded=True)
-    X = Normal(mu1, sigma1)
-    Y = Normal(mu2, sigma2)
+    X = Normal(mu1, s1)
+    Y = Normal(mu2, s2)
     Z = Exponential(rate)
     a, b, c = symbols('a b c', real=True, finite=True)
 
