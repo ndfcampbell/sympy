@@ -26,7 +26,7 @@ The main references for this are:
     Gordon and Breach Science Publisher
 """
 from sympy.core import oo, S, pi
-from sympy.core.function import expand, expand_mul
+from sympy.core.function import expand, expand_mul, expand_power_base
 from sympy.core.add import Add
 from sympy.core.mul import Mul
 from sympy.core.cache import cacheit
@@ -230,7 +230,7 @@ def _get_coeff_exp(expr, x):
     (1, 3)
     """
     from sympy import powsimp
-    (c, m) = _expand_power_base(powsimp(expr)).as_coeff_mul(x)
+    (c, m) = expand_power_base(powsimp(expr)).as_coeff_mul(x)
     if not m:
         return c, S(0)
     [m] = m
@@ -277,10 +277,37 @@ def _functions(expr, x):
     from sympy import Function
     return set(e.func for e in expr.atoms(Function) if e.has(x))
 
-def _expand_power_base(f):
-    """ Expand (3*x)**y to 3**y*x**y. """
-    return expand(f, power_base=True, mul=False, power_exp=False,
-                     basic=False, multinomial=False, log=False)
+def _find_splitting_points(expr, x):
+    """
+    Find numbers a such that a linear substitution x --> x+a would
+    (hopefully) simplify expr.
+
+    >>> from sympy.integrals.meijerint import _find_splitting_points as fsp
+    >>> from sympy import sin
+    >>> from sympy.abc import a, x
+    >>> fsp(x, x)
+    set([0])
+    >>> fsp((x-1)**3, x)
+    set([1])
+    >>> fsp(sin(x+3)*x, x)
+    set([-3, 0])
+    """
+    from sympy import Tuple
+    p, q = map(lambda n: Wild(n, exclude=[x]), 'pq')
+    def compute_innermost(expr, res):
+        if expr.func is Tuple:
+            return
+        m = expr.match(p*x+q)
+        if m and m[p] != 0:
+            res.add(-m[q]/m[p])
+            return
+        if expr.is_Atom:
+            return
+        for arg in expr.args:
+            compute_innermost(arg, res)
+    innermost = set()
+    compute_innermost(expr, innermost)
+    return innermost
 
 def _split_mul(f, x):
     """
@@ -296,7 +323,7 @@ def _split_mul(f, x):
     fac = S(1)
     po  = S(1)
     g   = S(1)
-    f = _expand_power_base(f)
+    f = expand_power_base(f)
 
     args = Mul.make_args(f)
     for a in args:
