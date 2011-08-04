@@ -219,19 +219,19 @@ def check_assumptions(expr, **assumptions):
             continue
         assert isinstance(expected, bool), 'Argument %s=%s is incorrect. \
                                             A boolean is expected.' %(key, expected)
+        # Test using new assumptions
         if hasattr(Q, key):
-            test = ask(getattr(Q, key)(expr))
-            if test is expected:
-                continue
-            elif test is not None:
-                return False
-        # ask() can't conclude. Try using old assumption system.
+            new_test = ask(getattr(Q, key)(expr))
+        else:
+            new_test = None
+        # Test using old assumptions
         # XXX: remove this once transition to new assumption system is finished.
-        test = getattr(expr, 'is_' + key, None)
-        if test is expected:
+        old_test = getattr(expr, 'is_' + key, None)
+        if new_test is expected or old_test is expected:
             continue
-        elif test is not None:
+        if new_test is not None or old_test is not None:
             return False
+
         result = None # Can't conclude, unless an other test fails.
     return result
 
