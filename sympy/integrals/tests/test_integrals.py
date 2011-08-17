@@ -677,3 +677,9 @@ def test_atom_bug():
     from sympy import meijerg
     from sympy.integrals.risch import heurisch
     assert heurisch(meijerg([], [], [1], [], x), x) is None
+
+def test_limit_bug():
+    # NOTE this used to rais NotImplementedError because of a limit problem.
+    #      actually gruntz() can do this limit, see issue 2079
+    assert integrate(sin(x*y*z), (x, 0, pi), (y, 0, pi)) == \
+           Integral(-cos(pi*y*z)/(y*z) + 1/(y*z), (y, 0, pi))
