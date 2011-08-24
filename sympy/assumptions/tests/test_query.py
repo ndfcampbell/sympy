@@ -404,8 +404,11 @@ def test_bounded():
     assert ask(Q.bounded(Rational(1,2) ** x), Q.negative(x)) == None
     assert ask(Q.bounded(S(2) ** x), Q.negative(x)) == True
     assert ask(Q.bounded(sqrt(x))) == None
-    assert ask(Q.bounded(2**x), ~Q.bounded(x))==False
+    assert ask(Q.bounded(2**x), ~Q.bounded(x))==None
+    assert ask(Q.bounded(2**x), ~Q.bounded(x) & Q.positive(x))==False
+    assert ask(Q.bounded(1.0/2**x), ~Q.bounded(x) & Q.negative(x))==False
     assert ask(Q.bounded(x**2), ~Q.bounded(x))==False
+
 
     # sign function
     assert ask(Q.bounded(sign(x))) == True

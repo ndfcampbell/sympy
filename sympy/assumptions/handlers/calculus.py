@@ -133,8 +133,13 @@ class AskBoundedHandler(CommonHandler):
             return True
         if abs(expr.base)>=1 and ask(Q.negative(expr.exp), assumptions):
             return True
-        if abs(expr.base)>=1 and exp_bounded==False:
+        if (abs(expr.base)>=1 and exp_bounded==False
+                and ask(Q.positive(expr.exp), assumptions)):
             return False
+        if (abs(expr.base)<=1 and exp_bounded==False
+                and ask(Q.negative(expr.exp), assumptions)):
+            return False
+
         return None
 
     @staticmethod
