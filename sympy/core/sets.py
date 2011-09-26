@@ -5,7 +5,7 @@ from numbers import Float, Integer
 from sympify import _sympify, sympify, SympifyError
 from sympy.mpmath import mpi, mpf
 from containers import Tuple
-
+from types import GeneratorType
 
 class Set(Basic):
     """
@@ -1000,27 +1000,26 @@ class FiniteSet(CountableSet):
 
     """
     def __new__(cls, *args):
-        def flatten(arg):
-            if is_flattenable(arg):
-                return sum(map(flatten, arg), [])
-            return [arg]
-        args = flatten(list(args))
-
-        # Sympify Arguments
-        args = map(sympify, args)
-        # Turn tuples into Tuples
-        args = [Tuple(*arg) if arg.__class__ is tuple else arg for arg in args]
+        # Special Case Generator Expressions
+        if len(args)==1 and args[0].__class__ is GeneratorType:
+            args = list(args[0])
 
         if len(args) == 0:
             return EmptySet()
 
-        if all(arg.is_real and arg.is_number for arg in args):
-            cls = RealFiniteSet
+        args = map(sympify, args) # Sympify Arguments
+        # Turn tuples into Tuples
+        args = [Tuple(*arg) if arg.__class__ is tuple else arg for arg in args]
 
-        elements = map(sympify, args)
-        elements.sort(key=hash)
-        obj = Basic.__new__(cls, *elements)
-        obj.elements = frozenset(elements)
+        try:
+            if all(arg.is_real and arg.is_number for arg in args):
+                cls = RealFiniteSet
+        except AttributeError:
+            pass
+
+        args.sort(key=hash)
+        obj = Basic.__new__(cls, *args)
+        obj.elements = frozenset(args)
         return obj
 
     def __iter__(self):

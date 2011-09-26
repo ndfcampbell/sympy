@@ -68,7 +68,7 @@ def test_union():
     assert Union(Set()) == Set()
 
     assert FiniteSet(1) + FiniteSet(2) + FiniteSet(3) == FiniteSet(1,2,3)
-    assert FiniteSet(['ham']) + FiniteSet(['eggs']) == FiniteSet('ham', 'eggs')
+    assert FiniteSet('ham') + FiniteSet('eggs') == FiniteSet('ham', 'eggs')
     assert FiniteSet(1,2,3) + S.EmptySet == FiniteSet(1,2,3)
 
     assert FiniteSet(1,2,3) & FiniteSet(2,3,4) == FiniteSet(2,3)
@@ -97,7 +97,7 @@ def test_difference():
             Union(Interval(0,1,False, True), Interval(1,2, True, False))
 
     assert FiniteSet(1,2,3) - FiniteSet(2) == FiniteSet(1,3)
-    assert FiniteSet('ham', 'eggs') - FiniteSet(['eggs']) == FiniteSet(['ham'])
+    assert FiniteSet('ham', 'eggs') - FiniteSet('eggs') == FiniteSet('ham')
     assert FiniteSet(1,2,3,4) - Interval(2,10, True, False) == FiniteSet(1,2)
     assert FiniteSet(1,2,3,4) - S.EmptySet == FiniteSet(1,2,3,4)
     assert Union(Interval(0,2), FiniteSet(2,3,4)) - Interval(1,3) == \
@@ -155,8 +155,8 @@ def test_intersect():
            Union(Interval(0, 1), Interval(2, 2))
 
     assert FiniteSet(1,2,x).intersect(FiniteSet(x)) == FiniteSet(x)
-    assert FiniteSet('ham', 'eggs').intersect(FiniteSet(['ham'])) == \
-            FiniteSet(['ham'])
+    assert FiniteSet('ham', 'eggs').intersect(FiniteSet('ham')) == \
+            FiniteSet('ham')
     assert FiniteSet(1,2,3,4,5).intersect(S.EmptySet) == S.EmptySet
 
     assert Interval(0,5).intersect(FiniteSet(1,3)) == FiniteSet(1,3)
@@ -170,7 +170,7 @@ def test_intersect():
            S.EmptySet
     assert Union(Interval(0, 1), Interval(2, 3)).intersect(S.EmptySet) == \
            S.EmptySet
-    assert Union(Interval(0,5), FiniteSet(['Ham'])).intersect(
+    assert Union(Interval(0,5), FiniteSet('Ham')).intersect(
             FiniteSet(2,3,4,5,6)) == FiniteSet(2,3,4,5)
 
 def test_interval_subs():
@@ -246,7 +246,7 @@ def test_contains():
     assert FiniteSet(1,2,Symbol('x')).contains(Symbol('x'))
     items = [1,2,S.Infinity, 'ham', -1.1, Interval]
 
-    assert all(item in FiniteSet(items) for item in items)
+    assert all(item in FiniteSet(*items) for item in items)
 
     assert Union(Interval(0, 1), Interval(2, 5)).contains(3) == True
     assert Union(Interval(0, 1), Interval(2, 5)).contains(6) == False
@@ -346,6 +346,8 @@ def test_finite_basic():
     S = FiniteSet((1,2), Float, A, -5, x, 'eggs', x**2, Interval)
 
     assert FiniteSet(1,2,3) == FiniteSet(3,2,1)
+
+    assert 4 in FiniteSet(x**2 for x in range(5))  # Can define using generators
 
 def test_product_basic():
     H,T = 'H', 'T'
