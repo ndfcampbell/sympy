@@ -1018,6 +1018,7 @@ class FiniteSet(CountableSet):
                 cls = RealFiniteSet
         except AttributeError:
             pass
+
         elements = frozenset(map(sympify, args))
         obj = Basic.__new__(cls, *elements)
         obj.elements = elements

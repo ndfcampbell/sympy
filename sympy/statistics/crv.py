@@ -1,25 +1,32 @@
 from rv import (Domain, SingleDomain, ConditionalDomain, ProductDomain, PSpace,
         random_symbols, ProductPSpace)
 from sympy.functions.special.delta_functions import DiracDelta
-from sympy import S, Interval, Dummy, FiniteSet, Mul, Integral, And
+from sympy import S, Interval, Dummy, FiniteSet, Mul, Integral, And, Or
 from sympy.solvers.inequalities import reduce_poly_inequalities
 from sympy import integrate as sympy_integrate
 oo = S.Infinity
 
 
 def integrate(*args, **kwargs):
+    """
+    Wrap around sympy integrate function to include a lazy flag
+    if lazy==True then just return the Integral object
+    """
     lazy = kwargs.get('lazy', False)
     if not lazy:
         return sympy_integrate(*args)
     else:
         return Integral(*args)
 
-
 class ContinuousDomain(Domain):
-    is_continuous = True
+    """
+    A domain with continuous support.
+    Represented using symbols and Intervals
+    """
+    is_Continuous = True
 
     def as_boolean(self):
-        return Or(*[And(*[Eq(sym, val) for sym, val in item]) for item in self])
+        raise NotImplementedError("Not Implemented for generic Domains")
 
 class SingleContinuousDomain(ContinuousDomain, SingleDomain):
     def __new__(cls, symbol, set):
@@ -51,14 +58,21 @@ class ProductContinuousDomain(ProductDomain, ContinuousDomain):
                 expr = domain.integrate(expr, domain_vars, **kwargs)
         return expr
 
+    def as_boolean(self):
+        return And(*[domain.as_boolean() for domain in self.domains])
+
 class ConditionalContinuousDomain(ContinuousDomain, ConditionalDomain):
 
 
     def integrate(self, expr, variables=None, **kwargs):
+        if variables is None:
+            variables = self.symbols
+        if not variables:
+            return expr
         # Extract the full integral
         fullintegral = self.fulldomain.integrate(expr, variables, lazy=True)
         # separate into integrand and limits
-        integrand, limits = fullintegral.function, fullintegral.limits
+        integrand, limits = fullintegral.function, list(fullintegral.limits)
 
         conditions = [self.condition]
         while conditions:
@@ -73,18 +87,44 @@ class ConditionalContinuousDomain(ContinuousDomain, ConditionalDomain):
                     # Add the appropriate Delta to the integrand
                     integrand *= DiracDelta(cond.lhs-cond.rhs)
                 else:
-                    raise NotImplementedError(
-                            "Inequalities not yet implemented")
+                    symbols = FiniteSet(cond.free_symbols) & self.symbols
+                    if len(symbols)!=1: # Can't handle x > y
+                        raise NotImplementedError(
+                            "Multivariate Inequalities not yet implemented")
+                    # Can handle x > 0
+                    symbol = tuple(symbols)[0]
+                    # Find the limit with x, such as (x, -oo, oo)
+                    for i, limit in enumerate(limits):
+                        if limit[0]==symbol:
+                            # Make condition into an Interval like [0, oo]
+                            cintvl = reduce_poly_inequalities_wrap(cond, symbol)
+                            # Make limit into an Interval like [-oo, oo]
+                            lintvl = Interval(limit[1], limit[2])
+                            # Intersect them to get [0, oo]
+                            intvl = cintvl.intersect(lintvl)
+                            # Put back into limits list
+                            limits[i] = (symbol, intvl.left, intvl.right)
             else:
                 raise ValueError(
                         "Condition %s is not a relational or Boolean"%cond)
 
         return integrate(integrand, *limits, **kwargs)
 
+    def as_boolean(self):
+        return And(self.fulldomain.as_boolean(), self.condition)
+
+    @property
+    def set(self):
+        if len(self.symbols) == 1:
+            return (self.fulldomain.set & reduce_poly_inequalities_wrap(
+                self.condition, tuple(self.symbols)[0]))
+        else:
+            raise NotImplementedError(
+                    "Set of Conditional Domain not Implemented")
 
 
 class ContinuousPSpace(PSpace):
-    is_continuous = True
+    is_Continuous = True
 
     def integrate(self, expr, rvs=None, **kwargs):
         if rvs == None:
@@ -107,7 +147,7 @@ class ContinuousPSpace(PSpace):
                 for rs in self.values - frozenset((expr,))),  **kwargs)
             return expr.symbol, density
 
-        z = Dummy('z', real=True)
+        z = Dummy('z', real=True, finite=True)
         return z, self.integrate(DiracDelta(expr - z), **kwargs)
 
     def P(self, condition, **kwargs):
@@ -135,7 +175,7 @@ class ContinuousPSpace(PSpace):
             raise NotImplementedError(
                     "Multiple continuous random variables not supported")
         rv = tuple(rvs)[0]
-        interval = reduce_poly_inequalities([[condition]], rv, relational=False)
+        interval = reduce_poly_inequalities_wrap(condition, rv)
         interval = interval.intersect(self.domain.set)
         return SingleContinuousDomain(rv.symbol, interval)
 
@@ -169,3 +209,16 @@ class ProductContinuousPSpace(ProductPSpace, ContinuousPSpace):
     def density(self):
         return Mul(*[space.density for space in self.spaces])
 
+def reduce_poly_inequalities_wrap(condition, var):
+    if condition.is_Relational:
+        return reduce_poly_inequalities([[condition]], var, relational=False)
+    if condition.__class__ is Or:
+        return reduce_poly_inequalities([list(condition.args)],
+                var, relational=False)
+    if condition.__class__ is And:
+        intervals = [reduce_poly_inequalities([[arg]], var, relational=False)
+            for arg in condition.args]
+        I = intervals[0]
+        for i in intervals:
+            I = I.intersect(i)
+        return I

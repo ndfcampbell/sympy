@@ -1,14 +1,20 @@
 from sympy import Basic, S, Expr, Symbol, Tuple, And
-from sympy.core.sets import FiniteSet
+from sympy.core.sets import FiniteSet, ProductSet
 
 class Domain(Basic):
     """
     Represents a set of variables and the values which they can take
+
+    Implemented by:
+        ContinuousDomain
+        FiniteDomain
+        MultivariateDomain
     """
 
     is_ProductDomain = False
-    is_finite = False
-    is_continuous = False
+    is_Finite = False
+    is_Continuous = False
+
     def __new__(cls, symbols, *args):
         symbols = FiniteSet(*symbols)
         return Basic.__new__(cls, symbols, *args)
@@ -28,6 +34,11 @@ class Domain(Basic):
 class SingleDomain(Domain):
     """
     A single variable and its domain
+
+    Implemented by:
+        SingleContinuousDomain
+        SingleFiniteDomain
+        SingleMultivariateDomain
     """
     def __new__(cls, symbol, set):
         assert symbol.is_Symbol
@@ -47,6 +58,10 @@ class SingleDomain(Domain):
 class ConditionalDomain(Domain):
     """
     A Domain with an attached condition
+
+    Implemented by:
+        ConditionalContinuousDomain
+        ConditionalFiniteDomain
     """
     def __new__(cls, fulldomain, condition):
         condition = condition.subs(dict((rs,rs.symbol)
@@ -60,6 +75,10 @@ class ConditionalDomain(Domain):
     def condition(self):
         return self.args[2]
 
+    @property
+    def set(self):
+        raise NotImplementedError("Set of Conditional Domain not Implemented")
+
     def as_boolean(self):
         return And(self.fulldomain.as_boolean(), self.condition)
 
@@ -71,10 +90,15 @@ class PSpace(Basic):
     probabalistically. These underly Random Symbols which occur in SymPy
     expressions and contain the mechanics to evaluate statistical statements.
 
+    Implemented by:
+        ContinuousPSpace
+        FinitePSpace
+        MultivariatePSpace
     """
 
-    is_finite = None
-    is_continuous = None
+    is_Finite = None
+    is_Continuous = None
+
     @property
     def domain(self):
         return self.args[0]
@@ -112,18 +136,34 @@ class RandomSymbol(Symbol):
     In principle they can take on any value that their symbol can take on
     within the associated PSpace with probability determined by the PSpace
     Density.
+
+    Random Symbols contain pspace and symbol properties.
+    The pspace property points to the represented Probability Space
+    The symbol is a standard SymPy Symbol that is used in that probability space
+    for example in defining a density.
+
+    You can form normal SymPy expressions using RandomSymbols and operate on
+    those expressions with the Functions
+
+    E - Expectation of a random expression
+    P - Probability of a condition
+    Density - Probability Density of an expression
+    Given - A new random expression (with new random symbols) given a condition
     """
 
     is_bounded=True
     is_finite=True
     def __new__(cls, *args):
-        return Basic.__new__(cls, *args)
-    @property
-    def pspace(self):
-        return self.args[0]
-    @property
-    def symbol(self):
-        return self.args[1]
+        obj = Basic.__new__(cls)
+        obj.pspace = args[0]
+        obj.symbol = args[1]
+        return obj
+#    @property
+#    def pspace(self):
+#        return self.args[0]
+#    @property
+#    def symbol(self):
+#        return self.args[1]
     @property
     def name(self):
         return self.symbol.name
@@ -131,9 +171,7 @@ class RandomSymbol(Symbol):
     def is_commutative(self):
         return self.symbol.is_commutative
     def _hashable_content(self):
-        return self.args
-
-
+        return self.pspace, self.symbol
 
 class ProductPSpace(PSpace):
     """
@@ -151,10 +189,13 @@ class ProductPSpace(PSpace):
             for value in space.values:
                 rs_space_dict[value] = space
         symbols = FiniteSet(val.symbol for val in rs_space_dict.keys())
+        # Overlapping symbols
+        if len(symbols) < sum(len(space.symbols) for space in spaces):
+            raise ValueError("Overlapping Random Variables")
 
-        if all(space.is_finite for space in spaces):
+        if all(space.is_Finite for space in spaces):
             cls = ProductFinitePSpace
-        if all(space.is_continuous for space in spaces):
+        if all(space.is_Continuous for space in spaces):
             cls = ProductContinuousPSpace
 
         obj = Basic.__new__(cls, symbols, FiniteSet(*spaces))
@@ -187,7 +228,12 @@ class ProductPSpace(PSpace):
 class ProductDomain(Domain):
     """
     A domain resulting from the merger of two independent domains
+
+    Implemented by:
+        ProductContinuousDomain
+        ProductFiniteDomain
     """
+
     is_ProductDomain = True
     def __new__(cls, *domains):
 
@@ -209,10 +255,10 @@ class ProductDomain(Domain):
         for domain in domains2:
             for symbol in domain.symbols:
                 sym_domain_dict[symbol] = domain
-        if all(domain.is_finite for domain in domains2):
+        if all(domain.is_Finite for domain in domains2):
             from sympy.statistics.frv import ProductFiniteDomain
             cls = ProductFiniteDomain
-        if all(domain.is_continuous for domain in domains2):
+        if all(domain.is_Continuous for domain in domains2):
             from sympy.statistics.crv import ProductContinuousDomain
             cls = ProductContinuousDomain
         obj = Domain.__new__(cls, symbols, domains2)
@@ -225,8 +271,7 @@ class ProductDomain(Domain):
 
     @property
     def set(self):
-        raise NotImplementedError("Product Sets not implemented")
-        # return ProductSet(domain.set for domain in self.domains)
+        return ProductSet(domain.set for domain in self.domains)
 
     def __contains__(self, other):
         # Split event into each subdomain
@@ -290,6 +335,9 @@ def rs_swap(a,b):
     and   Y = ('x', pspace2)
     then X and Y match and the key, value pair
     {X:Y} will appear in the result
+
+    Inputs: collections a and b of random variables which share common symbols
+    Output: dict mapping RVs in a to RVs in b
     """
     d = {}
     for rsa in a:
@@ -320,7 +368,7 @@ def Given(expr, given=None, **kwargs):
     # Dictionary to swap out RandomSymbols in expr with new RandomSymbols
     # That point to the new conditional space
     swapdict = rs_swap(fullspace.values, space.values)
-    # Swap
+    # Swap random variables in the expression
     expr = expr.subs(swapdict)
     return expr
 

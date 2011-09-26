@@ -6,18 +6,14 @@ from rv import (Domain,  ProductDomain, ConditionalDomain, PSpace,
 import itertools
 from sympy.core.containers import Dict
 
-class CountableDomain(Domain):
-    def __iter__(self):
-        raise NotImplementedError()
-    def __contains__(self, other):
-        other in self.__iter__()
-
-class FiniteDomain(CountableDomain):
+class FiniteDomain(Domain):
     """
     A domain with discrete finite support.
     Represented using a FiniteSet
+
     """
-    is_finite = True
+    is_Finite = True
+
     def __new__(cls, elements):
         elements = FiniteSet(*elements)
         symbols = FiniteSet(sym for sym, val in elements)
@@ -26,6 +22,10 @@ class FiniteDomain(CountableDomain):
     @property
     def elements(self):
         return self.args[1]
+
+    @property
+    def dict(self):
+        return FiniteSet(Dict(dict(el)) for el in self.elements)
 
     def __contains__(self, other):
         return other in self.elements
@@ -71,8 +71,11 @@ class ConditionalFiniteDomain(ConditionalDomain, ProductFiniteDomain):
 
     def _test(self, elem):
         val = self.condition.subs(dict(elem))
-        assert val in [True, False]
-        return val
+        if val in [True, False]:
+            return val
+        elif val.is_Equality:
+            return val.lhs == val.rhs
+        raise ValueError("Undeciable if %s"%str(val))
 
     def __contains__(self, other):
         return other in self.fulldomain and self._test(other)
@@ -82,7 +85,13 @@ class ConditionalFiniteDomain(ConditionalDomain, ProductFiniteDomain):
 
     @property
     def set(self):
-        return FiniteSet(elem for elem in self.fulldomain if elem in self)
+        if self.fulldomain.__class__ is SingleFiniteDomain:
+            return FiniteSet(elem for elem in self.fulldomain.set
+                    if frozenset(((self.fulldomain.symbol, elem),)) in self)
+        else:
+            raise NotImplementedError(
+                    "Not implemented on multi-dimensional conditional domain")
+        #return FiniteSet(elem for elem in self.fulldomain if elem in self)
 
     def as_boolean(self):
         return FiniteDomain.as_boolean(self)
@@ -91,12 +100,10 @@ class ConditionalFiniteDomain(ConditionalDomain, ProductFiniteDomain):
 #=========  Probability Space  ===============
 #=============================================
 
-class FiniteDensity(Dict):
-    pass
-
 class FinitePSpace(PSpace):
 
-    is_finite = True
+    is_Finite = True
+
     def __new__(cls, domain, density):
         density = dict((sympify(key), sympify(val))
                 for key, val in density.items())
@@ -177,6 +184,3 @@ class ProductFinitePSpace(ProductPSpace, FinitePSpace):
     @cacheit
     def density(self):
         return Dict(self._density)
-
-def print_elem(elem):
-    return And(*[Eq(sym, val) for sym, val in elem])
