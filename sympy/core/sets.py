@@ -186,7 +186,7 @@ class Set(Basic):
     def __pow__(self, exp):
         if not sympify(exp).is_Integer and exp>=0:
             raise ValueError("%s: Exponent must be a positive Integer"%exp)
-        return ProductSet([self]*exp)
+        return ProductSet(*([self]*exp))
 
     def __sub__(self, other):
         return self.intersect(other.complement)
@@ -285,17 +285,20 @@ class ProductSet(Set):
         - Flattens Products of ProductSets
     """
 
-    def __new__(cls, *sets, **assumptions):
+    def __new__(cls, *args, **assumptions):
+
+        # Special case input: allow for generator expressions
+        if len(args)==1 and args[0].__class__ is GeneratorType:
+            args = list(args[0])
+
         def flatten(arg):
             if isinstance(arg, Set):
                 if arg.is_ProductSet:
                     return sum(map(flatten, arg.args), [])
                 else:
                     return [arg]
-            elif is_flattenable(arg):
-                return sum(map(flatten, arg), [])
             raise TypeError("Input must be Sets or iterables of Sets")
-        sets = flatten(list(sets))
+        sets = sum(map(flatten, args), [])
 
         if EmptySet() in sets or len(sets)==0:
             return EmptySet()
@@ -664,8 +667,10 @@ class Union(Set):
 
     def __new__(cls, *args):
 
-        # Flatten out Iterators and Unions to form one list of sets
-        args = list(args)
+        # Special case input: allow for generator expressions
+        if len(args)==1 and args[0].__class__ is GeneratorType:
+            args = list(args[0])
+
         def flatten(arg):
             if arg == S.EmptySet:
                return []
@@ -674,16 +679,14 @@ class Union(Set):
                     return sum(map(flatten, arg.args), [])
                 else:
                     return [arg]
-            if is_flattenable(arg): # and not isinstance(arg, Set) (implicit)
-                return sum(map(flatten, arg), [])
             raise TypeError("Input must be Sets or iterables of Sets")
-        args = flatten(args)
+        args = sum(map(flatten, args), [])
         if len(args) == 0:
             return S.EmptySet
 
         # Only real parts? Return a RealUnion
         if all(arg.is_real for arg in args):
-            return RealUnion(args)
+            return RealUnion(*args)
 
         # Lets find and merge real elements if we have them
         # Separate into finite, real and other sets
@@ -697,7 +700,7 @@ class Union(Set):
         other_finite = FiniteSet(i for i in finite_set if not i.is_real)
 
         # Merge real part of set
-        real_union = RealUnion(real_sets+[real_finite])
+        real_union = RealUnion(*(real_sets+[real_finite]))
 
         if not real_union: # Real part was empty
             sets = other_sets + [other_finite]
@@ -839,7 +842,12 @@ class RealUnion(Union, RealSet):
     def __new__(cls, *args):
 
         intervals, finite_sets, other_sets = [], [], []
-        args = list(args)
+
+        # Special case input: allow for generator expressions
+        if len(args)==1 and args[0].__class__ is GeneratorType:
+            args = list(args[0])
+        else:
+            args = list(args)
         for arg in args:
 
             if isinstance(arg, Set):
@@ -853,8 +861,6 @@ class RealUnion(Union, RealSet):
                     intervals.append(arg)
                 else:
                     other_sets.append(arg)
-            elif is_flattenable(arg):
-                args += arg
             else:
                 raise TypeError("%s: Not a set or iterable of sets"%arg)
 
