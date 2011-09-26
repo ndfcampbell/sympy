@@ -1017,9 +1017,10 @@ class FiniteSet(CountableSet):
         if all(arg.is_real and arg.is_number for arg in args):
             cls = RealFiniteSet
 
-        elements = frozenset(map(sympify, args))
+        elements = map(sympify, args)
+        elements.sort(key=hash)
         obj = Basic.__new__(cls, *elements)
-        obj.elements = elements
+        obj.elements = frozenset(elements)
         return obj
 
     def __iter__(self):

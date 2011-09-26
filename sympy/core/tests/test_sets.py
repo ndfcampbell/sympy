@@ -345,6 +345,8 @@ def test_finite_basic():
     # Ensure a variety of types can exist in a FiniteSet
     S = FiniteSet((1,2), Float, A, -5, x, 'eggs', x**2, Interval)
 
+    assert FiniteSet(1,2,3) == FiniteSet(3,2,1)
+
 def test_product_basic():
     H,T = 'H', 'T'
     unit_line = Interval(0,1)
