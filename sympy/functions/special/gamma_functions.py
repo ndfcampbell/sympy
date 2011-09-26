@@ -22,6 +22,7 @@ class gamma(Function):
     """
 
     nargs = 1
+    unbranched = True
 
     def fdiff(self, argindex=1):
         if argindex == 1:
@@ -73,8 +74,9 @@ class gamma(Function):
         if arg.is_Add:
             coeff, tail = arg.as_coeff_add()
             if coeff and coeff.q != 1:
-                tail = (C.Rational(1, coeff.q),) + tail
-                coeff = floor(coeff)
+                intpart = floor(coeff)
+                tail = (coeff - intpart,) + tail
+                coeff = intpart
             tail = arg._new_rawargs(*tail, **dict(reeval=False))
             return gamma(tail)*C.RisingFactorial(tail, coeff)
 
@@ -152,6 +154,34 @@ class lowergamma(Function):
 
     @classmethod
     def eval(cls, a, x):
+        # For lack of a better place, we use this one to extract branching
+        # information. The following can be
+        # found in the literature (c/f references given above), albeit scattered:
+        # 1) For fixed x != 0, lowergamma(s, x) is an entire function of s
+        # 2) For fixed positive integers s, lowergamma(s, x) is an entire
+        #    function of x.
+        # 3) For fixed non-positive integers s,
+        #    lowergamma(s, exp(I*2*pi*n)*x) =
+        #              2*pi*I*n*(-1)**(-s)/factorial(-s) + lowergamma(s, x)
+        #    (this follows from lowergamma(s, x).diff(x) = x**(s-1)*exp(-x)).
+        # 4) For fixed non-integral s,
+        #    lowergamma(s, x) = x**s*gamma(s)*lowergamma_unbranched(s, x),
+        #    where lowergamma_unbranched(s, x) is an entire function (in fact
+        #    of both s and x), i.e.
+        #    lowergamma(s, exp(2*I*pi*n)*x) = exp(2*pi*I*n*a)*lowergamma(a, x)
+        from sympy import unpolarify, I, factorial, exp
+        nx, n = x.extract_branch_factor()
+        if a.is_integer and a > 0:
+            nx = unpolarify(x)
+            if nx != x:
+                return lowergamma(a, nx)
+        elif a.is_integer and a <= 0:
+            if n != 0:
+                return 2*pi*I*n*(-1)**(-a)/factorial(-a) + lowergamma(a, nx)
+        elif n != 0:
+            return exp(2*pi*I*n*a)*lowergamma(a, nx)
+
+        # Special values.
         if a.is_Number:
             # TODO this should be non-recursive
             if a is S.One:
@@ -176,6 +206,9 @@ class lowergamma(Function):
         res = mp.gammainc(a, 0, z)
         mp.prec = oprec
         return Expr._from_mpmath(res, prec)
+
+    def _eval_rewrite_as_uppergamma(self, s, x):
+        return gamma(s) - uppergamma(s, x)
 
 class uppergamma(Function):
     r"""
@@ -242,6 +275,7 @@ class uppergamma(Function):
 
     @classmethod
     def eval(cls, a, z):
+        from sympy import unpolarify, I, factorial, exp
         if z.is_Number:
             if z is S.NaN:
                 return S.NaN
@@ -250,6 +284,19 @@ class uppergamma(Function):
             elif z is S.Zero:
                 return gamma(a)
 
+        # We extract branching information here. C/f lowergamma.
+        nx, n = z.extract_branch_factor()
+        if a.is_integer and a > 0:
+            nx = unpolarify(z)
+            if z != nx:
+                return uppergamma(a, nx)
+        elif a.is_integer and a <= 0:
+            if n != 0:
+                return -2*pi*I*n*(-1)**(-a)/factorial(-a) + uppergamma(a, nx)
+        elif n != 0:
+            return gamma(a)*(1 - exp(2*pi*I*n*a)) + exp(2*pi*I*n*a)*uppergamma(a, nx)
+
+        # Special values.
         if a.is_Number:
             # TODO this should be non-recursive
             if a is S.One:
@@ -263,6 +310,9 @@ class uppergamma(Function):
 
                 if not a.is_Integer:
                     return (cls(a + 1, z) - z**a * C.exp(-z))/a
+
+    def _eval_rewrite_as_lowergamma(self, s, x):
+        return gamma(s) - lowergamma(s, x)
 
 
 

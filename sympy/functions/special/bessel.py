@@ -1,6 +1,6 @@
 """Bessel type functions"""
 
-from sympy import S, pi
+from sympy import S, pi, I
 from sympy.core import sympify
 from sympy.core.function import Function, ArgumentIndexError
 from sympy.functions.elementary.trigonometric import sin, cos
@@ -114,6 +114,40 @@ class besselj(BesselBase):
     def _eval_rewrite_as_jn(self, nu, z):
         return sqrt(2*z/pi) * jn(nu - S('1/2'), self.argument)
 
+    @classmethod
+    def eval(cls, nu, z):
+        if nu.is_Integer:
+            if nu < 0:
+                return S(-1)**nu*besselj(-nu, z)
+            if z.could_extract_minus_sign():
+                return S(-1)**nu*besselj(nu, -z)
+            newz = z.extract_multiplicatively(I)
+            if newz: # NOTE we don't want to change the function if z==0
+                return I**(nu)*besseli(nu, newz)
+
+        # branch handling:
+        from sympy import unpolarify, exp
+        if nu.is_integer:
+            newz = unpolarify(z)
+            if newz != z:
+                return besselj(nu, newz)
+        else:
+            newz, n = z.extract_branch_factor()
+            if n != 0:
+                return exp(2*n*pi*nu*I)*besselj(nu, newz)
+        nnu = unpolarify(nu)
+        if nu != nnu:
+            return besselj(nnu, z)
+
+    def _eval_expand_func(self, deep=False, **hints):
+        if self.order.is_Rational and self.order.q == 2:
+            return self.rewrite(jn)._eval_expand_func(deep, **hints)
+        return self
+
+    def _eval_rewrite_as_besseli(self, nu, z):
+        from sympy import polar_lift, exp
+        return exp(I*pi*nu/2)*besseli(nu, polar_lift(-I)*z)
+
 class bessely(BesselBase):
     r"""
     Bessel function of the second kind.
@@ -148,6 +182,17 @@ class bessely(BesselBase):
     def _eval_rewrite_as_yn(self, nu, z):
         return sqrt(2*z/pi) * yn(nu - S('1/2'), self.argument)
 
+    @classmethod
+    def eval(cls, nu, z):
+        if nu.is_Integer:
+            if nu < 0:
+                return S(-1)**nu*bessely(-nu, z)
+
+    def _eval_expand_func(self, deep=False, **hints):
+        if self.order.is_Rational and self.order.q == 2:
+            return self.rewrite(yn)._eval_expand_func(deep, **hints)
+        return self
+
 class besseli(BesselBase):
     r"""
     Modified Bessel function of the first kind.
@@ -177,6 +222,31 @@ class besseli(BesselBase):
 
     _a = -S.One
     _b = S.One
+
+    @classmethod
+    def eval(cls, nu, z):
+        if nu.is_Integer:
+            newz = z.extract_multiplicatively(I)
+            if newz: # NOTE we don't want to change the function if z==0
+                return I**(-nu)*besselj(nu, -newz)
+
+        # branch handling:
+        from sympy import unpolarify, exp
+        if nu.is_integer:
+            newz = unpolarify(z)
+            if newz != z:
+                return besseli(nu, newz)
+        else:
+            newz, n = z.extract_branch_factor()
+            if n != 0:
+                return exp(2*n*pi*nu*I)*besseli(nu, newz)
+        nnu = unpolarify(nu)
+        if nu != nnu:
+            return besseli(nnu, z)
+
+    def _eval_rewrite_as_besselj(self, nu, z):
+        from sympy import polar_lift, exp
+        return exp(-I*pi*nu/2)*besselj(nu, polar_lift(I)*z)
 
 class besselk(BesselBase):
     r"""
@@ -285,6 +355,8 @@ class SphericalBesselBase(BesselBase):
     def _eval_expand_func(self, deep=False, **hints):
         if self.order.is_Integer:
             return self._expand()
+        else:
+            return self
 
     def _eval_evalf(self, prec):
         return self._rewrite()._eval_evalf(prec)
