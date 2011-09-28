@@ -1,7 +1,7 @@
 from rv import P, E, Density, Where, Given, pspace#, sample
-from sympy import sqrt
+from sympy import sqrt, sympify, Tuple, FiniteSet
 
-def variance(X, given=None, **kwargs):
+def variance(expr, given=None, **kwargs):
     """Variance of a random expression.
 
     Expectation of (X-E(X))**2
@@ -20,11 +20,16 @@ def variance(X, given=None, **kwargs):
     p*(-p + 1)
 
     """
-    return E(X**2, given, **kwargs) - E(X, given, **kwargs)**2
+    if expr.__class__ in [set, frozenset, list, tuple]:
+        return expr.__class__([variance(element) for element in expr])
+    if expr.__class__ in [Tuple, FiniteSet]:
+        return expr.__class__(*[variance(element) for element in expr])
+
+    return E(expr**2, given, **kwargs) - E(expr, given, **kwargs)**2
 var = variance
 
 
-def standard_deviation(X, given=None, **kwargs):
+def standard_deviation(expr, given=None, **kwargs):
     """Standard Deviation of a random expression.
 
     Square root of the Expectation of (X-E(X))**2
@@ -39,6 +44,11 @@ def standard_deviation(X, given=None, **kwargs):
     (-p**2 + p)**(1/2)
 
     """
+    if expr.__class__ in [set, frozenset, list, tuple]:
+        return expr.__class__([standard_deviation(element) for element in expr])
+    if expr.__class__ in [Tuple, FiniteSet]:
+        return expr.__class__(*[standard_deviation(elem) for elem in expr])
+
     return sqrt(variance(X, given, **kwargs))
 std = standard_deviation
 
@@ -64,12 +74,15 @@ def covariance(X, Y, given=None, **kwargs):
     >>> covar(X, Y + rate*X)
     1/lambda
     """
-
     return E( (X-E(X, given, **kwargs)) * (Y-E(Y, given, **kwargs)),
             given, **kwargs)
 covar = covariance
 
 def skewness(X, given=None, **kwargs):
+    if X.__class__ in [set, frozenset, list, tuple]:
+        return X.__class__([standard_deviation(element) for element in expr])
+    if X.__class__ in [Tuple, FiniteSet]:
+        return X.__class__(*[standard_deviation(elem) for elem in expr])
 
     mu = E(X, given, **kwargs)
     sigma = std(X, given, **kwargs)

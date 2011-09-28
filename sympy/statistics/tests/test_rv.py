@@ -58,3 +58,15 @@ def test_ProductPSpace():
 
 def test_E():
     assert E(5) == 5
+
+def test_container_expressions():
+    X = Normal(0, 1)
+    Y = Normal(0, 1)
+    a = X
+    b = S(5)
+    assert E((a,b)) == (E(a),E(b))
+    assert E([a,b]) == [E(a),E(b)]
+    assert E(X+Y) == E(X)+E(X)
+    assert E(X*Y) == E(X)*E(Y)
+    assert var((a,b)) == (var(a), var(b))
+

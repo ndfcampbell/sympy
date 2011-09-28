@@ -1,5 +1,6 @@
-from sympy import Basic, S, Expr, Symbol, Tuple, And
+from sympy import Basic, S, Expr, Symbol, Tuple, And, sympify, Matrix
 from sympy.core.sets import FiniteSet, ProductSet
+from sympy.core.compatibility import iterable, is_sequence
 
 class Domain(Basic):
     """
@@ -387,6 +388,17 @@ def E(expr, given=None, **kwargs):
     >>> E(X, X>3) # Expectation of X given that it is above 3
     5
     """
+    if isinstance(expr, Matrix):
+        data = [E(x) for x in expr.mat]
+        return Matrix(expr.rows, expr.cols, data)
+
+    if expr.__class__ in [set, frozenset, list, tuple]:
+        return expr.__class__([E(element) for element in expr])
+    if expr.__class__ in [Tuple, FiniteSet]:
+        return expr.__class__(*[E(element) for element in expr])
+    expr = sympify(expr)
+    if expr.is_Add or expr.is_Mul:
+        return expr.__class__(*[E(term) for term in expr.args])
 
     if not random_symbols(expr): # expr isn't random?
         return expr
