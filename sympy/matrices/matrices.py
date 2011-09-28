@@ -2599,6 +2599,14 @@ class Matrix(object):
         """
         return any(a.has(*patterns) for a in self.mat)
 
+    @property
+    def free_symbols(self):
+        union = set.union
+        symbols = set()
+        for arg in self.mat:
+            symbols.update(arg.free_symbols)
+        return symbols
+
 def matrix_multiply(A, B):
     """
     Matrix product A*B.

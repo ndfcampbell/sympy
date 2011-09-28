@@ -499,7 +499,7 @@ class LatexPrinter(Printer):
         else:
             return tex
 
-    def _print_exp(self, expr, exp=None):
+    def _print_ExpBase(self, expr, exp=None):
         tex = r"e^{%s}" % self._print(expr.args[0])
         return self._do_exponent(tex, exp)
 
@@ -820,6 +820,7 @@ class LatexPrinter(Printer):
     def _print_tuple(self, expr):
         return r"\begin{pmatrix}%s\end{pmatrix}" % \
             r", & ".join([ self._print(i) for i in expr ])
+    _print_Tuple = _print_tuple
 
     def _print_Tuple(self, expr):
         return _print_tuple(self, expr)
@@ -837,6 +838,7 @@ class LatexPrinter(Printer):
             items.append("%s : %s" % (self._print(key), self._print(val)))
 
         return r"\begin{Bmatrix}%s\end{Bmatrix}" % r", & ".join(items)
+    _print_Dict = _print_dict
 
     def _print_Dict(self, expr):
         return self._print_dict(expr)
@@ -848,8 +850,20 @@ class LatexPrinter(Printer):
             tex = r"\delta^{\left( %s \right)}\left( %s \right)" % (\
             self._print(expr.args[1]), self._print(expr.args[0]))
         return tex
+
     def _print_ProductSet(self, p):
         return r" \cross ".join(self._print(set) for set in p.sets)
+
+    def _print_Domain(self, d):
+        try:
+            return 'Domain: '+self._print(d.as_boolean())
+        except:
+            try:
+                return ('Domain: ' + self._print(d.symbols) + ' in ' +
+                        self._print(d.set))
+            except:
+                return 'Domain on ' + self._print(d.symbols)
+
     def _print_FiniteSet(self, s):
         if len(s) > 10:
             #take ten elements from the set at random

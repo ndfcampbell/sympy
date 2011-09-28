@@ -1066,3 +1066,7 @@ def test_issue_1100():
     a = x - y
     assert a._eval_interval(x, 1, oo)._eval_interval(y, oo, 1) is S.NaN
     raises(ValueError, 'x._eval_interval(x, None, None)')
+
+def test_extract_multiplicatively_bug():
+    from sympy import I, sqrt
+    assert (I*(1 + sqrt(5))/4).extract_multiplicatively(I) == S(1)/4 + sqrt(5)/4

@@ -762,7 +762,7 @@ class PrettyPrinter(Printer):
         return D
 
 
-    def _print_exp(self, e):
+    def _print_ExpBase(self, e):
         base = prettyForm(pretty_atom('Exp1', 'e'))
         return base ** self._print(e.args[0])
 
@@ -1261,6 +1261,21 @@ class PrettyPrinter(Printer):
         pform = prettyForm(*pform.left('atan2'))
         return pform
 
+    def _print_Domain(self, d):
+        try:
+            pform = self._print('Domain: ')
+            pform = prettyForm(*pform.right(self._print(d.as_boolean())))
+            return pform
+
+        except:
+            try:
+                pform = self._print('Domain: ')
+                pform = prettyForm(*pform.right(self._print(d.symbols)))
+                pform = prettyForm(*pform.right(self._print(' in ')))
+                pform = prettyForm(*pform.right(self._print(d.set)))
+                return pform
+            except:
+                return self._print(None)
 
 def pretty(expr, **settings):
     """
