@@ -121,7 +121,10 @@ def Gamma(k, theta, symbol=None):
 class UniformPSpace(SingleContinuousPSpace):
     def __new__(cls, left, right, symbol=None):
         x = symbol or SingleContinuousPSpace.create_symbol()
-        pdf = Piecewise( (0, x<left), (0, x>right), (1/(right-left), True))
+        pdf = Piecewise(
+                (S.Zero, x<left),
+                (S.Zero, x>right),
+                (S.One/(right-left), True))
 
         obj = SingleContinuousPSpace.__new__(cls, x, pdf)
         obj.left = left
