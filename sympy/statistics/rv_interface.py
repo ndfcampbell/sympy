@@ -49,7 +49,7 @@ def standard_deviation(expr, given=None, **kwargs):
     if expr.__class__ in [Tuple, FiniteSet]:
         return expr.__class__(*[standard_deviation(elem) for elem in expr])
 
-    return sqrt(variance(X, given, **kwargs))
+    return sqrt(variance(expr, given, **kwargs))
 std = standard_deviation
 
 def covariance(X, Y, given=None, **kwargs):

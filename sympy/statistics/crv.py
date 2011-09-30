@@ -166,7 +166,7 @@ class ContinuousPSpace(PSpace):
             val, density = self.compute_density(expr, **kwargs)
             # Turn problem into univariate case
             space = SingleContinuousPSpace(val, density)
-            return space.P(condition.__class__(space.value, 0))
+            return space.P(condition.__class__(space.value, 0), **kwargs)
 
 
     def where(self, condition):
