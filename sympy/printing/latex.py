@@ -563,7 +563,9 @@ class LatexPrinter(Printer):
         else:
             return tex
 
-    def _print_exp(self, expr, exp=None):
+    def _print_ExpBase(self, expr, exp=None):
+        # TODO should exp_polar be printed differently?
+        #      what about exp_polar(0), exp_polar(1)?
         tex = r"e^{%s}" % self._print(expr.args[0])
         return self._do_exponent(tex, exp)
 
@@ -592,6 +594,15 @@ class LatexPrinter(Printer):
             return r"\gamma^{%s}%s" % (exp, tex)
         else:
             return r"\gamma%s" % tex
+
+    def _print_expint(self, expr, exp=None):
+        tex = r"\left(%s\right)" % self._print(expr.args[1])
+        nu = self._print(expr.args[0])
+
+        if exp is not None:
+            return r"\operatorname{E}_{%s}^{%s}%s" % (nu, exp, tex)
+        else:
+            return r"\operatorname{E}_{%s}%s" % (nu, tex)
 
     def _print_factorial(self, expr, exp=None):
         x = expr.args[0]
@@ -711,6 +722,34 @@ class LatexPrinter(Printer):
         if exp is not None:
             tex = r"{%s}^{%s}" % (tex, self._print(exp))
         return tex
+
+    def _print_dirichlet_eta(self, expr, exp=None):
+        tex = r"\left(%s\right)" % self._print(expr.args[0])
+        if exp is not None:
+            return r"\eta^{%s}%s" % (self._print(exp), tex)
+        return r"\eta%s" % tex
+
+    def _print_zeta(self, expr, exp=None):
+        if len(expr.args) == 2:
+            tex = r"\left(%s, %s\right)" % tuple(map(self._print, expr.args))
+        else:
+            tex = r"\left(%s\right)" % self._print(expr.args[0])
+        if exp is not None:
+            return r"\zeta^{%s}%s" % (self._print(exp), tex)
+        return r"\zeta%s" % tex
+
+    def _print_lerchphi(self, expr, exp=None):
+        tex = r"\left(%s, %s, %s\right)" % tuple(map(self._print, expr.args))
+        if exp is None:
+            return r"\Phi%s" % tex
+        return r"\Phi^{%s}%s" % (self._print(exp), tex)
+
+    def _print_polylog(self, expr, exp=None):
+        s, z = map(self._print, expr.args)
+        tex = r"\left(%s\right)" % z
+        if exp is None:
+            return r"\operatorname{Li}_{%s}%s" % (s, tex)
+        return r"\operatorname{Li}_{%s}^{%s}%s" % (s, self._print(exp), tex)
 
     def _print_Rational(self, expr):
         if expr.q != 1:

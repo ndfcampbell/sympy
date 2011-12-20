@@ -1,6 +1,6 @@
 from sympy import (symbols, log, Float, nan, oo, zoo, I, pi, E, exp, Symbol,
         LambertW, sqrt, Rational, expand_log, S, sign, nextprime, conjugate,
-        sin, cos, sinh, cosh)
+        sin, cos, sinh, cosh, exp_polar)
 
 def test_exp_values():
 
@@ -44,6 +44,11 @@ def test_exp_log():
     assert exp(log(x)) == x
     assert log(x).inverse() == exp
     assert exp(x).inverse() == log
+
+    y = Symbol("y", polar=True)
+    z = Symbol("z")
+    assert log(exp_polar(z)) == z
+    assert exp(log(y)) == y
 
 def test_exp_expand():
     x = Symbol("x")
@@ -281,3 +286,14 @@ def test_as_numer_denom():
     assert exp(-2).as_numer_denom() == (1, exp(2))
     assert exp(n).as_numer_denom() == (exp(n), 1)
     assert exp(-n).as_numer_denom() == (1, exp(n))
+
+def test_polar():
+    x, y = symbols('x y', polar=True)
+    z = Symbol('z')
+
+    assert abs(exp_polar(I*4)) == 1
+    assert exp_polar(I*10).n() == exp_polar(I*10)
+
+    assert log(exp_polar(z)) == z
+    assert log(x*y).expand() == log(x) + log(y)
+    assert log(x**z).expand() == z*log(x)

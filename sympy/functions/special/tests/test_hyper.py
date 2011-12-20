@@ -1,5 +1,5 @@
 from sympy import (hyper, meijerg, S, Tuple, pi, I, exp, log,
-                   cos, sqrt, symbols, oo)
+                   cos, sqrt, symbols, oo, Derivative)
 from sympy.abc import x, z, k
 from sympy.utilities.pytest import raises
 from sympy.utilities.randtest import (
@@ -36,7 +36,12 @@ def test_hyper():
              a1*a2/(b1*b2*b3) * hyper((a1+1, a2+1), (b1+1, b2+1, b3+1), z)
 
     # differentiation wrt parameters is not supported
-    raises(NotImplementedError, 'hyper((z,), (), z).diff(z)')
+    assert hyper([z], [], z).diff(z) == Derivative(hyper([z], [], z), z)
+
+    # hyper is unbranched wrt parameters
+    from sympy import polar_lift
+    assert hyper([polar_lift(z)], [polar_lift(k)], polar_lift(x)) == \
+           hyper([z], [k], polar_lift(x))
 
 def test_expand_func():
     # evaluation at 1 of Gauss' hypergeometric function:
@@ -120,4 +125,119 @@ def test_meijer():
         (meijerg((a1-1, a2), (b1, b2), (c1, c2), (d1, d2), z) \
          + (a1 - 1)*meijerg((a1, a2), (b1, b2), (c1, c2), (d1, d2), z))/z
 
-    raises(NotImplementedError, 'meijerg((z,), (), (), (), z).diff(z)')
+    assert meijerg([z, z], [], [], [], z).diff(z) == \
+           Derivative(meijerg([z, z], [], [], [], z), z)
+
+    # meijerg is unbranched wrt parameters
+    from sympy import polar_lift as pl
+    assert meijerg([pl(a1)], [pl(a2)], [pl(b1)], [pl(b2)], pl(z)) == \
+           meijerg([a1], [a2], [b1], [b2], pl(z))
+
+def test_meijerg_derivative():
+    assert meijerg([], [1, 1], [0, 0, x], [], z).diff(x) == \
+           log(z)*meijerg([], [1, 1], [0, 0, x], [], z) \
+           + 2*meijerg([], [1, 1, 1], [0, 0, x, 0], [], z)
+
+    y = randcplx()
+    a = 5 # mpmath chokes with non-real numbers, and Mod1 with floats
+    assert td(meijerg([x], [], [], [], y), x)
+    assert td(meijerg([x**2], [], [], [], y), x)
+    assert td(meijerg([], [x], [], [], y), x)
+    assert td(meijerg([], [], [x], [], y), x)
+    assert td(meijerg([], [], [], [x], y), x)
+    assert td(meijerg([x], [a], [a + 1], [], y), x)
+    assert td(meijerg([x], [a + 1], [a], [], y), x)
+    assert td(meijerg([x, a], [], [], [a + 1], y), x)
+    assert td(meijerg([x, a + 1], [], [], [a], y), x)
+    b = S(3)/2
+    assert td(meijerg([a + 2], [b], [b - 3, x], [a], y), x)
+
+def test_meijerg_period():
+    assert meijerg([], [1], [0], [], x).get_period() == 2*pi
+    assert meijerg([1], [], [], [0], x).get_period() == 2*pi
+    assert meijerg([], [], [0], [], x).get_period() == 2*pi # exp(x)
+    assert meijerg([], [], [0], [S(1)/2], x).get_period() == 2*pi # cos(sqrt(x))
+    assert meijerg([], [], [S(1)/2], [0], x).get_period() == 4*pi # sin(sqrt(x))
+    assert meijerg([1, 1], [], [1], [0], x).get_period() == oo # log(1 + x)
+
+def test_hyper_unpolarify():
+    from sympy import exp_polar
+    a = exp_polar(2*pi*I)*x
+    b = x
+    assert hyper([], [], a).argument == b
+    assert hyper([0], [], a).argument == a
+    assert hyper([0], [0], a).argument == b
+    assert hyper([0, 1], [0], a).argument == a
+
+def test_hyperrep():
+    from sympy.functions.special.hyper import (HyperRep, HyperRep_atanh,
+        HyperRep_power1, HyperRep_power2, HyperRep_log1, HyperRep_asin1,
+        HyperRep_asin2, HyperRep_sqrts1, HyperRep_sqrts2, HyperRep_log2,
+        HyperRep_cosasin, HyperRep_sinasin)
+    # First test the base class works.
+    from sympy import Piecewise, exp_polar
+    a, b, c, d, z = symbols('a b c d z')
+    class myrep(HyperRep):
+        @classmethod
+        def _expr_small(cls, x): return a
+        @classmethod
+        def _expr_small_minus(cls, x): return b
+        @classmethod
+        def _expr_big(cls, x, n): return c*n
+        @classmethod
+        def _expr_big_minus(cls, x, n): return d*n
+    assert myrep(z).rewrite('nonrep') == Piecewise((0, abs(z) > 1), (a, True))
+    assert myrep(exp_polar(I*pi)*z).rewrite('nonrep') == \
+           Piecewise((0, abs(z) > 1), (b, True))
+    assert myrep(exp_polar(2*I*pi)*z).rewrite('nonrep') == \
+           Piecewise((c, abs(z) > 1), (a, True))
+    assert myrep(exp_polar(3*I*pi)*z).rewrite('nonrep') == \
+           Piecewise((d, abs(z) > 1), (b, True))
+    assert myrep(exp_polar(4*I*pi)*z).rewrite('nonrep') == \
+           Piecewise((2*c, abs(z) > 1), (a, True))
+    assert myrep(exp_polar(5*I*pi)*z).rewrite('nonrep') == \
+           Piecewise((2*d, abs(z) > 1), (b, True))
+    assert myrep(z).rewrite('nonrepsmall') == a
+    assert myrep(exp_polar(I*pi)*z).rewrite('nonrepsmall') == b
+
+    def t(func, hyp, z):
+        """ Test that func is a valid representation of hyp. """
+        # First test that func agrees with hyp for small z
+        if not tn(func.rewrite('nonrepsmall'), hyp, z,
+                  a=S(-1)/2, b=S(-1)/2, c=S(1)/2, d=S(1)/2):
+            return False
+        # Next check that the two small representations agree.
+        if not tn(func.rewrite('nonrepsmall').subs(z, exp_polar(I*pi)*z).replace(exp_polar, exp),
+                  func.subs(z, exp_polar(I*pi)*z).rewrite('nonrepsmall'),
+                  z, a=S(-1)/2, b=S(-1)/2, c=S(1)/2, d=S(1)/2):
+            return False
+        # Next check continuity along exp_polar(I*pi)*t
+        expr = func.subs(z, exp_polar(I*pi)*z).rewrite('nonrep')
+        if abs(expr.subs(z, 1 + 1e-15).n() - expr.subs(z, 1 - 1e-15).n()) > 1e-10:
+            return False
+        # Finally check continuity of the big reps.
+        for n in [0, 1, 2, 3, 4, -1, -2, -3, -4]:
+            expr1 = func.subs(z, exp_polar(2*I*pi*n)*z).rewrite('nonrep').subs(z, exp_polar(I*pi/2)*z).replace(exp_polar, exp)
+            expr2 = func.subs(z, exp_polar(2*I*pi*n + I*pi)*z).rewrite('nonrep').subs(z, exp_polar(-I*pi/2)*z).replace(exp_polar, exp)
+            if not tn(expr1, expr2, z):
+                return False
+            expr1 = func.subs(z, exp_polar(2*I*pi*(n + 1))*z).rewrite('nonrep').subs(z, exp_polar(-I*pi/2)*z).replace(exp_polar, exp)
+            expr2 = func.subs(z, exp_polar(2*I*pi*n + I*pi)*z).rewrite('nonrep').subs(z, exp_polar(I*pi/2)*z).replace(exp_polar, exp)
+            if not tn(expr1, expr2, z):
+                return False
+        return True
+
+    # Now test the various representatives.
+    a = S(1)/3
+    assert t(HyperRep_atanh(z), hyper([S(1)/2, 1], [S(3)/2], z), z)
+    assert t(HyperRep_power1(a, z), hyper([-a], [], z), z)
+    assert t(HyperRep_power2(a, z), hyper([a, a - S(1)/2], [2*a], z), z)
+    assert t(HyperRep_log1(z), -z*hyper([1, 1], [2], z), z)
+    assert t(HyperRep_asin1(z), hyper([S(1)/2, S(1)/2], [S(3)/2], z), z)
+    assert t(HyperRep_asin2(z), hyper([1, 1], [S(3)/2], z), z)
+    assert t(HyperRep_sqrts1(a, z), hyper([-a, S(1)/2 - a], [S(1)/2], z), z)
+    assert t(HyperRep_sqrts2(a, z),
+             -2*z/(2*a + 1)*hyper([-a - S(1)/2, -a], [S(1)/2], z).diff(z), z)
+    assert t(HyperRep_log2(z), -z/4*hyper([S(3)/2, 1, 1], [2, 2], z), z)
+    assert t(HyperRep_cosasin(a, z), hyper([-a, a], [S(1)/2], z), z)
+    assert t(HyperRep_sinasin(a, z), 2*a*z*hyper([1-a, 1+a], [S(3)/2], z), z)

@@ -22,6 +22,7 @@ class gamma(Function):
     """
 
     nargs = 1
+    unbranched = True
 
     def fdiff(self, argindex=1):
         if argindex == 1:
@@ -146,10 +147,10 @@ class lowergamma(Function):
     nargs = 2
 
     def fdiff(self, argindex=2):
-        from sympy import meijerg
+        from sympy import meijerg, unpolarify
         if argindex == 2:
             a, z = self.args
-            return C.exp(-z)*z**(a-1)
+            return C.exp(-unpolarify(z))*z**(a-1)
         elif argindex == 1:
             a, z = self.args
             return gamma(a)*digamma(a) - log(z)*uppergamma(a, z) \
@@ -160,6 +161,34 @@ class lowergamma(Function):
 
     @classmethod
     def eval(cls, a, x):
+        # For lack of a better place, we use this one to extract branching
+        # information. The following can be
+        # found in the literature (c/f references given above), albeit scattered:
+        # 1) For fixed x != 0, lowergamma(s, x) is an entire function of s
+        # 2) For fixed positive integers s, lowergamma(s, x) is an entire
+        #    function of x.
+        # 3) For fixed non-positive integers s,
+        #    lowergamma(s, exp(I*2*pi*n)*x) =
+        #              2*pi*I*n*(-1)**(-s)/factorial(-s) + lowergamma(s, x)
+        #    (this follows from lowergamma(s, x).diff(x) = x**(s-1)*exp(-x)).
+        # 4) For fixed non-integral s,
+        #    lowergamma(s, x) = x**s*gamma(s)*lowergamma_unbranched(s, x),
+        #    where lowergamma_unbranched(s, x) is an entire function (in fact
+        #    of both s and x), i.e.
+        #    lowergamma(s, exp(2*I*pi*n)*x) = exp(2*pi*I*n*a)*lowergamma(a, x)
+        from sympy import unpolarify, I, factorial, exp
+        nx, n = x.extract_branch_factor()
+        if a.is_integer and a > 0:
+            nx = unpolarify(x)
+            if nx != x:
+                return lowergamma(a, nx)
+        elif a.is_integer and a <= 0:
+            if n != 0:
+                return 2*pi*I*n*(-1)**(-a)/factorial(-a) + lowergamma(a, nx)
+        elif n != 0:
+            return exp(2*pi*I*n*a)*lowergamma(a, nx)
+
+        # Special values.
         if a.is_Number:
             # TODO this should be non-recursive
             if a is S.One:
@@ -188,6 +217,12 @@ class lowergamma(Function):
     def _eval_rewrite_as_uppergamma(self, s, x):
         return gamma(s) - uppergamma(s, x)
 
+    def _eval_rewrite_as_expint(self, s, x):
+        from sympy import expint
+        if s.is_integer:
+            return self
+        return self.rewrite(uppergamma).rewrite(expint)
+
 class uppergamma(Function):
     r"""
     Upper incomplete gamma function
@@ -206,6 +241,9 @@ class uppergamma(Function):
 
     where :math:`{}_1F_1` is the (confluent) hypergeometric function.
 
+    The upper incomplete gamma function is also essentially equivalent to the
+    generalized exponential integral.
+
     Examples
     ========
 
@@ -217,6 +255,8 @@ class uppergamma(Function):
     x**2*exp(-x) + 2*x*exp(-x) + 2*exp(-x)
     >>> uppergamma(-S(1)/2, x)
     -2*sqrt(pi)*(-erf(sqrt(x)) + 1) + 2*exp(-x)/sqrt(x)
+    >>> uppergamma(-2, x)
+    expint(3, x)/x**2
 
     See Also
     ========
@@ -237,10 +277,10 @@ class uppergamma(Function):
     nargs = 2
 
     def fdiff(self, argindex=2):
-        from sympy import meijerg
+        from sympy import meijerg, unpolarify
         if argindex == 2:
             a, z = self.args
-            return -C.exp(-z)*z**(a-1)
+            return -C.exp(-unpolarify(z))*z**(a-1)
         elif argindex == 1:
             a, z = self.args
             return uppergamma(a, z)*log(z) + meijerg([], [1, 1], [0, 0, a], [], z)
@@ -260,6 +300,7 @@ class uppergamma(Function):
 
     @classmethod
     def eval(cls, a, z):
+        from sympy import unpolarify, I, factorial, exp, expint
         if z.is_Number:
             if z is S.NaN:
                 return S.NaN
@@ -268,6 +309,19 @@ class uppergamma(Function):
             elif z is S.Zero:
                 return gamma(a)
 
+        # We extract branching information here. C/f lowergamma.
+        nx, n = z.extract_branch_factor()
+        if a.is_integer and a > 0:
+            nx = unpolarify(z)
+            if z != nx:
+                return uppergamma(a, nx)
+        elif a.is_integer and a <= 0:
+            if n != 0:
+                return -2*pi*I*n*(-1)**(-a)/factorial(-a) + uppergamma(a, nx)
+        elif n != 0:
+            return gamma(a)*(1 - exp(2*pi*I*n*a)) + exp(2*pi*I*n*a)*uppergamma(a, nx)
+
+        # Special values.
         if a.is_Number:
             # TODO this should be non-recursive
             if a is S.One:
@@ -278,12 +332,19 @@ class uppergamma(Function):
                 b = a - 1
                 if b.is_positive:
                     return b*cls(b, z) + z**b * C.exp(-z)
+                elif b.is_Integer:
+                    return expint(-b, z)*unpolarify(z)**(b + 1)
 
                 if not a.is_Integer:
                     return (cls(a + 1, z) - z**a * C.exp(-z))/a
 
+
     def _eval_rewrite_as_lowergamma(self, s, x):
         return gamma(s) - lowergamma(s, x)
+
+    def _eval_rewrite_as_expint(self, s, x):
+        from sympy import expint
+        return expint(1 - s, x)*x**s
 
 
 
@@ -361,9 +422,15 @@ class polygamma(Function):
     @classmethod
     def eval(cls, n, z):
         n, z = map(sympify, (n, z))
+        from sympy import unpolarify
 
         if n.is_integer:
-            if n.is_negative:
+            if n >= 0:
+                nz = unpolarify(z)
+                if z != nz:
+                    return polygamma(n, nz)
+
+            if n == -1:
                 return loggamma(z)
             else:
                 if z.is_Number:
@@ -383,6 +450,26 @@ class polygamma(Function):
                                 return -S.EulerGamma + C.harmonic(z-1, 1)
                             elif n.is_odd:
                                 return (-1)**(n+1)*C.factorial(n)*zeta(n+1, z)
+
+        if n == 0 and z.is_Rational:
+            # TODO actually *any* n/m can be done, but that is messy
+            lookup = {S(1)/2: -2*log(2) - S.EulerGamma,
+                      S(1)/3: -S.Pi/2/sqrt(3) - 3*log(3)/2 - S.EulerGamma,
+                      S(1)/4: -S.Pi/2 - 3*log(2) - S.EulerGamma,
+                      S(3)/4: -3*log(2) - S.EulerGamma + S.Pi/2,
+                      S(2)/3: -3*log(3)/2 + S.Pi/2/sqrt(3) - S.EulerGamma}
+            if z > 0:
+                n = floor(z)
+                z0 = z - n
+                if z0 in lookup:
+                    return lookup[z0] + Add(*[1/(z0 + k) for k in range(n)])
+            elif z < 0:
+                n = floor(1 - z)
+                z0 = z + n
+                if z0 in lookup:
+                    return lookup[z0] - Add(*[1/(z0 - 1 - k) for k in range(n)])
+
+        # TODO n == 1 also can do some rational z
 
 
     def _eval_expand_func(self, deep=True, **hints):
@@ -412,6 +499,7 @@ class polygamma(Function):
                         return Add(*tail)/coeff + log(coeff)
                     else:
                         return Add(*tail)/coeff**(n+1)
+                z *= coeff
 
         return polygamma(n, z)
 
