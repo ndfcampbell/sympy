@@ -1114,6 +1114,9 @@ class FiniteSet(CountableSet):
     def is_real(self):
         return all(el.is_real for el in self)
 
+    def compare(self, r):
+        return cmp(hash(self), hash(r))
+
 class RealFiniteSet(FiniteSet, RealSet):
     """
     A FiniteSet with all elements Real Numbers.

@@ -12,7 +12,7 @@ def test_where():
     assert Where(Z**2<=1).set == Interval(-1, 1)
     assert Where(Z**2<1).as_boolean() == And(Z.symbol<1, Z.symbol>-1)
     assert len(Where(X<3).set) == 2
-    assert frozenset(((X.symbol, 1), )) in Where(X<3).set
+    assert Where(X<3).set == FiniteSet(1,2)
 
 def test_random_symbols():
     X, Y = Normal(0,1), Normal(0,1)
