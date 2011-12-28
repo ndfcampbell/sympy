@@ -1,8 +1,10 @@
-from rv import Domain, SingleDomain, PSpace
+from rv import Domain, SingleDomain, PSpace, ConditionalDomain, ProductPSpace
 from sympy import Interval, S, FiniteSet, Symbol, Tuple
 from sympy.matrices import BlockMatrix, BlockDiagMatrix, linear_factors, Transpose
 
+oo = S.Infinity
 R = Interval(-oo, oo)
+Rn = Interval(-oo, oo)
 
 def is_linear(expr, syms=None):
     return True
@@ -14,7 +16,7 @@ class SingleMultivariateDomain(MultivariateDomain, SingleDomain):
     def __new__(cls, symbol):
         assert symbol.is_Symbol
         symbols = FiniteSet(symbol)
-        return Domain.__new__(cls, symbols, R**symbol.n)
+        return Domain.__new__(cls, symbols, Rn)
 
     def as_boolean(self):
         return self.set.as_relational(self.symbol)
@@ -55,7 +57,7 @@ class MultivariatePSpace(PSpace):
 
         # Construct row vector
         sym = self.symbol
-        rowvec = Blockmatrix([[d[sym] for sym in self.symbol]])
+        rowvec = BlockMatrix([[d[sym] for sym in self.symbol]])
 
         mean = rowvec * self.mean
         covar = rowvec * self.covariance * Transpose(rowvec)
@@ -77,7 +79,7 @@ class MultivariatePSpace(PSpace):
         domain = ConditionalMultivariateDomain(self.domain, condition)
         density = self.density
 
-        return ContinuousPSpace(domain, density)
+        return MultivariatePSpace(domain, density)
 
 
 
@@ -85,7 +87,7 @@ class SingleMultivariatePSpace(MultivariatePSpace):
     _count = 0
     _name = 'X'
     def __new__(cls, symbol, mean, covariance):
-        assert symbol.is_MatrixSymbol
+        assert symbol.is_Matrix
         domain = SingleMultivariateDomain(symbol)
         density = Tuple(symbol, mean, covariance)
         return MultivariatePSpace.__new__(cls, domain, density)
@@ -94,7 +96,7 @@ class SingleMultivariatePSpace(MultivariatePSpace):
     def value(self):
         return tuple(self.values)[0]
 
-class ProductContinuousPSpace(ProductPSpace, ContinuousPSpace):
+class ProductMultivariatePSpace(ProductPSpace, MultivariatePSpace):
     @property
     def density(self):
         symbol = BlockMatrix([[space.symbol] for space in self.spaces])
