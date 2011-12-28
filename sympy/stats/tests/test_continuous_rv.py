@@ -1,5 +1,5 @@
-from sympy.statistics import (Normal, Exponential, P, E, Where, Density, var,
-        covar, skewness, Gamma, Pareto, Beta, Uniform, Given, pspace, CDF)
+from sympy.stats import (Normal, Exponential, P, E, Where, Density, var, covar,
+        skewness, Uniform, Gamma, Pareto, Beta, Given, pspace, CDF)
 from sympy import (Symbol, exp, S, pi, simplify, Interval, erf, Eq, symbols,
         sqrt, And, gamma, beta)
 from sympy.utilities.pytest import raises
