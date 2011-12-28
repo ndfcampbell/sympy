@@ -14,6 +14,7 @@ class Domain(Basic):
     is_ProductDomain = False
     is_Finite = False
     is_Continuous = False
+    is_Multivariate = False
 
     def __new__(cls, symbols, *args):
         symbols = FiniteSet(*symbols)
@@ -101,6 +102,7 @@ class PSpace(Basic):
 
     is_Finite = None
     is_Continuous = None
+    is_Multivariate = None
 
     @property
     def domain(self):
