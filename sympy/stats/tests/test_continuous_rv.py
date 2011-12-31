@@ -143,6 +143,6 @@ def test_uniform():
     X = Uniform(l, l+w)
 
     assert simplify(E(X)) == l + w/2
-    assert simplify(var(X)) == w**2/12
+    assert simplify(Var(X)) == w**2/12
 
     assert P(X<l) == 0 and P(X>l+w) == 0
