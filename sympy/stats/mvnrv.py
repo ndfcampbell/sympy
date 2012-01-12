@@ -1,12 +1,33 @@
-from rv import (Domain, SingleDomain, PSpace, ConditionalDomain, ProductPSpace,
-        RandomSymbol)
+"""
+Multivariate Normal Random Variables Module
+
+Multivariate normal random variables symbolically represent high-dimensional
+vectors distributed according to a multivariate normal distribution.
+
+The operations on these variable types are limited to application of linear
+operators i.e. H*X where X is a MVNRV and H is a matrix.
+
+This module was produced to highlight how the random variable framework could
+be extended to new types. This class implements all logic behind the Kalman
+Filter.
+
+Warning: This code is not mature
+
+See Also
+========
+sympy.stats.mvnrv_types
+sympy.stats.rv
+sympy.stats.crv
+sympy.stats.frv
+"""
+
+from rv import (RandomDomain, SingleDomain, PSpace, ConditionalDomain,
+        ProductPSpace, RandomSymbol)
 from sympy import Interval, S, FiniteSet, Symbol, Tuple
 from sympy.matrices import (BlockMatrix, BlockDiagMatrix, linear_factors,
         Transpose, MatrixSymbol, block_collapse, Inverse, Identity, ZeroMatrix)
 
-
 oo = S.Infinity
-R = Interval(-oo, oo)
 Rn = Interval(-oo, oo)
 
 def is_linear(expr, syms=None):
@@ -30,7 +51,6 @@ class ConditionalMultivariateDomain(MultivariateDomain, ConditionalDomain):
 class MultivariatePSpace(PSpace):
     is_Multivariate = True
 
-
     @property
     def symbol(self):
         return self.density[0]
@@ -46,18 +66,21 @@ class MultivariatePSpace(PSpace):
                 for sym in self.domain.symbols)
 
     def integrate(self, expr, rvs=None, **kwargs):
-        if rvs == None:
-            rvs = self.values
-        else:
-            rvs = frozenset(rvs)
-
-        assert is_linear(expr, rvs)
-
+        raise NotImplementedError("Expectations not implemented in MVNRV case")
+        #if rvs == None:
+        #    rvs = self.values
+        #else:
+        #    rvs = frozenset(rvs)
+        #
+        #assert is_linear(expr, rvs)
         #return expr.subs{rv:mean_of_rv}
 
-        return None
-
     def _expr_to_operator(self, expr):
+        """
+        Given an expression like HX+Y build a linear operator which creates
+        this expression when applied onto the vector of random values of this
+        object (assume in this example values = [X, Y])
+        """
         expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
 
         d = linear_factors(expr, *self.symbols)
@@ -79,6 +102,9 @@ class MultivariatePSpace(PSpace):
         return operator
 
     def compute_density(self, expr, **kwargs):
+        """
+        Compute the mean and covariance matrices of a random expression
+        """
 
         operator = self._expr_to_operator(expr)
         expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
@@ -101,7 +127,9 @@ class MultivariatePSpace(PSpace):
                "Operation not implemented for Multivariate case")
 
     def conditional_space(self, condition, **kwargs):
-        assert condition.is_Equality
+        if not condition.is_Equality:
+            raise NotImplementedError("Only equality constraints supported")
+
         expr = condition.lhs - condition.rhs
         expr = expr.subs(dict((rv, rv.symbol) for rv in self.values))
 
@@ -128,8 +156,6 @@ class MultivariatePSpace(PSpace):
         density = (self.symbol, xx, PP)
 
         return MultivariatePSpace(domain, density)
-
-
 
 class SingleMultivariatePSpace(MultivariatePSpace):
     _count = 0
@@ -165,16 +191,14 @@ class ProductMultivariatePSpace(ProductPSpace, MultivariatePSpace):
     def density(self):
         symbol = BlockMatrix([space.symbol for space in self.spaces])
         mean = BlockMatrix([space.mean for space in self.spaces])
-        covar = BlockDiagMatrix([space.covariance for space in self.spaces])
+        covar = BlockDiagMatrix(*[space.covariance for space in self.spaces])
 
         return Tuple(symbol, mean, covar)
 
     def compute_density(self, expr, **kwargs):
         return MultivariatePSpace.compute_density(self, expr, **kwargs)
 
-
 class RandomMatrixSymbol(RandomSymbol, MatrixSymbol):
-
     @property
     def shape(self):
         return self.symbol.shape

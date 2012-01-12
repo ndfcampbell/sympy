@@ -2,6 +2,9 @@ from mvnrv import SingleMultivariatePSpace
 from crv_examples import Normal as SingleNormal
 from sympy import sympify
 
+__all__ = ['MultivariateNormal']
+#__all__ = ['Normal', 'MultivariateNormal']
+
 def MultivariateNormal(mean, covariance, symbol=None):
     return SingleMultivariatePSpace(mean, covariance, symbol).value
 
