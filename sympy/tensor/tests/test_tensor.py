@@ -1,10 +1,10 @@
 from sympy.tensor.tensor import *
 
+i,j,k,l,m,n = indices('ijklmn')
+
 def test_indexing():
     R = TensorSymbol('R', ((4,4), (4,4)))
     g = TensorSymbol('g', ((4,4), ()))
-
-    i,j,k,l,m,n = indices('ijklmn')
 
     assert isinstance(R, TensorSymbol)
     assert isinstance(R, Tensor)
@@ -14,8 +14,8 @@ def test_indexing():
     assert R[i|j, k|l].rank == (2,2)
     R_lowered = (R[i|j, k|l]*g[k|m]*g[l|n])
     assert R_lowered.rank == (4,0)
-    assert R.covariants == FiniteSet(i,j,m,n)
-    assert R.contravariants == EmptySet
+    assert R_lowered.free_contravariants == FiniteSet(i,j,m,n)
+    assert R_lowered.free_covariants     == EmptySet()
 
     assert R[i|j, j|k].rank == (1,1) # Contraction
 

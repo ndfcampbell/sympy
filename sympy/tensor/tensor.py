@@ -5,9 +5,7 @@ class Tensor(Basic):
     def sizes(self):
         raise NotImplementedError()
 
-    @property
-    def rank(self):
-        return tuple(map(len, self.sizes))
+    rank = property(lambda self: (len(self.sizes[0]), len(self.sizes[1])))
 
     def __getitem__(self, key):
         if isinstance(key, IndexSet):
@@ -35,15 +33,9 @@ class IndexedTensor(Expr):
         assert (len(contravariants), len(covariants)) == tensor.rank, "Bad Rank"
         return Basic.__new__(cls, tensor, contravariants, covariants)
 
-    @property
-    def tensor(self):
-        return self.args[0]
-    @property
-    def contravariants(self):
-        return self.args[1]
-    @property
-    def covariants(self):
-        return self.args[2]
+    tensor          = property(lambda self: self.args[0])
+    contravariants  = property(lambda self: self.args[1])
+    covariants      = property(lambda self: self.args[2])
 
     @property
     def dimension_dict(self):
@@ -59,15 +51,11 @@ class IndexedTensor(Expr):
     def free_indices(self):
         return (FiniteSet(*self.contravariants) - FiniteSet(*self.covariants),
                 FiniteSet(*self.covariants) - FiniteSet(*self.contravariants))
-    @property
-    def free_contravariants(self):
-        return self.free_indices()[0]
-    @property
-    def free_covariants(self):
-        return self.free_indices()[1]
-    @property
-    def rank(self):
-        return len(self.free_contravariants), len(self.free_covariants)
+
+    free_contravariants = property(lambda self: self.free_indices()[0])
+    free_covariants     = property(lambda self: self.free_indices()[1])
+
+    rank         =  property(lambda self: tuple(map(len, self.free_indices())))
 
     def __str__(self):
         s = str(self.tensor)
@@ -87,16 +75,9 @@ class TensorSymbol(Tensor):
     def __new__(cls, name, sizes):
         return Basic.__new__(cls, name, sizes)
 
-    @property
-    def name(self):
-        return self.args[0]
-    @property
-    def sizes(self):
-        return self.args[1]
-
-    @property
-    def display(self):
-        return self.name
+    name    = property(lambda self: self.args[0])
+    sizes   = property(lambda self: self.args[1])
+    display = property(lambda self: self.name)
 
     def __str__(self):
         return self.name
@@ -162,19 +143,19 @@ class TensorMul(IndexedTensor):
 
     @property
     def contravariants(self):
-        return IndexSet(*[ind for arg in self.args for ind in
-                arg.contravariants.indices])
+        return IndexSet(*[ind for arg in self.args
+                              for ind in arg.contravariants.indices])
     @property
     def covariants(self):
-        return IndexSet(*[ind for arg in self.args for ind in
-                arg.covariants.indices])
+        return IndexSet(*[ind for arg in self.args
+                              for ind in arg.covariants.indices])
 
     def __str__(self):
         return '*'.join(map(str, self.args))
 
 def MatrixSymbol(name, rows=None, cols=None):
-    if rows and rows>1 : contra_sizes  = (rows,)
-    else:                contra_sizes= ()
+    if rows and rows>1 : contra_sizes = (rows,)
+    else:                contra_sizes = ()
     if cols and cols>1 :  covar_sizes = (cols,)
     else:                 covar_sizes = ()
 
