@@ -38,6 +38,13 @@ def test_matrices():
     assert is_col_vector(X[i,j]*Y[j,k]*Z[k,l]*x[l])
     assert (X[i,j]*Y[j,k]).rank
 
+def test_addition():
+    a,b,c,d= symbols('a,b,c,d')
+    X = MatrixSymbol('X', a, b)
+
+    assert (X[i,j] + X[i,j]).rank == (1,1)
+    assert (X[i,j] + X[n,m]).rank == (2,2)
+    assert X[i,i].rank == (0,0)
 
 
 

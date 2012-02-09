@@ -70,6 +70,8 @@ class IndexedTensor(Expr):
 
     def __mul__(self, other):
         return TensorMul(self, other)
+    def __add__(self, other):
+        return TensorMul(self, other)
 
 class TensorSymbol(Tensor):
     def __new__(cls, name, sizes):
@@ -123,7 +125,7 @@ class Index(Symbol, IndexSet):
 def indices(s):
     return map(Index, s)
 
-class TensorMul(IndexedTensor):
+class TensorCollection(IndexedTensor):
 
     def __new__(cls, *indexed_tensors):
         assert all(isinstance(it,IndexedTensor) for it in indexed_tensors)
@@ -150,13 +152,31 @@ class TensorMul(IndexedTensor):
         return IndexSet(*[ind for arg in self.args
                               for ind in arg.covariants.indices])
 
+class TensorMul(TensorCollection):
     def __str__(self):
         return '*'.join(map(str, self.args))
 
-def MatrixSymbol(name, rows=None, cols=None):
-    if rows and rows>1 : contra_sizes = (rows,)
-    else:                contra_sizes = ()
-    if cols and cols>1 :  covar_sizes = (cols,)
-    else:                 covar_sizes = ()
+class TensorAdd(TensorCollection):
+    def __str__(self):
+        return '+'.join(map(str, self.args))
 
-    return TensorSymbol(name, (contra_sizes, covar_sizes))
+class MatrixSymbol(TensorSymbol):
+    def __new__(cls, name, rows=None, cols=None):
+        if rows and rows>1 : contra_sizes = (rows,)
+        else:                contra_sizes = ()
+        if cols and cols>1 : covar_sizes  = (cols,)
+        else:                covar_sizes  = ()
+
+        return TensorSymbol.__new__(cls, name, (contra_sizes, covar_sizes))
+    @property
+    def shape(self):
+        return self.sizes[0][0], self.sizes[1][0]
+
+class ColumnVector(MatrixSymbol):
+    def __new__(cls, name, rows):
+        return MatrixSymbol.__new__(cls, name, rows, None)
+class RowVector(MatrixSymbol):
+    def __new__(cls, name, cols):
+        return MatrixSymbol.__new__(cls, name, None, cols)
+    def __getitem__(self, col_index):
+        return TensorSymbol.__getitem__(self, (None, col_index))
