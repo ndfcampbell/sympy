@@ -965,6 +965,9 @@ class EmptySet(Set):
     def _intersect(self, other):
         return S.EmptySet
 
+    def __sub__(self, other):
+        return self
+
     @property
     def _complement(self):
         return Interval(S.NegativeInfinity, S.Infinity)
