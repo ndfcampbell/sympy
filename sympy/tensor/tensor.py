@@ -31,6 +31,9 @@ class Tensor(Basic):
 class IndexedTensor(Expr):
     def __new__(cls, tensor, contravariants, covariants):
         assert (len(contravariants), len(covariants)) == tensor.rank, "Bad Rank"
+        assert (isinstance(covariants, IndexSet) and
+                isinstance(contravariants, IndexSet))
+
         return Basic.__new__(cls, tensor, contravariants, covariants)
 
     tensor          = property(lambda self: self.args[0])
@@ -168,15 +171,3 @@ class MatrixSymbol(TensorSymbol):
         else:                covar_sizes  = ()
 
         return TensorSymbol.__new__(cls, name, (contra_sizes, covar_sizes))
-    @property
-    def shape(self):
-        return self.sizes[0][0], self.sizes[1][0]
-
-class ColumnVector(MatrixSymbol):
-    def __new__(cls, name, rows):
-        return MatrixSymbol.__new__(cls, name, rows, None)
-class RowVector(MatrixSymbol):
-    def __new__(cls, name, cols):
-        return MatrixSymbol.__new__(cls, name, None, cols)
-    def __getitem__(self, col_index):
-        return TensorSymbol.__getitem__(self, (None, col_index))
