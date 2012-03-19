@@ -1,6 +1,7 @@
 """Tools for solving inequalities and systems of inequalities. """
 
-from sympy.core import Symbol, Interval
+from sympy.core import Symbol
+from sympy.sets import Interval
 from sympy.core.relational import Relational, Eq, Ge, Lt
 from sympy.core.singleton import S
 from sympy.assumptions import ask, AppliedPredicate, Q

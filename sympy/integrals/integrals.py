@@ -1,5 +1,5 @@
 from sympy.core import (Basic, Expr, S, C, Symbol, Wild, Add, sympify, diff,
-                        oo, Tuple, Interval)
+                        oo, Tuple)
 
 from sympy.core.symbol import Dummy
 from sympy.core.compatibility import is_sequence
@@ -15,6 +15,7 @@ from sympy.functions import Piecewise, sqrt, sign
 from sympy.geometry import Curve
 from sympy.functions.elementary.piecewise import piecewise_fold
 from sympy.series import limit
+from sympy.sets import Interval
 
 def _process_limits(*symbols):
     """Convert the symbols-related limits into proper limits,

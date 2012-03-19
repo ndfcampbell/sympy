@@ -1,4 +1,5 @@
-from sympy.core import S, C, Basic, Interval
+from sympy.core import S, C, Basic
+from sympy.sets import Interval
 from sympy.core.function import _coeff_isneg
 from sympy.utilities import group
 

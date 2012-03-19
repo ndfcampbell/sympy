@@ -4,7 +4,8 @@ from matadd import MatAdd
 from transpose import Transpose
 from inverse import Inverse
 from sympy.matrices import Matrix, eye
-from sympy import Tuple, Basic, sympify, FiniteSet
+from sympy import Tuple, Basic, sympify
+from sympy.sets import FiniteSet
 
 class BlockMatrix(MatrixExpr):
     """A BlockMatrix is a Matrix composed of other smaller, submatrices
