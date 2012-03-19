@@ -274,8 +274,7 @@ class ProductSet(Set):
 
     References
     ==========
-
-    .. [1] http://en.wikipedia.org/wiki/Cartesian_product
+    http://en.wikipedia.org/wiki/Cartesian_product
     """
     is_ProductSet = True
 
@@ -416,7 +415,7 @@ class Interval(RealSet):
     References
     ==========
 
-    .. [1] http://en.wikipedia.org/wiki/Interval_(mathematics)
+    <http://en.wikipedia.org/wiki/Interval_(mathematics)>
     """
     is_Interval = True
 
@@ -649,8 +648,7 @@ class Union(Set):
 
     References
     ==========
-
-    .. [1] http://en.wikipedia.org/wiki/Union_(set_theory)
+    <http://en.wikipedia.org/wiki/Union_(set_theory)>
     """
     is_Union = True
 
@@ -815,8 +813,7 @@ class Intersection(Set):
 
     References
     ==========
-
-    .. [1] http://en.wikipedia.org/wiki/Intersection_(set_theory)
+    <http://en.wikipedia.org/wiki/Intersection_(set_theory)>
     """
     is_Intersection = True
 
@@ -1069,8 +1066,7 @@ class EmptySet(Set):
 
     References
     ==========
-
-    .. [1] http://en.wikipedia.org/wiki/Empty_set
+    http://en.wikipedia.org/wiki/Empty_set
     """
     __metaclass__ = Singleton
     is_EmptySet = True
@@ -1123,8 +1119,7 @@ class UniversalSet(Set):
 
     References
     ==========
-
-    .. [1] http://en.wikipedia.org/wiki/Universal_set
+    http://en.wikipedia.org/wiki/Universal_set
     """
 
     __metaclass__ = Singleton
@@ -1166,8 +1161,7 @@ class FiniteSet(CountableSet):
 
     References
     ==========
-
-    .. [1] http://en.wikipedia.org/wiki/Finite_set
+    http://en.wikipedia.org/wiki/Finite_set
     """
     is_FiniteSet = True
 
