@@ -1,7 +1,9 @@
 from sympy import (ceiling, floor, solve, Dummy, S, symbols, Lambda, sin, cos,
-        pi)
+        pi, Basic, sympify)
 from sympy.core.compatibility import iterable
-from sympy.core.sets import *
+from sympy.sets.sets import (Set, Interval, FiniteSet, CountableSet,
+        Intersection)
+from sympy.core.singleton import Singleton, S
 oo = S.Infinity
 
 class Naturals(CountableSet):

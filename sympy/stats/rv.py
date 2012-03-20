@@ -13,7 +13,7 @@ sympy.stats.rv_interface
 """
 
 from sympy import Basic, S, Expr, Symbol, Tuple, And, Add, Eq, lambdify
-from sympy.core.sets import FiniteSet, ProductSet
+from sympy.sets.sets import FiniteSet, ProductSet
 
 class RandomDomain(Basic):
     """

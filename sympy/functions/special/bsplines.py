@@ -1,7 +1,7 @@
 from sympy.core import S, sympify, expand
 from sympy.functions import Piecewise, piecewise_fold
 from sympy.functions.elementary.piecewise import ExprCondPair
-from sympy.core.sets import Interval
+from sympy.sets.sets import Interval
 
 
 def _add_splines(c, b1, d, b2):

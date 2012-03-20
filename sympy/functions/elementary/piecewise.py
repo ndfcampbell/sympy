@@ -1,7 +1,7 @@
 from sympy.core import Basic, S, Function, diff, Number, sympify, Tuple
 from sympy.core.relational import Equality, Relational
 from sympy.logic.boolalg import Boolean
-from sympy.core.sets import Set
+from sympy.sets.sets import Set
 from sympy.core.symbol import Dummy
 
 class ExprCondPair(Tuple):

@@ -10,7 +10,7 @@ sympy.stats.crv
 
 from sympy import (And, Eq, Basic, S, Expr, Symbol, cacheit, sympify, Mul, Add,
         And, Or, Tuple)
-from sympy.core.sets import FiniteSet
+from sympy.sets.sets import FiniteSet
 from rv import (RandomDomain, ProductDomain, ConditionalDomain, PSpace,
         ProductPSpace, SinglePSpace, random_symbols, sumsets, rv_subs)
 from sympy.core.compatibility import product
