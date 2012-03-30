@@ -26,6 +26,10 @@ class Q:
     real = Predicate('real')
     odd = Predicate('odd')
     is_true = Predicate('is_true')
+    symmetric = Predicate('symmetric')
+    orthogonal = Predicate('orthogonal')
+    identity = Predicate('identity')
+
 
 
 
@@ -215,7 +219,9 @@ _handlers_dict = {
     'real'           : ['sympy.assumptions.handlers.sets.AskRealHandler'],
     'odd'            : ['sympy.assumptions.handlers.ntheory.AskOddHandler'],
     'algebraic'      : ['sympy.assumptions.handlers.sets.AskAlgebraicHandler'],
-    'is_true'        : ['sympy.assumptions.handlers.TautologicalHandler']
+    'is_true'        : ['sympy.assumptions.handlers.TautologicalHandler'],
+    'symmetric'      : ['sympy.assumptions.handlers.matrices.AskSymmetricHandler'],
+    'identity'      : ['sympy.assumptions.handlers.matrices.AskIdentityHandler']
 }
 for name, value in _handlers_dict.iteritems():
     register_handler(name, value[0])
