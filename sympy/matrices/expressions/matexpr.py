@@ -20,6 +20,7 @@ class MatrixExpr(Expr):
     _op_priority = 11.0
 
     is_Matrix = True
+    is_MatrixBase = False
     is_MatrixExpr = True
     is_Identity = None
     is_Inverse = False
@@ -186,16 +187,34 @@ class MatrixExpr(Expr):
                 a[i, j] = self[i, j]
         return a
 
+    def matexpr_equals(self, other):
+        if self.is_MatrixExpr and other.is_MatrixExpr:
+            return simplify(self) == simplify(other)
+        raise TypeError("Expected %s and %s to be MatExprs"%(self, other))
+
     def equals(self, other):
         """
-        Test elementwise equality between matrices, potentially of different
-        types
+        Test equality between matrices, potentially of different types
+
+        Against MatrixBase we compute elementwise equality
 
         >>> from sympy import Identity, eye
         >>> Identity(3).equals(eye(3))
         True
         """
-        return self.as_explicit().equals(other)
+        if other.is_MatrixBase:
+            return self.as_explicit().equals(other)
+        if other.is_MatrixExpr:
+            return self.matexpr_equals(other)
+
+    def simplify(self):
+        return self
+
+def simplify(x):
+    if not isinstance(x, MatrixExpr):
+        return x
+    args = map(simplify, x.args)
+    return x.__class__(*args).simplify()
 
 class MatrixSymbol(MatrixExpr, Symbol):
     """Symbolic representation of a Matrix object
@@ -258,7 +277,16 @@ class Identity(MatrixSymbol):
 
     is_Identity = True
     def __new__(cls, n):
-        return MatrixSymbol.__new__(cls, "I", n, n)
+        n = sympify(n)
+        return Basic.__new__(cls, n)
+
+    @property
+    def name(self):
+        return "I"
+
+    @property
+    def shape(self):
+        return (self.args[0], self.args[0])
 
     def transpose(self):
         return self

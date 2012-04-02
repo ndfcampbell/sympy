@@ -1,5 +1,5 @@
 from matexpr import MatrixExpr
-from sympy import Basic
+from sympy import Basic, ask, Q
 
 class Transpose(MatrixExpr):
     """Matrix Transpose
@@ -19,7 +19,16 @@ class Transpose(MatrixExpr):
     B'*A'
     """
     is_Transpose = True
-    def __new__(cls, mat):
+    def __new__(cls, mat, evaluate=True):
+
+        obj = Basic.__new__(cls, mat)
+        if evaluate:
+            return obj.simplify()
+        else:
+            return obj
+
+    def simplify(self):
+        mat = self.arg
 
         if not mat.is_Matrix:
             return mat
@@ -36,7 +45,13 @@ class Transpose(MatrixExpr):
         if mat.is_Add:
             return MatAdd(*[Transpose(arg) for arg in mat.args])
 
-        return Basic.__new__(cls, mat)
+        if mat.is_Pow:
+            return MatPow(Transpose(mat.base), mat.exp)
+
+        if ask(Q.symmetric(mat)):
+            return mat
+
+        return Transpose(mat, evaluate=False)
 
     @property
     def arg(self):
@@ -48,6 +63,9 @@ class Transpose(MatrixExpr):
 
     def _entry(self, i, j):
         return self.arg._entry(j, i)
+
+    def equals(self, other):
+        return self.simplify() == other.simplify()
 
 from matmul import MatMul
 from matadd import MatAdd

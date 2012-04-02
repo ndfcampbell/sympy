@@ -14,8 +14,6 @@ class AskSymmetricHandler(CommonHandler):
     def MatrixSymbol(expr, assumptions):
         if ask(Q.identity(expr), assumptions):
             return True
-        if ask(Q.zero(expr), assumptions):
-            return True
         if Q.symmetric(expr) in conjuncts(assumptions):
             return True
 
@@ -48,6 +46,10 @@ class AskSymmetricHandler(CommonHandler):
     @staticmethod
     def Transpose(expr, assumptions):
         return ask(Q.symmetric(expr.arg, assumptions))
+
+    @staticmethod
+    def ZeroMatrix(expr, assumptions):
+        return True
 
     Inverse = Transpose
 

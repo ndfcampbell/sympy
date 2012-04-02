@@ -34,14 +34,25 @@ class Inverse(MatPow):
         if hasattr(mat, 'inv'):
             return mat.inv()
 
+        if not mat.is_square:
+            raise ShapeError("Inverse of non-square matrix %s"%mat)
+
+        evaluate = kwargs.get('evaluate', True)
+
+        obj = MatPow.__new__(cls, mat, -1)
+        if evaluate:
+            return obj.simplify()
+        else:
+            return obj
+
+    def simplify(self):
+        mat = self.arg
+
         if mat.is_Inverse:
             return mat.arg
 
         if mat.is_Identity:
             return mat
-
-        if not mat.is_square:
-            raise ShapeError("Inverse of non-square matrix %s"%mat)
 
         if mat.is_Mul:
             try:
@@ -49,7 +60,7 @@ class Inverse(MatPow):
             except ShapeError:
                 pass
 
-        return MatPow.__new__(cls, mat, -1)
+        return self
 
     @property
     def arg(self):

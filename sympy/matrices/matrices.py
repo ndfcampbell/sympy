@@ -71,6 +71,7 @@ class MatrixBase(object):
     __array_priority__ = 10.0
 
     is_Matrix = True
+    is_MatrixBase = True
     _class_priority = 3
 
     @classmethod
