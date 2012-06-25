@@ -4,6 +4,7 @@ from sympy.core.singleton import Singleton, S
 from sympy.core.evalf import EvalfMixin
 from sympy.core.numbers import Float
 from sympy.core.compatibility import iterable
+from sympy.core.symbol import symbols
 
 from sympy.mpmath import mpi, mpf
 from sympy.assumptions import ask
@@ -28,6 +29,7 @@ class Set(Basic):
 
     is_FiniteSet = False
     is_Interval = False
+    is_ComplexDisk = False
     is_ProductSet = False
     is_Union = False
     is_Intersection = None
@@ -667,6 +669,71 @@ class Interval(Set, EvalfMixin):
             return left
         else:
             return And(left, right)
+
+def as_r_theta(z):
+    from sympy import sqrt, atan
+    x,y = z.as_real_imag()
+    r, theta = sqrt(x**2+y**2), atan(y/x)
+    theta = theta % 2*S.Pi
+    return r, theta
+
+class ComplexDisk(Set):
+    """
+    Represents a complex disk as a Set.
+
+    Represents a region of the complex plane described in polar coordinates.
+    Stores this region as real intervals that represent allowable ranges for
+    the magnitude and argument.
+
+    Examples
+    ========
+
+    >>> from sympy import S, I, ComplexDisk
+
+    >>> unit_disk = ComplexDisk(Interval(0, 1), Interval(0, 2*S.Pi))
+    >>> upper_half_plane = ComplexDisk(Interval(0, oo), Interval(0, S.Pi))
+    >>> 5 * 2*I in unit_disk
+    False
+    >>> 5 * 2*I in upper_half_plane
+    True
+
+    """
+    is_ComplexDisk = True
+    def __new__(cls, r_interval, theta_interval):
+        return Basic.__new__(cls, r_interval, theta_interval)
+
+    r_interval      = property(lambda self : self.args[0])
+    theta_interval  = property(lambda self : self.args[1])
+
+    def _contains(self, element):
+        r, theta = as_r_theta(element)
+        return And( self.r_interval._contains(r),
+                    self.theta_interval._contains(theta))
+
+    @property
+    def _measure(self):
+        from sympy import integrate
+        r, theta = symbols('r, theta')
+        return integrate(r, (r, self.r_interval), (theta, self.theta_interval))
+
+    def _intersect(self, other):
+        if other.is_ComplexDisk:
+            r_int     = Intersection(self.r_interval, other.r_interval)
+            theta_int = Intersection(self.theta_interval, other.theta_interval)
+            return ComplexDisk(r_int, theta_int)
+
+        if other is S.Reals:
+            intervals = []
+            if 0 in self.theta_interval:
+                intervals.append(self.r_interval)
+            if S.Pi in self.theta_interval:
+                rint = self.r_interval
+                intervals.append(Interval(-rint.right, -rint.left,
+                                           rint.right_open, rint.left_open))
+            return Union(*intervals)
+
+        if other.is_Interval:
+            return Intersection(self, S.Reals, other)
 
 def set_sort_fn(s):
     """

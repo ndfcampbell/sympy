@@ -22,7 +22,7 @@ from function import Lambda, WildFunction, Derivative, diff, FunctionClass, \
     expand_mul, expand_log, expand_func,\
     expand_trig, expand_complex, expand_multinomial, nfloat, expand_power_base
 from sets import (Set, Interval, Union, EmptySet, FiniteSet, ProductSet,
-        Intersection)
+        Intersection, ComplexDisk)
 from evalf import PrecisionExhausted, N
 from containers import Tuple, Dict
 from exprtools import gcd_terms, factor_terms, factor_nc

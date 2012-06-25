@@ -1,11 +1,11 @@
 from sympy import (
-    Symbol, Set, Union, Interval, oo, S, sympify, nan,
+    Symbol, Set, Union, Interval, oo, S, sympify, nan, I,
     GreaterThan, LessThan, Max, Min, And, Or, Eq, Ge, Le, Gt, Lt, Float,
-    FiniteSet, Intersection
+    FiniteSet, Intersection, ComplexDisk
 )
 from sympy.mpmath import mpi
 
-from sympy.utilities.pytest import raises
+from sympy.utilities.pytest import raises, XFAIL
 
 def test_interval_arguments():
     assert Interval(0, oo) == Interval(0, oo, False, True)
@@ -446,3 +446,39 @@ def test_universalset():
     x = Symbol('x')
     assert U.as_relational(x) == True
     assert U.union(Interval(2,4)) == U
+
+def test_complex_interval():
+    pi = S.Pi
+    unit_disk = ComplexDisk(Interval(0, 1), Interval(0, 2*pi))
+    upper_half_plane = ComplexDisk(Interval(0, oo), Interval(0, pi))
+    half_disk = Intersection(unit_disk, upper_half_plane)
+
+    assert .5+.5*I in unit_disk
+    assert 1 in unit_disk
+    assert 1.1 not in unit_disk
+    assert unit_disk.measure == pi
+    assert 1 in half_disk
+    assert half_disk.measure == pi/2
+
+    assert half_disk == ComplexDisk(Interval(0, 1), Interval(0, pi))
+
+@XFAIL
+def test_complex_interval_contains_mod():
+    pi = S.Pi
+    unit_disk = ComplexDisk(Interval(0, 1), Interval(0, 2*pi))
+    upper_half_plane = ComplexDisk(Interval(0, oo), Interval(0, pi))
+    half_disk = Intersection(unit_disk, upper_half_plane)
+    assert I in unit_disk
+    assert -5 + 3*I in upper_half_plane
+    assert 5 - 3*I not in upper_half_plane
+    assert -I not in half_disk
+
+def test_complex_interval_intersections():
+    annulus = ComplexDisk(Interval(1, 2), Interval(0, 2*S.Pi))
+    unit_disk = ComplexDisk(Interval(0, 1), Interval(0, 2*S.Pi))
+    assert annulus.intersect(Interval(-oo, oo)) == \
+            Interval(1, 2).union(Interval(-2, -1))
+    assert annulus.intersect(unit_disk) == ComplexDisk( FiniteSet(1),
+                                                        Interval(0, 2*S.Pi))
+    assert unit_disk.intersect(Interval(-5, 1, True, True)) == \
+            Interval(-1, 1, True, True)

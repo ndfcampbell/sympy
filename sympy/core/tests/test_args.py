@@ -326,6 +326,10 @@ def test_sympy__core__sets__Interval():
     from sympy.core.sets import Interval
     assert _test_args(Interval(0, 1))
 
+def test_sympy__core__sets__ComplexDisk():
+    from sympy.core.sets import ComplexDisk, Interval, S
+    assert _test_args(ComplexDisk(Interval(0, 1), Interval(0, 2*S.Pi)))
+
 def test_sympy__core__sets__ProductSet():
     from sympy.core.sets import ProductSet, Interval
     assert _test_args(ProductSet(Interval(0, 1), Interval(0, 1)))
