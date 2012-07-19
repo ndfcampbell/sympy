@@ -200,6 +200,8 @@ class ContinuousPSpace(PSpace):
             pdf = self.compute_density(rv, **kwargs)
             # Integrate out the last variable over the special domain
             evaluate = kwargs.pop("evaluate", True)
+            if not domain.set:
+                return 0
             if evaluate:
                 return integrate(pdf(z), (z, domain.set), **kwargs)
             else:

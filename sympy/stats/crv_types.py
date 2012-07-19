@@ -1394,12 +1394,11 @@ class UniformPSpace(SingleContinuousPSpace):
         left, right = sympify(left), sympify(right)
 
         x = Symbol(name)
-        pdf = Piecewise(
-                (S.Zero, x<left),
-                (S.Zero, x>right),
-                (S.One/(right-left), True))
 
-        obj = SingleContinuousPSpace.__new__(cls, x, pdf)
+        pdf = S.One/(right-left)
+
+        obj = SingleContinuousPSpace.__new__(cls, x, pdf,
+                                             set=Interval(left, right))
         obj.left = left
         obj.right = right
         return obj
