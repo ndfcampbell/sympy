@@ -368,6 +368,10 @@ def test_uniform():
     assert P(X<3) == 0 and P(X>5) == 0
     assert P(X<4) == P(X>4) == S.Half
 
+    X = Uniform('x', 0, 1)
+    assert P(X < -10) == 0
+    assert P(X > 10) == 0
+    assert P(X > .5) == .5
 
 @XFAIL
 def test_uniformsum():
