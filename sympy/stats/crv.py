@@ -212,7 +212,8 @@ class ContinuousPSpace(PSpace):
             density = self.compute_density(expr, **kwargs)
             # Turn problem into univariate case
             space = SingleContinuousPSpace(z, density(z))
-            return space.probability(condition.__class__(space.value, 0))
+            return space.probability(condition.__class__(space.value, 0),
+                    **kwargs)
 
 
     def where(self, condition):
