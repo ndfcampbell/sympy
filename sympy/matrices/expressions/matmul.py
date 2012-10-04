@@ -18,11 +18,7 @@ class MatMul(MatrixExpr, Mul):
 
         # Check that the shape of the args is consistent
         matrices = [arg for arg in args if arg.is_Matrix]
-
-        for i in range(len(matrices)-1):
-            A,B = matrices[i:i+2]
-            if A.cols != B.rows:
-                raise ShapeError("Matrices %s and %s are not aligned"%(A, B))
+        validate(*matrices)
 
         if any(arg.is_zero for arg in args):
             return ZeroMatrix(matrices[0].rows, matrices[-1].cols)
@@ -104,5 +100,11 @@ class MatMul(MatrixExpr, Mul):
         except ShapeError:
             raise NotImplementedError("Can not decompose this Inverse")
 
+def validate(*matrices):
+    """ Checks for valid shapes for args of MatMul """
+    for i in range(len(matrices)-1):
+        A,B = matrices[i:i+2]
+        if A.cols != B.rows:
+            raise ShapeError("Matrices %s and %s are not aligned"%(A, B))
 
 from matadd import MatAdd
