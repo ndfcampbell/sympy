@@ -1,4 +1,4 @@
-from matexpr import MatrixExpr, ZeroMatrix, Identity
+from matexpr import MatrixExpr, ZeroMatrix, Identity, MatrixSymbol
 from matmul import MatMul
 from matadd import MatAdd
 from transpose import Transpose
@@ -33,11 +33,18 @@ class BlockMatrix(MatrixExpr):
     """
     is_BlockMatrix = True
     is_BlockDiagMatrix = False
-    def __new__(cls, mat):
-        if not isinstance(mat, Matrix):
-            mat = Matrix(mat)
-        data = Tuple(*mat.mat)
-        shape = Tuple(*sympify(mat.shape))
+    def __new__(cls, *args):
+        if len(args) == 1:
+            mat = args[0]
+            if not isinstance(mat, Matrix):
+                mat = Matrix(mat)
+            data = Tuple(*mat.mat)
+            shape = Tuple(*sympify(mat.shape))
+
+        if len(args) == 2:
+            data, shape = args
+            mat = Matrix(shape[0], shape[1], data)
+
         obj = Basic.__new__(cls, data, shape)
         obj.mat = mat
         return obj
@@ -318,3 +325,11 @@ def block_collapse(expr):
         for i in range(1, expr.exp):
             rv = rv._blockmul(expr.base)
         return rv
+
+def block_symbol(s, cuts):
+    return BlockMatrix([[MatrixSymbol(s.name+'_%d%d'%(i,j), subrows, subcols)
+                       for j, subcols in enumerate(cuts.get(s.cols, [s.cols]))]
+                       for i, subrows in enumerate(cuts.get(s.rows, [s.rows]))])
+
+def block_cut(expr, cuts):
+    return expr.subs({s: block_symbol(s, cuts) for s in expr.free_symbols})
