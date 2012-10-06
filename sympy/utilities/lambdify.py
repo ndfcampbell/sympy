@@ -133,7 +133,7 @@ def lambdify(args, expr, modules=None, printer=None, use_imps=True):
 
     Usage:
 
-    >>> from sympy import sqrt, sin
+    >>> from sympy import sqrt, sin, Matrix
     >>> from sympy.utilities.lambdify import lambdify
     >>> from sympy.abc import x, y, z
     >>> f = lambdify(x, x**2)
@@ -148,6 +148,12 @@ def lambdify(args, expr, modules=None, printer=None, use_imps=True):
     >>> f = lambdify((x,y), sin(x*y)**2)
     >>> f(0, 5)
     0.0
+    >>> f = lambdify((x, y), Matrix((x, x + y)).T)
+    >>> f(1, 2)
+    [1, 3]
+    >>> f = lambdify(Matrix((x,y)), Matrix((x, x + y)).jacobian((x, y)))
+    >>> f(1, 2)
+    [1, 3]
 
     If not specified differently by the user, SymPy functions are replaced as
     far as possible by either python-math, numpy (if available) or mpmath
@@ -158,8 +164,8 @@ def lambdify(args, expr, modules=None, printer=None, use_imps=True):
      - the strings "math", "mpmath", "numpy", "sympy"
      - any modules (e.g. math)
      - dictionaries that map names of sympy functions to arbitrary functions
-     - lists that contain a mix of the arguments above. (Entries that are first
-        in the list have higher priority)
+     - lists that contain a mix of the arguments above, with higher priority
+       given to entries appearing first.
 
     Examples
     ========
