@@ -25,3 +25,4 @@ def test_composite():
     assert cc.outputs == set(((alpha*A*B + beta*C).I*y,))
     assert cc.dag_io() == {mm: set([sv]), sv: set([])}
     assert cc.dag_oi() == {sv: set([mm]), mm: set([])}
+    assert cc.toposort() == [mm, sv]
