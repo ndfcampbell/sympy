@@ -13,7 +13,7 @@ from sympy.utilities.iterables import (
     necklaces, numbered_symbols, ordered, partitions, permutations,
     postfixes, postorder_traversal, prefixes, reshape, rotate_left,
     rotate_right, runs, sift, subsets, take, topological_sort, unflatten,
-    uniq, variations)
+    uniq, variations, _toposort, reverse_dict)
 from sympy.core.singleton import S
 from sympy.functions.elementary.piecewise import Piecewise, ExprCondPair
 from sympy.utilities.pytest import raises
@@ -644,3 +644,14 @@ def test__partition():
         ['b', 'e'], ['a', 'c'], ['d']]
     output = (3, [1, 0, 1, 2, 0])
     assert _partition('abcde', *output) == [['b', 'e'], ['a', 'c'], ['d']]
+
+def test_reverse_dict():
+    d = {'a': (1, 2), 'b': (2, 3), 'c': ()}
+    assert reverse_dict(d) == {1: set(['a']), 2: set(['a', 'b']), 3: set(['b'])}
+
+def test__toposort():
+    edges = {1: set((4, 6, 7)), 2: set((4, 6, 7)),
+             3: set((5, 7)),    4: set((6, 7)), 5: set((7,))}
+    order = _toposort(edges)
+    assert not any(a in edges.get(b, ()) for i, a in enumerate(order)
+                                         for b    in order[i:])
