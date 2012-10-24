@@ -72,3 +72,7 @@ class CompositeComputation(Computation):
         return {A: set([B for B in self.args
                           if intersect(A.inputs, B.outputs)])
                    for A in self.args}
+
+    def toposort(self):
+        from sympy.utilities.iterables import _toposort
+        return _toposort(self.dag_io())
