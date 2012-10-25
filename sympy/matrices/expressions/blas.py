@@ -1,6 +1,6 @@
 from sympy.computations import Computation
 from sympy import Basic, Tuple, Symbol, Q, symbols
-from sympy.matrices.expressions import MatrixSymbol
+from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy.rules.tools import subs
 
 class BLAS(Computation):
@@ -28,7 +28,18 @@ class MM(BLAS):
     condition = True
 
 class GEMM(MM):
-    pass
+    def fortran(self, namefn):
+        s = ("%(fn)s(%(TRANSA)s, %(TRANSB)s, %(M)s, %(N)s, %(K)s, %(alpha)s, "
+             "%(A)s, %(LDA)s, %(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
+        varnames = 'alpha A B beta C'.split()
+        alpha, A, B, beta, C = self.inputs
+        names    = map(namefn, self.inputs)
+        namemap  = dict(zip(varnames, names))
+        other = {'TRANSA': trans(A), 'TRANSB': trans(B),
+                 'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
+                 'M':str(A.shape[0]), 'N':str(A.shape[1]), 'K':str(B.shape[1]),
+                 'fn': self.__class__.__name__}
+        return s%merge(namemap, other)
 
 class SYMM(MM):
     condition = Q.symmetric(A) | Q.symmetric(B)
@@ -81,3 +92,17 @@ class LU(BLAS):
 class Cholesky(LU):
     condition = Q.symmetric(S) & Q.positive_definite(S)
 
+def trans(A):
+    if isinstance(A, Transpose):
+        return 'T'
+    else:
+        return 'N'
+
+def uplo(A, *assumptions):
+    if ask(Q.upper_triangular(A)):
+        return 'U'
+    if ask(Q.lower_triangular(A)):
+        return 'L'
+
+def LD(A):
+    return str(A.shape[0])
