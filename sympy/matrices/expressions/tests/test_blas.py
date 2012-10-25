@@ -9,20 +9,20 @@ alpha, beta, gamma = symbols('alpha, beta, gamma')
 
 def test_MM():
     mm = MM(alpha, A, B, beta, C)
-    assert mm.inputs  == set((alpha, A, B, beta, C))
-    assert mm.outputs == set((alpha*A*B + beta*C,))
+    assert mm.inputs  == (alpha, A, B, beta, C)
+    assert mm.outputs == (alpha*A*B + beta*C,)
 
 def test_SV():
     sv = SV(A, y)
-    assert sv.outputs == set((A.I*y,))
+    assert sv.outputs == (A.I*y,)
 
 def test_composite():
     mm = MM(alpha, A, B, beta, C)
     sv = SV(alpha*A*B + beta*C, y)
     cc = CompositeComputation(mm, sv)
 
-    assert cc.inputs  == set((alpha, A, B, beta, C, y))
-    assert cc.outputs == set(((alpha*A*B + beta*C).I*y,))
+    assert set(cc.inputs)  == set((alpha, A, B, beta, C, y))
+    assert set(cc.outputs) == set(((alpha*A*B + beta*C).I*y,))
     assert cc.dag_io() == {mm: set([sv]), sv: set([])}
     assert cc.dag_oi() == {sv: set([mm]), mm: set([])}
     assert cc.toposort() == [mm, sv]
