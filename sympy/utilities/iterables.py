@@ -1555,3 +1555,12 @@ def _toposort(edges):
     if any(incoming_edges.get(v, None) for v in edges):
         raise ValueError("Input has cycles")
     return L
+
+def merge(*dicts):
+    """ Merge the items of several dictionaries
+
+    >>> from sympy.utilities.iterables import merge
+    >>> merge({1: 2}, {3: 4})
+    {1: 2, 3: 4}
+    """
+    return dict(it for d in dicts for it in d.items())

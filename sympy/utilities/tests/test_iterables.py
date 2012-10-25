@@ -6,7 +6,7 @@ from sympy.utilities.iterables import (postorder_traversal, flatten, group,
         generate_involutions, generate_derangements, unrestricted_necklace,
         generate_oriented_forest, unflatten, common_prefix, common_suffix,
         quick_sort, minlex, runs, lazyDSU_sort, reshape, _toposort,
-        reverse_dict)
+        reverse_dict, merge)
 from sympy.core.singleton import S
 from sympy.functions.elementary.piecewise import Piecewise, ExprCondPair
 from sympy.utilities.pytest import raises
@@ -408,3 +408,6 @@ def test__toposort():
     order = _toposort(edges)
     assert not any(a in edges.get(b, ()) for i, a in enumerate(order)
                                          for b    in order[i:])
+
+def test_merge():
+    assert merge({1: 2}, {3: 4}) == {1: 2, 3: 4}
