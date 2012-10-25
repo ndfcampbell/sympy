@@ -1,32 +1,27 @@
-from sympy import Basic, Tuple
+from sympy import Basic, Tuple, Dict
 
 class Computation(Basic):
     """ Represents a computation graph """
 
-    def __new__(cls, inputs, outputs, varins, varouts):
+    def __new__(cls, inputs, outputs, view_map):
         return Basic.__new__(cls, Tuple(*inputs),
                                   Tuple(*outputs),
-                                  Tuple(*varins),
-                                  Tuple(*varouts))
+                                  Dict(view_map))
 
     @property
     def inputs(self):
-        return set(self.args[0])
+        return self.args[0]
 
     @property
     def outputs(self):
-        return set(self.args[1])
+        return self.args[1]
 
     @property
-    def varins(self):
-        return set(self.args[2])
-
-    @property
-    def varouts(self):
-        return set(self.args[3])
+    def view_map(self):
+        return self.args[2]
 
     def inplace(self):
-        return len(set(self.inputs).intersection(self.varouts)) != 0
+        return not self.view_map
 
 def intersect(a, b):
     return len(set(a).intersection(set(b))) != 0
@@ -43,6 +38,7 @@ class CompositeComputation(Computation):
     def alloutputs(self):
         return set([o for c in self.args for o in c.outputs])
 
+    # TODO: these should have deterministic order
     @property
     def inputs(self):
         return self.allinputs() - self.alloutputs()
@@ -50,10 +46,6 @@ class CompositeComputation(Computation):
     @property
     def outputs(self):
         return self.alloutputs() - self.allinputs()
-
-    @property
-    def varouts(self):
-        raise NotImplemented()
 
     def dag_io(self):
         """ Return a dag of computations from inputs to outputs
