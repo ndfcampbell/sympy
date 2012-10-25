@@ -28,6 +28,12 @@ def test_composite():
     assert cc.toposort() == [mm, sv]
 
 def test_GEMM():
-    gemm = GEMM(alpha, A, B, beta, C)
-    assert gemm.print_Fortran(str) == \
+    assert GEMM(alpha, A,   B, beta, C).print_Fortran(str) == \
             "GEMM('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)"
+
+    assert GEMM(alpha, A.T, B, beta, C).print_Fortran(str) == \
+            "GEMM('T', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)"
+
+def test_SYMM():
+    assert SYMM(alpha, A, B, beta, C).print_Fortran(str, Q.symmetric(A)) == \
+            "SYMM('L', 'U', n, n, alpha, A, n, B, n, beta, C, n)"
