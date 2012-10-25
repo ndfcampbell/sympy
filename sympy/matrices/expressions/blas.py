@@ -61,8 +61,8 @@ class TRMM(MM):
     _outputs = (alpha*A*B,)
     view_map  = {0: 2}
     condition = Q.triangular(A) | Q.triangular(B)
-    fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', %(TRANSA)s, %(DIAG)s, "
-                        "%(M)s, %(N)s, %(alpha)s, %(A)s, %(LDA)s, "
+    fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', '%(TRANSA)s', "
+                        "'%(DIAG)s', %(M)s, %(N)s, %(alpha)s, %(A)s, %(LDA)s, "
                         "%(B)s, %(LDB)s)")
     def codemap(self, namefn, assumptions=True):
         varnames = 'alpha A B'.split()
