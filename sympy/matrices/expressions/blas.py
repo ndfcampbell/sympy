@@ -2,6 +2,7 @@ from sympy.computations import Computation
 from sympy import Basic, Tuple, Symbol, Q, symbols
 from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy.rules.tools import subs
+from sympy.utilities.iterables import merge
 
 class BLAS(Computation):
     # TODO: metaclass magic for s/d/z prefixes
@@ -28,9 +29,10 @@ class MM(BLAS):
     condition = True
 
 class GEMM(MM):
-    def fortran(self, namefn):
-        s = ("%(fn)s(%(TRANSA)s, %(TRANSB)s, %(M)s, %(N)s, %(K)s, %(alpha)s, "
-             "%(A)s, %(LDA)s, %(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
+    fortran_template = ("%(fn)s('%(TRANSA)s', '%(TRANSB)s', %(M)s, %(N)s, %(K)s, "
+                        "%(alpha)s, %(A)s, %(LDA)s, "
+                        "%(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
+    def codemap(self, namefn):
         varnames = 'alpha A B beta C'.split()
         alpha, A, B, beta, C = self.inputs
         names    = map(namefn, self.inputs)
@@ -39,7 +41,10 @@ class GEMM(MM):
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
                  'M':str(A.shape[0]), 'N':str(A.shape[1]), 'K':str(B.shape[1]),
                  'fn': self.__class__.__name__}
-        return s%merge(namemap, other)
+        return merge(namemap, other)
+
+    def print_Fortran(self, namefn):
+        return self.fortran_template % self.codemap(namefn)
 
 class SYMM(MM):
     condition = Q.symmetric(A) | Q.symmetric(B)
