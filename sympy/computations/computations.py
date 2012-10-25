@@ -3,10 +3,9 @@ from sympy import Basic, Tuple, Dict
 class Computation(Basic):
     """ Represents a computation graph """
 
-    def __new__(cls, inputs, outputs, view_map):
+    def __new__(cls, inputs, outputs):
         return Basic.__new__(cls, Tuple(*inputs),
-                                  Tuple(*outputs),
-                                  Dict(view_map))
+                                  Tuple(*outputs))
 
     @property
     def inputs(self):
@@ -15,13 +14,6 @@ class Computation(Basic):
     @property
     def outputs(self):
         return self.args[1]
-
-    @property
-    def view_map(self):
-        return self.args[2]
-
-    def inplace(self):
-        return not self.view_map
 
     @classmethod
     def purify(cls):
