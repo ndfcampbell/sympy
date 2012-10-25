@@ -29,5 +29,5 @@ def test_composite():
 
 def test_GEMM():
     gemm = GEMM(alpha, A, B, beta, C)
-    assert gemm.fortran(str) == \
-            "GEMM(N, N, n, n, n, alpha, A, n, B, n, beta, C, n)"
+    assert gemm.print_Fortran(str) == \
+            "GEMM('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)"
