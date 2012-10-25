@@ -2,8 +2,12 @@ from sympy.matrices.expressions.blas import *
 from sympy.computations import CompositeComputation
 from sympy import *
 
-n = Symbol('n', integer=True)
-A, B, C, X, Y = [MatrixSymbol(s, n, n) for s in 'ABCXY']
+n,m,k = symbols('n,m,k')
+A = MatrixSymbol('A', n, m)
+B = MatrixSymbol('B', m, k)
+C = MatrixSymbol('C', n, k)
+S = MatrixSymbol('S', n, n)
+
 x,y,a,b = [MatrixSymbol(s, n, 1) for s in 'xyab']
 alpha, beta, gamma = symbols('alpha, beta, gamma')
 
@@ -13,10 +17,11 @@ def test_MM():
     assert mm.outputs == (alpha*A*B + beta*C,)
 
 def test_SV():
-    sv = SV(A, y)
-    assert sv.outputs == (A.I*y,)
+    sv = SV(S, y)
+    assert sv.outputs == (S.I*y,)
 
 def test_composite():
+    A,B,C = [MatrixSymbol(s, n, n) for s in 'ABC']
     mm = MM(alpha, A, B, beta, C)
     sv = SV(alpha*A*B + beta*C, y)
     cc = CompositeComputation(mm, sv)
@@ -28,12 +33,19 @@ def test_composite():
     assert cc.toposort() == [mm, sv]
 
 def test_GEMM():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
     assert GEMM(alpha, A,   B, beta, C).print_Fortran(str) == \
-            "GEMM('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)"
+            "GEMM('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"
 
-    assert GEMM(alpha, A.T, B, beta, C).print_Fortran(str) == \
-            "GEMM('T', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)"
+    D = MatrixSymbol('D', k, m)
+    assert GEMM(alpha, D.T, B, beta, C).print_Fortran(str) == \
+            "GEMM('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"
 
 def test_SYMM():
+    A = MatrixSymbol('A', m, m)
+    B = MatrixSymbol('B', m, n)
+    C = MatrixSymbol('C', m, n)
     assert SYMM(alpha, A, B, beta, C).print_Fortran(str, Q.symmetric(A)) == \
-            "SYMM('L', 'U', n, n, alpha, A, n, B, n, beta, C, n)"
+            "SYMM('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"

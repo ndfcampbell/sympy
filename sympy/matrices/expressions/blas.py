@@ -38,7 +38,7 @@ class MM(BLAS):
         namemap  = dict(zip(varnames, names))
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
-                 'M':str(A.shape[0]), 'N':str(A.shape[1]), 'K':str(B.shape[1]),
+                 'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
                  'fn': self.__class__.__name__,
                  'SIDE': side(A, B, assumptions),
                  'DIAG': diag(A, assumptions),
@@ -52,7 +52,7 @@ class GEMM(MM):
 
 class SYMM(MM):
     condition = Q.symmetric(A) | Q.symmetric(B)
-    fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', %(M)s, %(K)s, "
+    fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', %(M)s, %(N)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, %(B)s, %(LDB)s, "
                         "%(beta)s, %(C)s, %(LDC)s)")
 
@@ -123,7 +123,8 @@ def uplo(A, assumptions):
         return 'L'
 
 def LD(A):
-    return str(A.shape[0])
+    # TODO make sure we don't use transposed matrices in untransposable slots
+    return str(detranspose(A).shape[0])
 
 def side(A, B, assumptions):
     if ask(Q.symmetric(A), assumptions):
