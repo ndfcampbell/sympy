@@ -11,6 +11,9 @@ class BLAS(Computation):
         outputs = subs(mapping)(Tuple(*cls._outputs))
         return Computation.__new__(cls, inputs, outputs)
 
+    def print_Fortran(self, namefn):
+        return self.fortran_template % self.codemap(namefn)
+
 alpha = Symbol('alpha')
 beta  = Symbol('beta')
 n,m,k = symbols('n,m,k')
@@ -42,9 +45,6 @@ class GEMM(MM):
                  'M':str(A.shape[0]), 'N':str(A.shape[1]), 'K':str(B.shape[1]),
                  'fn': self.__class__.__name__}
         return merge(namemap, other)
-
-    def print_Fortran(self, namefn):
-        return self.fortran_template % self.codemap(namefn)
 
 class SYMM(MM):
     condition = Q.symmetric(A) | Q.symmetric(B)
