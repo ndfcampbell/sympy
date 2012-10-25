@@ -40,9 +40,9 @@ class MM(BLAS):
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
                  'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
                  'fn': self.__class__.__name__,
-                 'SIDE': side(A, B, assumptions),
+                 'SIDE': left_or_right(A, B, Q.symmetric, assumptions),
                  'DIAG': diag(A, assumptions),
-                 'UPLO': uplo(A, assumptions)}
+                 'UPLO': 'U'} # TODO: symmetric matrices might be stored low
         return merge(namemap, other)
 
 class GEMM(MM):
@@ -57,10 +57,26 @@ class SYMM(MM):
                         "%(beta)s, %(C)s, %(LDC)s)")
 
 class TRMM(MM):
+    _inputs = (alpha, A, B)
+    _outputs = (alpha*A*B,)
+    view_map  = {0: 2}
     condition = Q.triangular(A) | Q.triangular(B)
     fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', %(TRANSA)s, %(DIAG)s, "
-                        "%(N)s, %(K)s, %(alpha)s, %(A)s, %(LDA)s, "
+                        "%(M)s, %(N)s, %(alpha)s, %(A)s, %(LDA)s, "
                         "%(B)s, %(LDB)s)")
+    def codemap(self, namefn, assumptions=True):
+        varnames = 'alpha A B'.split()
+        alpha, A, B = self.inputs
+        names    = map(namefn, (alpha, detranspose(A), B))
+        namemap  = dict(zip(varnames, names))
+        other = {'TRANSA': trans(A), 'TRANSB': trans(B),
+                 'LDA': LD(A), 'LDB': LD(B),
+                 'M':str(B.shape[0]), 'N':str(B.shape[1]),
+                 'fn': self.__class__.__name__,
+                 'SIDE': left_or_right(A, B, Q.triangular, assumptions),
+                 'DIAG': diag(A, assumptions),
+                 'UPLO': uplo(A, assumptions)}
+        return merge(namemap, other)
 
 class SM(BLAS):
     _inputs   = (alpha, S, A)
@@ -114,9 +130,6 @@ def trans(A):
         return 'N'
 
 def uplo(A, assumptions):
-    # TODO: uplo means two different things. This is a hack
-    if ask(Q.symmetric(A), assumptions): # upper storage
-        return 'U'
     if ask(Q.upper_triangular(A), assumptions):
         return 'U'
     if ask(Q.lower_triangular(A), assumptions):
@@ -126,10 +139,10 @@ def LD(A):
     # TODO make sure we don't use transposed matrices in untransposable slots
     return str(detranspose(A).shape[0])
 
-def side(A, B, assumptions):
-    if ask(Q.symmetric(A), assumptions):
+def left_or_right(A, B, predicate, assumptions):
+    if ask(predicate(A), assumptions):
         return 'L'
-    if ask(Q.symmetric(B), assumptions):
+    if ask(predicate(B), assumptions):
         return 'R'
 
 def diag(A, assumptions):

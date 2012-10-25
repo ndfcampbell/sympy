@@ -49,3 +49,9 @@ def test_SYMM():
     C = MatrixSymbol('C', m, n)
     assert SYMM(alpha, A, B, beta, C).print_Fortran(str, Q.symmetric(A)) == \
             "SYMM('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"
+
+def test_TRMM():
+    A = MatrixSymbol('A', m, m)
+    B = MatrixSymbol('B', m, n)
+    assert TRMM(alpha, A, B).print_Fortran(str, Q.upper_triangular(A)) == \
+            "TRMM('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
