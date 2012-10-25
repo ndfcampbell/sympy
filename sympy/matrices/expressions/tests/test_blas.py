@@ -26,3 +26,8 @@ def test_composite():
     assert cc.dag_io() == {mm: set([sv]), sv: set([])}
     assert cc.dag_oi() == {sv: set([mm]), mm: set([])}
     assert cc.toposort() == [mm, sv]
+
+def test_GEMM():
+    gemm = GEMM(alpha, A, B, beta, C)
+    assert gemm.fortran(str) == \
+            "GEMM(N, N, n, n, n, alpha, A, n, B, n, beta, C, n)"
