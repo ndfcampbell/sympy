@@ -23,6 +23,10 @@ class Computation(Basic):
     def inplace(self):
         return not self.view_map
 
+    @classmethod
+    def purify(cls):
+        return type(cls.__name__+"Pure", (Pure, cls), {})
+
 def intersect(a, b):
     return len(set(a).intersection(set(b))) != 0
 
@@ -68,3 +72,6 @@ class CompositeComputation(Computation):
     def toposort(self):
         from sympy.utilities.iterables import _toposort
         return _toposort(self.dag_io())
+
+class Pure(Computation):
+    view_map = {}
