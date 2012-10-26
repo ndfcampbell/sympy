@@ -1,15 +1,15 @@
-from sympy.computations import Computation
+from sympy.computations import InplaceComputation
 from sympy import Basic, Tuple, Symbol, Q, symbols, ask
 from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy.rules.tools import subs
 from sympy.utilities.iterables import merge
 
-class BLAS(Computation):
+class BLAS(InplaceComputation):
     # TODO: metaclass magic for s/d/z prefixes
     def __new__(cls, *inputs):
         mapping = dict(zip(cls._inputs, inputs))
         outputs = subs(mapping)(Tuple(*cls._outputs))
-        return Computation.__new__(cls, inputs, outputs)
+        return InplaceComputation.__new__(cls, inputs, outputs)
 
     def print_Fortran(self, namefn, assumptions=True):
         return self.fortran_template % self.codemap(namefn, assumptions)
