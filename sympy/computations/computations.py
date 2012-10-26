@@ -35,7 +35,10 @@ class CompositeComputation(Computation):
 
         return Basic.__new__(cls, computations, inputs, outputs)
 
-    # TODO: these should have deterministic order
+    @property
+    def computations(self):
+        return self.args[0]
+
     @property
     def inputs(self):
         return self.args[1]
@@ -43,10 +46,6 @@ class CompositeComputation(Computation):
     @property
     def outputs(self):
         return self.args[2]
-
-    @property
-    def computations(self):
-        return self.args[0]
 
     def dag_io(self):
         """ Return a dag of computations from inputs to outputs
