@@ -109,7 +109,22 @@ class SV(BLAS):
     condition = True
 
 class TRSV(SV):
+    fortran_template = ("%(fn)s('%(UPLO)s', '%(TRANS)s', '%(DIAG)s', "
+                        "%(N)s, %(A)s, %(LDA)s, %(x)s, %(INCX)s)")
     condition = Q.triangular(A)
+    def codemap(self, namefn, assumptions=True):
+        varnames = 'A x'.split()
+        A, x = self.inputs
+        names    = map(namefn, (detranspose(A), x))
+        namemap  = dict(zip(varnames, names))
+        other = {'TRANS': trans(A),
+                 'LDA': LD(A),
+                 'N':str(A.shape[0]),
+                 'fn': self.__class__.__name__,
+                 'DIAG': diag(A, assumptions),
+                 'UPLO': uplo(A, assumptions),
+                 'INCX': '1'}
+        return merge(namemap, other)
 
 # TODO: Make these classes
 class Lof(Basic):    pass
@@ -122,6 +137,15 @@ class LU(BLAS):
 
 class Cholesky(LU):
     condition = Q.symmetric(S) & Q.positive_definite(S)
+
+class CopyMatrix(InplaceComputation):
+    _id = 0
+    view_map = {}
+    def __new__(cls, x):
+        name = '_%d'%cls._id
+        cls._id += 1
+        cp = MatrixSymbol(name, x.rows, x.cols)
+        return Computation.__new__((x,), (cp,))
 
 def trans(A):
     if isinstance(A, Transpose):
