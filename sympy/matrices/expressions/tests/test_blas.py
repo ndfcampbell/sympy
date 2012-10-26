@@ -55,3 +55,9 @@ def test_TRMM():
     B = MatrixSymbol('B', m, n)
     assert TRMM(alpha, A, B).print_Fortran(str, Q.upper_triangular(A)) == \
             "TRMM('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
+
+def test_TRSV():
+    A = MatrixSymbol('A', m, m)
+    x = MatrixSymbol('x', m, 1)
+    assert TRSV(A, x).print_Fortran(str, Q.upper_triangular(A)) == \
+            "TRSV('U', 'N', 'N', m, A, m, x, 1)"
