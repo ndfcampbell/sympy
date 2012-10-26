@@ -1,6 +1,6 @@
 from sympy.matrices.expressions.blas import *
-from sympy.computations import CompositeComputation
 from sympy import *
+from sympy.utilities.pytest import XFAIL
 
 n,m,k = symbols('n,m,k')
 A = MatrixSymbol('A', n, m)
@@ -61,3 +61,22 @@ def test_TRSV():
     x = MatrixSymbol('x', m, 1)
     assert TRSV(A, x).print_Fortran(str, Q.upper_triangular(A)) == \
             "TRSV('U', 'N', 'N', m, A, m, x, 1)"
+
+@XFAIL
+def test_gemm_trsv():
+    A = MatrixSymbol('A', n, n)
+    B = MatrixSymbol('B', n, n)
+    C = MatrixSymbol('C', n, n)
+    x = MatrixSymbol('x', n, 1)
+    context = (Q.lower_triangular(A) &
+               Q.lower_triangular(B) &
+               Q.lower_triangular(C))
+    expr = (alpha*A*B + beta*C).I*x
+    gemm = GEMM(alpha, A, B, beta, C)
+    trsv = TRSV(alpha*A*B + beta*C, x)
+    comp = MatrixRoutine((gemm, trsv), (alpha, A, B, beta, C, x), (x,))
+
+    computation_string = \
+"""GEMM('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
+TRSV('L', 'N', 'N', n, C, n, x, 1)"""
+    assert computation_string in comp.print_Fortran(str, context)
