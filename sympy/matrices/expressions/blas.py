@@ -180,3 +180,17 @@ def detranspose(A):
         return A.arg
     else:
         return A
+
+def basic_names(x):
+    if x in basic_names._cache:
+        return basic_names._cache[x]
+    if isinstance(x, (MatrixSymbol, Symbol)):
+        result = x.name
+    else:
+        result = "_%d"%basic_names._id
+        basic_names._id += 1
+    basic_names._cache[x] = result
+    return result
+basic_names._cache = {}
+basic_names._id = 1
+
