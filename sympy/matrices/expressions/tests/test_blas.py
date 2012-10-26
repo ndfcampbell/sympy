@@ -24,7 +24,7 @@ def test_composite():
     A,B,C = [MatrixSymbol(s, n, n) for s in 'ABC']
     mm = MM(alpha, A, B, beta, C)
     sv = SV(alpha*A*B + beta*C, y)
-    cc = CompositeComputation(mm, sv)
+    cc = CompositeComputation((mm, sv))
 
     assert set(cc.inputs)  == set((alpha, A, B, beta, C, y))
     assert set(cc.outputs) == set(((alpha*A*B + beta*C).I*y,))

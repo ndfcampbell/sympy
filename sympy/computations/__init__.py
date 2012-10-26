@@ -1,1 +1,1 @@
-from computations import Computation, CompositeComputation
+from computations import Computation, CompositeComputation, InplaceComputation

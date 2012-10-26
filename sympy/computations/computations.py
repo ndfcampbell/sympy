@@ -24,46 +24,55 @@ def intersect(a, b):
 
 class CompositeComputation(Computation):
     """ Represents a computation of many parts """
-    def __new__(cls, *computations):
+    def __new__(cls, computations, inputs=None, outputs=None):
         # TODO: flatten composites of composites?
-        return Basic.__new__(cls, *computations)
+        allinputs  = set([i for c in computations for i in c.inputs])
+        alloutputs = set([o for c in computations for o in c.outputs])
+        if inputs is None:
+            inputs = Tuple(*sorted(allinputs - alloutputs, key=str))
+        if outputs is None:
+            outputs = Tuple(*sorted(alloutputs - allinputs, key=str))
 
-    def allinputs(self):
-        return set([i for c in self.args for i in c.inputs])
-
-    def alloutputs(self):
-        return set([o for c in self.args for o in c.outputs])
+        return Basic.__new__(cls, computations, inputs, outputs)
 
     # TODO: these should have deterministic order
     @property
     def inputs(self):
-        return self.allinputs() - self.alloutputs()
+        return self.args[1]
 
     @property
     def outputs(self):
-        return self.alloutputs() - self.allinputs()
+        return self.args[2]
+
+    @property
+    def computations(self):
+        return self.args[0]
 
     def dag_io(self):
         """ Return a dag of computations from inputs to outputs
 
         returns {A: {Bs}} such that A must occur before each of the Bs
         """
-        return {A: set([B for B in self.args
+        return {A: set([B for B in self.computations
                           if intersect(A.outputs, B.inputs)])
-                   for A in self.args}
+                    for A in self.computations}
 
     def dag_oi(self):
         """ Return a dag of computations from outputs to inputs
 
         returns {A: {Bs}} such that A requires each of the Bs before it runs
         """
-        return {A: set([B for B in self.args
+        return {A: set([B for B in self.computations
                           if intersect(A.inputs, B.outputs)])
-                   for A in self.args}
+                    for A in self.computations}
 
     def toposort(self):
         from sympy.utilities.iterables import _toposort
         return _toposort(self.dag_io())
 
-class Pure(Computation):
+class InplaceComputation(Computation):
+    def inplace(self):
+        return not self.view_map
+
+class Pure(InplaceComputation):
     view_map = {}
