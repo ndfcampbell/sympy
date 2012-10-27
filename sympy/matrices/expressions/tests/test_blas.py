@@ -1,4 +1,5 @@
 from sympy.matrices.expressions.blas import *
+from sympy.matrices.expressions.matcomp import *
 from sympy import *
 from sympy.utilities.pytest import XFAIL
 
