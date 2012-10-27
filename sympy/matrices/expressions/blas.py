@@ -57,20 +57,21 @@ class MM(BLAS):
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
                  'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
-                 'fn': self.__class__.__name__,
+                 'fn': self.__class__.__name__.lower(),
                  'SIDE': left_or_right(A, B, Q.symmetric, assumptions),
                  'DIAG': diag(A, assumptions),
                  'UPLO': 'U'} # TODO: symmetric matrices might be stored low
         return merge(namemap, other)
 
 class GEMM(MM):
-    fortran_template = ("%(fn)s('%(TRANSA)s', '%(TRANSB)s', %(M)s, %(N)s, %(K)s, "
+    fortran_template = ("call %(fn)s('%(TRANSA)s', '%(TRANSB)s', "
+                        "%(M)s, %(N)s, %(K)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, "
                         "%(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
 
 class SYMM(MM):
     condition = Q.symmetric(A) | Q.symmetric(B)
-    fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', %(M)s, %(N)s, "
+    fortran_template = ("call %(fn)s('%(SIDE)s', '%(UPLO)s', %(M)s, %(N)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, %(B)s, %(LDB)s, "
                         "%(beta)s, %(C)s, %(LDC)s)")
 
@@ -79,7 +80,7 @@ class TRMM(MM):
     _outputs = (alpha*A*B,)
     view_map  = {0: 2}
     condition = Q.triangular(A) | Q.triangular(B)
-    fortran_template = ("%(fn)s('%(SIDE)s', '%(UPLO)s', '%(TRANSA)s', "
+    fortran_template = ("call %(fn)s('%(SIDE)s', '%(UPLO)s', '%(TRANSA)s', "
                         "'%(DIAG)s', %(M)s, %(N)s, %(alpha)s, %(A)s, %(LDA)s, "
                         "%(B)s, %(LDB)s)")
     def codemap(self, namefn, assumptions=True):
@@ -90,7 +91,7 @@ class TRMM(MM):
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B),
                  'M':str(B.shape[0]), 'N':str(B.shape[1]),
-                 'fn': self.__class__.__name__,
+                 'fn': self.__class__.__name__.lower(),
                  'SIDE': left_or_right(A, B, Q.triangular, assumptions),
                  'DIAG': diag(A, assumptions),
                  'UPLO': uplo(A, assumptions)}
@@ -127,7 +128,7 @@ class SV(BLAS):
     condition = True
 
 class TRSV(SV):
-    fortran_template = ("%(fn)s('%(UPLO)s', '%(TRANS)s', '%(DIAG)s', "
+    fortran_template = ("call %(fn)s('%(UPLO)s', '%(TRANS)s', '%(DIAG)s', "
                         "%(N)s, %(A)s, %(LDA)s, %(x)s, %(INCX)s)")
     condition = Q.triangular(A)
     def codemap(self, namefn, assumptions=True):
@@ -138,7 +139,7 @@ class TRSV(SV):
         other = {'TRANS': trans(A),
                  'LDA': LD(A),
                  'N':str(A.shape[0]),
-                 'fn': self.__class__.__name__,
+                 'fn': self.__class__.__name__.lower(),
                  'DIAG': diag(A, assumptions),
                  'UPLO': uplo(A, assumptions),
                  'INCX': '1'}
