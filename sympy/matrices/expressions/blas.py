@@ -242,11 +242,13 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
         def intent(x):
             if x in self.inputs and x in self.outputs:
                 return 'inout'
-            if x in self.inputs:
+            if x in self.inputs or x in self.dimensions():
                 return 'in'
             if x in self.outputs:
                 return 'out'
-        return {x: intent(x) for x in self.variables() if intent(x)}
+
+        return {x: intent(x) for x in self.variables() | self.dimensions()
+                             if intent(x)}
 
     def declarations(self, namefn):
         inplace = self.inplace_fn()(self)
@@ -259,7 +261,7 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
             if x in inplace.shapes():
                 s += "%s" % str(inplace.shapes()[x])
             return s
-        return map(declaration, inplace.variables())
+        return map(declaration, inplace.variables() | inplace.dimensions())
 
     def header(self, namefn):
         return "subroutine %(name)s(%(inputs)s)" % {

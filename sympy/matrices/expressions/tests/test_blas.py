@@ -98,4 +98,5 @@ TRSV('L', 'N', 'N', n, C, n, x, 1)"""
     assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
     assert computation_string in comp.function_calls(str, context)
     assert comp.dimensions() == set([n])
+    assert 'integer, intent(in) :: n' in comp.declarations(str)
     comp.print_Fortran(str, context)
