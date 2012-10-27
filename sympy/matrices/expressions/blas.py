@@ -7,6 +7,11 @@ from sympy.utilities.iterables import merge
 basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
 
 class MatrixComputation(InplaceComputation):
+    """ A Computation for Matrix operations
+
+    Adds methods for matrices like shapes, dimensions.
+    Also adds methods for Fortran code generation
+    """
     name = 'f'
 
     def shapes(self):
@@ -74,7 +79,7 @@ class MatrixComputation(InplaceComputation):
         return module.__dict__[self.name]
 
 class BLAS(MatrixComputation):
-    # TODO: metaclass magic for s/d/z prefixes
+    """ Basic Linear Algebra Subroutine - Dense Matrix computation """
     def __new__(cls, *inputs, **kwargs):
         typecode = kwargs.get('typecode', 'D')
         mapping = dict(zip(cls._inputs, inputs))
@@ -114,6 +119,7 @@ a = MatrixSymbol('a', m, 1)
 b = MatrixSymbol('b', k, 1)
 
 class MM(BLAS):
+    """ Matrix Multiply """
     _inputs   = (alpha, A, B, beta, C)
     _outputs  = (alpha*A*B + beta*C,)
     view_map  = {0: 4}
@@ -134,18 +140,21 @@ class MM(BLAS):
         return merge(namemap, other)
 
 class GEMM(MM):
+    """ General Matrix Multiply """
     fortran_template = ("call %(fn)s('%(TRANSA)s', '%(TRANSB)s', "
                         "%(M)s, %(N)s, %(K)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, "
                         "%(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
 
 class SYMM(MM):
+    """ Symmetric Matrix Multiply """
     condition = Q.symmetric(A) | Q.symmetric(B)
     fortran_template = ("call %(fn)s('%(SIDE)s', '%(UPLO)s', %(M)s, %(N)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, %(B)s, %(LDB)s, "
                         "%(beta)s, %(C)s, %(LDC)s)")
 
 class TRMM(MM):
+    """ Triangular Matrix Multiply """
     _inputs = (alpha, A, B)
     _outputs = (alpha*A*B,)
     view_map  = {0: 2}
@@ -168,36 +177,44 @@ class TRMM(MM):
         return merge(namemap, other)
 
 class SM(BLAS):
+    """ Matrix Solve """
     _inputs   = (alpha, S, A)
     _outputs  = (alpha*S.I*A,)
     view_map  = {0: 2}
     condition = True
 
 class TRSM(SM):
+    """ Triangular Matrix Solve """
     condition = Q.triangular(A)
 
 class MV(BLAS):
+    """ Matrix Vector Multiply """
     _inputs   = (alpha, A, a, beta, x)
     _outputs  = (alpha*A*a + beta*x,)
     view_map  = {0: 4}
     condition = True
 
 class GEMV(MV):
+    """ General Matrix Vector Multiply """
     pass
 
 class SYMV(MV):
+    """ Symmetric Matrix Vector Multiply """
     condition = Q.symmetric(A) | Q.symmetric(B)
 
 class TRMV(MV):
+    """ Triangular Matrix Vector Multiply """
     condition = Q.triangular(A) | Q.triangular(B)
 
 class SV(BLAS):
+    """ Matrix Vector Solve """
     _inputs   = (S, x)
     _outputs  = (S.I*x,)
     view_map  = {0: 1}
     condition = True
 
 class TRSV(SV):
+    """ Triangular Matrix Vector Solve """
     fortran_template = ("call %(fn)s('%(UPLO)s', '%(TRANS)s', '%(DIAG)s', "
                         "%(N)s, %(A)s, %(LDA)s, %(x)s, %(INCX)s)")
     condition = Q.triangular(A)
@@ -219,12 +236,14 @@ class TRSV(SV):
 class Lof(Basic):    pass
 class Uof(Basic):    pass
 class LU(BLAS):
+    """ LU Decomposition """
     _inputs   = (S,)
     _outputs  = (Lof(S), Uof(S))
     view_map  = {0: 0, 1: 0}
     condition = True
 
 class Cholesky(LU):
+    """ Cholesky LU Decomposition """
     condition = Q.symmetric(S) & Q.positive_definite(S)
 
 class CopyMatrix(InplaceComputation):
@@ -237,40 +256,50 @@ class CopyMatrix(InplaceComputation):
         return Computation.__new__((x,), (cp,))
 
 def trans(A):
+    """ Return 'T' if A is a transpose, else 'N' """
     if isinstance(A, Transpose):
         return 'T'
     else:
         return 'N'
 
 def uplo(A, assumptions):
+    """ Return 'U' if A is stored in the upper Triangular 'U' if lower """
     if ask(Q.upper_triangular(A), assumptions):
         return 'U'
     if ask(Q.lower_triangular(A), assumptions):
         return 'L'
 
 def LD(A):
+    """ Leading dimension of matrix """
     # TODO make sure we don't use transposed matrices in untransposable slots
     return str(detranspose(A).shape[0])
 
 def left_or_right(A, B, predicate, assumptions):
+    """ Return 'L' if predicate is true of A, 'R' if predicate is true of B """
     if ask(predicate(A), assumptions):
         return 'L'
     if ask(predicate(B), assumptions):
         return 'R'
 
 def diag(A, assumptions):
+    """ Return 'U' if A is unit_triangular """
     if ask(Q.unit_triangular(A), assumptions):
         return 'U'
     else:
         return 'N'
 
 def detranspose(A):
+    """ Unpack a transposed matrix """
     if isinstance(A, Transpose):
         return A.arg
     else:
         return A
 
 def basic_names(x):
+    """ A function to map MatrixExprs to strings
+
+    if X is a MatrixSymbol return X.name
+    Otherwise return a name like "_123" consistently for repeated inputs """
     if x in basic_names._cache:
         return basic_names._cache[x]
     if isinstance(x, (MatrixSymbol, Symbol)):
@@ -283,6 +312,7 @@ def basic_names(x):
 basic_names._cache = {}
 basic_names._id = 1
 
+# TODO: Rename
 class MatrixRoutine(CompositeComputation, MatrixComputation):
     """ A Composite MatrixComputation """
     def calls(self, namefn, assumptions=True):
