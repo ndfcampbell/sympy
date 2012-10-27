@@ -93,10 +93,10 @@ call trsv('L', 'N', 'N', n, C, n, x, 1)"""
     assert not any(q in comp.shapes() for q in (alpha, beta, n))
     assert comp.types()[n] == 'integer'
     assert comp.types()[A] == GEMM.basetype
+    assert comp.intents()[x] == comp.intents()[C] == 'inout'
     assert 'real, intent(in) :: alpha' in comp.declarations(str)
     assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
     assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
     assert computation_string in comp.function_calls(str, context)
     assert comp.dimensions() == set([n])
     assert 'integer, intent(in) :: n' in comp.declarations(str)
-    comp.print_Fortran(str, context)
