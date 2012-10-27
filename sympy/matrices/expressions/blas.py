@@ -13,8 +13,8 @@ class MatrixComputation(InplaceComputation):
 
 
     def dimensions(self):
-        return tuple(d for x, shape in self.shapes().items()
-                       for d in shape if isinstance(d, Symbol))
+        return set(d for x, shape in self.shapes().items()
+                     for d in shape if isinstance(d, Symbol))
 
 class BLAS(MatrixComputation):
     # TODO: metaclass magic for s/d/z prefixes
@@ -34,8 +34,8 @@ class BLAS(MatrixComputation):
     def typecode(self):
         return self.args[2]
 
-    def print_Fortran(self, namefn, assumptions=True):
-        return self.fortran_template % self.codemap(namefn, assumptions)
+    def calls(self, namefn, assumptions=True):
+        return [self.fortran_template % self.codemap(namefn, assumptions)]
 
     @property
     def variables(self):
@@ -231,14 +231,12 @@ class MatrixRoutine(CompositeComputation, MatrixComputation):
     def print_Fortran(self, namefn, assumptions=True):
         return '\n\n'.join([self.header(namefn),
                             '\n'.join(self.declarations(namefn)),
-                            self.function_calls(namefn, assumptions),
+                            '\n'.join(self.calls(namefn, assumptions)),
                             self.footer()])
-    def function_calls(self, namefn, assumptions=True):
-        s = ""
-        rl = self.inplace_fn()
-        for c in map(rl, self.toposort()):
-            s += c.print_Fortran(namefn, assumptions) + "\n"
-        return s
+    def calls(self, namefn, assumptions=True):
+        computations = map(self.inplace_fn(), self.toposort())
+        return [call for c in computations
+                     for call in c.calls(namefn, assumptions)]
 
     def types(self):
         return merge(*map(lambda x: x.types(), self.computations))
