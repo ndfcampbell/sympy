@@ -4,13 +4,21 @@ from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy.rules.tools import subs
 from sympy.utilities.iterables import merge
 
+basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
+
 class BLAS(InplaceComputation):
     # TODO: metaclass magic for s/d/z prefixes
-    basetype = "real"
-    def __new__(cls, *inputs):
+    def __new__(cls, *inputs, **kwargs):
+        typecode = kwargs.get('typecode', 'D')
         mapping = dict(zip(cls._inputs, inputs))
         outputs = subs(mapping)(Tuple(*cls._outputs))
-        return InplaceComputation.__new__(cls, inputs, outputs)
+        return Basic.__new__(cls, Tuple(*inputs),
+                                  Tuple(*outputs),
+                                  typecode)
+
+    @property
+    def typecode(self):
+        return self.args[2]
 
     def print_Fortran(self, namefn, assumptions=True):
         return self.fortran_template % self.codemap(namefn, assumptions)
@@ -20,7 +28,7 @@ class BLAS(InplaceComputation):
         return self.inputs + self.outputs
 
     def types(self):
-        return merge({v: self.basetype  for v in self.variables},
+        return merge({v: basetypes[self.typecode] for v in self.variables},
                      {d: 'integer' for d in self.dimensions()})
 
     def shapes(self):
@@ -31,6 +39,10 @@ class BLAS(InplaceComputation):
                                    if hasattr(v, 'shape')]
                                    for d in v.shape
                                    if isinstance(d, Symbol))
+
+    def fnname(self):
+        """ GEMM(...).fnname -> dgemm """
+        return (self.typecode+self.__class__.__name__).lower()
 
 alpha = Symbol('alpha')
 beta  = Symbol('beta')
@@ -57,7 +69,7 @@ class MM(BLAS):
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
                  'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
-                 'fn': self.__class__.__name__.lower(),
+                 'fn': self.fnname(),
                  'SIDE': left_or_right(A, B, Q.symmetric, assumptions),
                  'DIAG': diag(A, assumptions),
                  'UPLO': 'U'} # TODO: symmetric matrices might be stored low
@@ -91,7 +103,7 @@ class TRMM(MM):
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B),
                  'M':str(B.shape[0]), 'N':str(B.shape[1]),
-                 'fn': self.__class__.__name__.lower(),
+                 'fn': self.fnname(),
                  'SIDE': left_or_right(A, B, Q.triangular, assumptions),
                  'DIAG': diag(A, assumptions),
                  'UPLO': uplo(A, assumptions)}
@@ -139,7 +151,7 @@ class TRSV(SV):
         other = {'TRANS': trans(A),
                  'LDA': LD(A),
                  'N':str(A.shape[0]),
-                 'fn': self.__class__.__name__.lower(),
+                 'fn': self.fnname(),
                  'DIAG': diag(A, assumptions),
                  'UPLO': uplo(A, assumptions),
                  'INCX': '1'}

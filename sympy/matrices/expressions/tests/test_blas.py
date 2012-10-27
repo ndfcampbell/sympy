@@ -36,31 +36,31 @@ def test_GEMM():
     A = MatrixSymbol('A', m, k)
     B = MatrixSymbol('B', k, n)
     C = MatrixSymbol('C', m, n)
-    assert GEMM(alpha, A,   B, beta, C).print_Fortran(str) == \
-            "call gemm('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"
+    assert GEMM(alpha, A,   B, beta, C, typecode='D').print_Fortran(str) == \
+            "call dgemm('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"
 
     D = MatrixSymbol('D', k, m)
-    assert GEMM(alpha, D.T, B, beta, C).print_Fortran(str) == \
-            "call gemm('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"
+    assert GEMM(alpha, D.T, B, beta, C, typecode='S').print_Fortran(str) == \
+            "call sgemm('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"
 
 def test_SYMM():
     A = MatrixSymbol('A', m, m)
     B = MatrixSymbol('B', m, n)
     C = MatrixSymbol('C', m, n)
     assert SYMM(alpha, A, B, beta, C).print_Fortran(str, Q.symmetric(A)) == \
-            "call symm('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"
+            "call dsymm('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"
 
 def test_TRMM():
     A = MatrixSymbol('A', m, m)
     B = MatrixSymbol('B', m, n)
     assert TRMM(alpha, A, B).print_Fortran(str, Q.upper_triangular(A)) == \
-            "call trmm('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
+            "call dtrmm('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
 
 def test_TRSV():
     A = MatrixSymbol('A', m, m)
     x = MatrixSymbol('x', m, 1)
     assert TRSV(A, x).print_Fortran(str, Q.upper_triangular(A)) == \
-            "call trsv('U', 'N', 'N', m, A, m, x, 1)"
+            "call dtrsv('U', 'N', 'N', m, A, m, x, 1)"
 
 def test_inplace_fn():
     A = MatrixSymbol('A', m, k)
@@ -85,16 +85,16 @@ def test_gemm_trsv():
     comp.declarations(str)
 
     computation_string = \
-"""call gemm('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
-call trsv('L', 'N', 'N', n, C, n, x, 1)"""
+"""call dgemm('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
+call dtrsv('L', 'N', 'N', n, C, n, x, 1)"""
     assert comp.outputs == (expr,)
     assert comp.shapes()[x] == x.shape
     assert all(q in comp.shapes() for q in (A,B,C,x,expr,))
     assert not any(q in comp.shapes() for q in (alpha, beta, n))
     assert comp.types()[n] == 'integer'
-    assert comp.types()[A] == GEMM.basetype
+    assert comp.types()[A] == basetypes[gemm.typecode]
     assert comp.intents()[x] == comp.intents()[C] == 'inout'
-    assert 'real, intent(in) :: alpha' in comp.declarations(str)
+    assert 'real*8, intent(in) :: alpha' in comp.declarations(str)
     assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
     assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
     assert computation_string in comp.function_calls(str, context)
