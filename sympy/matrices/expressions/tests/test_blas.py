@@ -85,6 +85,23 @@ def test_declarations():
                 "integer, intent(in) :: n",]
     assert set(expected) == set(gemm.declarations(str))
 
+def test_build():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
+    gemm = GEMM(alpha, A, B, beta, C)
+    f = gemm.build(str)
+    assert callable(f)
+
+    import numpy as np
+    A,B,C = [np.matrix(np.asarray([[1,2],[3,4]], order='F', dtype='float64'))
+                for i in range(3)]
+    a, b = 2.0, 3.0
+
+    result = a*A*B + b*C
+    f(a, A, B, b, C)
+    assert C == result
+
 def test_gemm_trsv():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, n)
