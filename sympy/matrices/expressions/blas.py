@@ -241,7 +241,7 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
 
     def intents(self):
         def intent(x):
-            if x in self.inputs and x in self.outputs:
+            if x in self.inputs and x in self.replacements().values():
                 return 'inout'
             if x in self.inputs or x in self.dimensions():
                 return 'in'
