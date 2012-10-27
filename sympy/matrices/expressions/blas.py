@@ -210,6 +210,11 @@ basic_names._id = 1
 class MatrixRoutine(CompositeComputation, InplaceComputation):
     name = 'f'
     def print_Fortran(self, namefn, assumptions=True):
+        return '\n\n'.join([self.header(namefn),
+                            '\n'.join(self.declarations(namefn)),
+                            self.function_calls(namefn, assumptions),
+                            self.footer()])
+    def function_calls(self, namefn, assumptions=True):
         s = ""
         rl = self.inplace_fn()
         for c in map(rl, self.toposort()):
