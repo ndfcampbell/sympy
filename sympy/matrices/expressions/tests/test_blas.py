@@ -36,31 +36,31 @@ def test_GEMM():
     A = MatrixSymbol('A', m, k)
     B = MatrixSymbol('B', k, n)
     C = MatrixSymbol('C', m, n)
-    assert GEMM(alpha, A,   B, beta, C, typecode='D').print_Fortran(str) == \
-            "call dgemm('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"
+    assert GEMM(alpha, A,   B, beta, C, typecode='D').calls(str) == \
+            ["call dgemm('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"]
 
     D = MatrixSymbol('D', k, m)
-    assert GEMM(alpha, D.T, B, beta, C, typecode='S').print_Fortran(str) == \
-            "call sgemm('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"
+    assert GEMM(alpha, D.T, B, beta, C, typecode='S').calls(str) == \
+            ["call sgemm('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"]
 
 def test_SYMM():
     A = MatrixSymbol('A', m, m)
     B = MatrixSymbol('B', m, n)
     C = MatrixSymbol('C', m, n)
-    assert SYMM(alpha, A, B, beta, C).print_Fortran(str, Q.symmetric(A)) == \
-            "call dsymm('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"
+    assert SYMM(alpha, A, B, beta, C).calls(str, Q.symmetric(A)) == \
+            ["call dsymm('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"]
 
 def test_TRMM():
     A = MatrixSymbol('A', m, m)
     B = MatrixSymbol('B', m, n)
-    assert TRMM(alpha, A, B).print_Fortran(str, Q.upper_triangular(A)) == \
-            "call dtrmm('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
+    assert TRMM(alpha, A, B).calls(str, Q.upper_triangular(A)) == \
+            ["call dtrmm('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"]
 
 def test_TRSV():
     A = MatrixSymbol('A', m, m)
     x = MatrixSymbol('x', m, 1)
-    assert TRSV(A, x).print_Fortran(str, Q.upper_triangular(A)) == \
-            "call dtrsv('U', 'N', 'N', m, A, m, x, 1)"
+    assert TRSV(A, x).calls(str, Q.upper_triangular(A)) == \
+            ["call dtrsv('U', 'N', 'N', m, A, m, x, 1)"]
 
 def test_inplace_fn():
     A = MatrixSymbol('A', m, k)
@@ -84,9 +84,8 @@ def test_gemm_trsv():
     comp = MatrixRoutine((gemm, trsv), (alpha, A, B, beta, C, x), (expr,))
     comp.declarations(str)
 
-    computation_string = \
-"""call dgemm('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
-call dtrsv('L', 'N', 'N', n, C, n, x, 1)"""
+    calls = ["call dgemm('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)",
+             "call dtrsv('L', 'N', 'N', n, C, n, x, 1)"]
     assert comp.outputs == (expr,)
     assert comp.shapes()[x] == x.shape
     assert all(q in comp.shapes() for q in (A,B,C,x,expr,))
@@ -97,6 +96,6 @@ call dtrsv('L', 'N', 'N', n, C, n, x, 1)"""
     assert 'real*8, intent(in) :: alpha' in comp.declarations(str)
     assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
     assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
-    assert computation_string in comp.function_calls(str, context)
+    assert all(c in comp.calls(str, context) for c in calls)
     assert set(comp.dimensions()) == set([n])
     assert 'integer, intent(in) :: n' in comp.declarations(str)
