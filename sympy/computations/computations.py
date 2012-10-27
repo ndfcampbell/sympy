@@ -17,10 +17,6 @@ class Computation(Basic):
     def outputs(self):
         return self.args[1]
 
-    @classmethod
-    def purify(cls):
-        return type(cls.__name__+"Pure", (Pure, cls), {})
-
 def intersect(a, b):
     return len(set(a).intersection(set(b))) != 0
 
@@ -95,6 +91,3 @@ class InplaceComputation(Computation):
             unseen = set(replacements) - seen
             rl = chain(rl, newrl) # Build up rl as we go
         return rl
-
-class Pure(InplaceComputation):
-    view_map = {}
