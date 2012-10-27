@@ -114,3 +114,6 @@ def test_gemm_trsv():
     assert set(calls) == set(comp.calls(str, context))
     assert set(comp.dimensions()) == set([n])
     assert 'integer, intent(in) :: n' in comp.declarations(str)
+
+    f = comp.build(str, context)
+    assert callable(f)

@@ -7,6 +7,7 @@ from sympy.utilities.iterables import merge
 basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
 
 class MatrixComputation(InplaceComputation):
+    name = 'f'
 
     def shapes(self):
         return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
@@ -42,6 +43,35 @@ class MatrixComputation(InplaceComputation):
         return {x: intent(x) for x in set(self.variables) | self.dimensions()
                              if intent(x)}
 
+    def header(self, namefn):
+        return "subroutine %(name)s(%(inputs)s)" % {
+            'name': self.name,
+            'inputs': ', '.join(map(namefn, self.inputs+tuple(self.dimensions())))}
+
+    def footer(self):
+        return "RETURN\nEND\n"
+
+    def print_Fortran(self, namefn, assumptions=True):
+        return '\n\n'.join([self.header(namefn),
+                            '\n'.join(self.declarations(namefn)),
+                            '\n'.join(self.calls(namefn, assumptions)),
+                            self.footer()])
+
+    def write(self, filename, *args, **kwargs):
+        file = open(filename, 'w')
+        file.write(self.print_Fortran(*args, **kwargs))
+        file.close()
+
+    def build(self, *args, **kwargs):
+        import os
+        src = kwargs.get('src', 'tmp.f90')
+        mod = kwargs.get('mod', 'blasmod')
+        self.write(src, *args, **kwargs)
+
+        command = 'f2py -c %(src)s -m %(mod)s -lblas' % locals()
+        file = os.popen(command); file.read()
+        module = __import__(mod)
+        return module.__dict__[self.name]
 
 class BLAS(MatrixComputation):
     # TODO: metaclass magic for s/d/z prefixes
@@ -254,14 +284,7 @@ basic_names._cache = {}
 basic_names._id = 1
 
 class MatrixRoutine(CompositeComputation, MatrixComputation):
-    name = 'f'
-
-    def print_Fortran(self, namefn, assumptions=True):
-        return '\n\n'.join([self.header(namefn),
-                            '\n'.join(self.declarations(namefn)),
-                            '\n'.join(self.calls(namefn, assumptions)),
-                            self.footer()])
-
+    """ A Composite MatrixComputation """
     def calls(self, namefn, assumptions=True):
         computations = map(self.inplace_fn(), self.toposort())
         return [call for c in computations
@@ -273,14 +296,6 @@ class MatrixRoutine(CompositeComputation, MatrixComputation):
     @property
     def variables(self):
         return set([x for c in self.computations for x in c.variables])
-
-    def header(self, namefn):
-        return "subroutine %(name)s(%(inputs)s)" % {
-            'name': self.name,
-            'inputs': ', '.join(map(namefn, self.inputs+tuple(self.dimensions())))}
-
-    def footer(self):
-        return "RETURN\nEND\n"
 
     def replacements(self):
         return merge(*[c.replacements() for c in self.computations])
