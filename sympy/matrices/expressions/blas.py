@@ -21,11 +21,16 @@ class BLAS(InplaceComputation):
 
     def types(self):
         return merge({v: self.basetype  for v in self.variables},
-                     {d: 'integer' for v in [v for v in self.variables
-                                                if hasattr(v, 'shape')]
-                                   for d in v.shape})
+                     {d: 'integer' for d in self.dimensions()})
+
     def shapes(self):
         return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
+
+    def dimensions(self):
+        return tuple(d for v in [v for v in self.variables
+                                   if hasattr(v, 'shape')]
+                                   for d in v.shape
+                                   if isinstance(d, Symbol))
 
 alpha = Symbol('alpha')
 beta  = Symbol('beta')
@@ -229,6 +234,9 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
 
     def variables(self):
         return set([x for c in self.computations for x in c.variables])
+
+    def dimensions(self):
+        return set([x for c in self.computations for x in c.dimensions()])
 
     def intents(self):
         def intent(x):
