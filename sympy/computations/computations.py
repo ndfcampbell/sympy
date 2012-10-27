@@ -3,7 +3,7 @@ from sympy.rules.tools import subs
 from sympy.rules import chain
 
 class Computation(Basic):
-    """ Represents a computation graph """
+    """ Computation graph - stores inputs and outputs """
 
     def __new__(cls, inputs, outputs):
         return Basic.__new__(cls, Tuple(*inputs),
@@ -21,7 +21,11 @@ def intersect(a, b):
     return len(set(a).intersection(set(b))) != 0
 
 class CompositeComputation(Computation):
-    """ Represents a computation of many parts """
+    """ Computation of many parts
+
+    Constituent computations are stored in a set.
+    Dependence is inferred from their inputs and outputs.
+    """
     def __new__(cls, computations, inputs=None, outputs=None):
         # TODO: flatten composites of composites?
         allinputs  = set([i for c in computations for i in c.inputs])
@@ -69,8 +73,8 @@ class CompositeComputation(Computation):
         from sympy.utilities.iterables import _toposort
         return _toposort(self.dag_io())
 
-
 class InplaceComputation(Computation):
+    """ Computation where some inputs are overwritten """
     def inplace(self):
         return not self.view_map
 
@@ -79,7 +83,7 @@ class InplaceComputation(Computation):
                 self.view_map.items()}
 
     def inplace_fn(self, seen = set([])):
-        """ Return a version of self with all inplace variables replaced """
+        """ Return a function to substitute outputs with overwritten inputs """
         replacements = Tuple(*[Tuple(k, v) for k, v in
             self.replacements().items()])
         seen = set([])
