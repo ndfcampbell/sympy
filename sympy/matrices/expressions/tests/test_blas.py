@@ -96,4 +96,5 @@ TRSV('L', 'N', 'N', n, C, n, x, 1)"""
     assert 'real, intent(in) :: alpha' in comp.declarations(str)
     assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
     assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
-    assert computation_string in comp.print_Fortran(str, context)
+    assert computation_string in comp.function_calls(str, context)
+    comp.print_Fortran(str, context)
