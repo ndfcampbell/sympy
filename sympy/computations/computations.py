@@ -73,9 +73,11 @@ class CompositeComputation(Computation):
 class InplaceComputation(Computation):
     def inplace(self):
         return not self.view_map
+
     def replacements(self):
         return {self.outputs[k]: self.inputs[v] for k, v in
                 self.view_map.items()}
+
     def inplace_fn(self, seen = set([])):
         """ Return a version of self with all inplace variables replaced """
         replacements = Tuple(*[Tuple(k, v) for k, v in
