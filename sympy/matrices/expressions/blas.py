@@ -6,7 +6,17 @@ from sympy.utilities.iterables import merge
 
 basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
 
-class BLAS(InplaceComputation):
+class MatrixComputation(InplaceComputation):
+
+    def shapes(self):
+        return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
+
+
+    def dimensions(self):
+        return tuple(d for x, shape in self.shapes().items()
+                       for d in shape if isinstance(d, Symbol))
+
+class BLAS(MatrixComputation):
     # TODO: metaclass magic for s/d/z prefixes
     def __new__(cls, *inputs, **kwargs):
         typecode = kwargs.get('typecode', 'D')
@@ -15,6 +25,10 @@ class BLAS(InplaceComputation):
         return Basic.__new__(cls, Tuple(*inputs),
                                   Tuple(*outputs),
                                   typecode)
+
+    def types(self):
+        return merge({v: basetypes[self.typecode] for v in self.variables},
+                     {d: 'integer' for d in self.dimensions()})
 
     @property
     def typecode(self):
@@ -26,19 +40,6 @@ class BLAS(InplaceComputation):
     @property
     def variables(self):
         return self.inputs + self.outputs
-
-    def types(self):
-        return merge({v: basetypes[self.typecode] for v in self.variables},
-                     {d: 'integer' for d in self.dimensions()})
-
-    def shapes(self):
-        return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
-
-    def dimensions(self):
-        return tuple(d for v in [v for v in self.variables
-                                   if hasattr(v, 'shape')]
-                                   for d in v.shape
-                                   if isinstance(d, Symbol))
 
     def fnname(self):
         """ GEMM(...).fnname -> dgemm """
@@ -225,7 +226,7 @@ def basic_names(x):
 basic_names._cache = {}
 basic_names._id = 1
 
-class MatrixRoutine(CompositeComputation, InplaceComputation):
+class MatrixRoutine(CompositeComputation, MatrixComputation):
     name = 'f'
     def print_Fortran(self, namefn, assumptions=True):
         return '\n\n'.join([self.header(namefn),
@@ -242,14 +243,9 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
     def types(self):
         return merge(*map(lambda x: x.types(), self.computations))
 
-    def shapes(self):
-        return merge(*map(lambda x: x.shapes(), self.computations))
-
+    @property
     def variables(self):
         return set([x for c in self.computations for x in c.variables])
-
-    def dimensions(self):
-        return set([x for c in self.computations for x in c.dimensions()])
 
     def intents(self):
         def intent(x):
@@ -260,7 +256,7 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
             if x in self.outputs:
                 return 'out'
 
-        return {x: intent(x) for x in self.variables() | self.dimensions()
+        return {x: intent(x) for x in self.variables | set(self.dimensions())
                              if intent(x)}
 
     def declarations(self, namefn):
@@ -275,7 +271,7 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
                 s += "%s" % str(inplace.shapes()[x])
             return s
         return map(declaration,
-                   sorted(inplace.variables() | inplace.dimensions(), key=str))
+                sorted(inplace.variables | set(inplace.dimensions()), key=str))
 
     def header(self, namefn):
         return "subroutine %(name)s(%(inputs)s)" % {
