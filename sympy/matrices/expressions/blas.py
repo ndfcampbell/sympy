@@ -16,6 +16,33 @@ class MatrixComputation(InplaceComputation):
         return set(d for x, shape in self.shapes().items()
                      for d in shape if isinstance(d, Symbol))
 
+    def declarations(self, namefn):
+        inplace = self.inplace_fn()(self)
+        def declaration(x):
+            s = "%s" % inplace.types()[x]
+            if x in inplace.intents():
+                s += ", intent(%s)" % inplace.intents()[x]
+            s += " :: "
+            s += "%s" % namefn(x)
+            if x in inplace.shapes():
+                s += "%s" % str(inplace.shapes()[x])
+            return s
+        return map(declaration,
+                sorted(set(inplace.variables) | set(inplace.dimensions()), key=str))
+
+    def intents(self):
+        def intent(x):
+            if x in self.inputs and x in self.replacements().values():
+                return 'inout'
+            if x in self.inputs or x in self.dimensions():
+                return 'in'
+            if x in self.outputs:
+                return 'out'
+
+        return {x: intent(x) for x in set(self.variables) | self.dimensions()
+                             if intent(x)}
+
+
 class BLAS(MatrixComputation):
     # TODO: metaclass magic for s/d/z prefixes
     def __new__(cls, *inputs, **kwargs):
@@ -228,11 +255,13 @@ basic_names._id = 1
 
 class MatrixRoutine(CompositeComputation, MatrixComputation):
     name = 'f'
+
     def print_Fortran(self, namefn, assumptions=True):
         return '\n\n'.join([self.header(namefn),
                             '\n'.join(self.declarations(namefn)),
                             '\n'.join(self.calls(namefn, assumptions)),
                             self.footer()])
+
     def calls(self, namefn, assumptions=True):
         computations = map(self.inplace_fn(), self.toposort())
         return [call for c in computations
@@ -244,32 +273,6 @@ class MatrixRoutine(CompositeComputation, MatrixComputation):
     @property
     def variables(self):
         return set([x for c in self.computations for x in c.variables])
-
-    def intents(self):
-        def intent(x):
-            if x in self.inputs and x in self.replacements().values():
-                return 'inout'
-            if x in self.inputs or x in self.dimensions():
-                return 'in'
-            if x in self.outputs:
-                return 'out'
-
-        return {x: intent(x) for x in self.variables | set(self.dimensions())
-                             if intent(x)}
-
-    def declarations(self, namefn):
-        inplace = self.inplace_fn()(self)
-        def declaration(x):
-            s = "%s" % inplace.types()[x]
-            if x in inplace.intents():
-                s += ", intent(%s)" % inplace.intents()[x]
-            s += " :: "
-            s += "%s" % namefn(x)
-            if x in inplace.shapes():
-                s += "%s" % str(inplace.shapes()[x])
-            return s
-        return map(declaration,
-                sorted(inplace.variables | set(inplace.dimensions()), key=str))
 
     def header(self, namefn):
         return "subroutine %(name)s(%(inputs)s)" % {

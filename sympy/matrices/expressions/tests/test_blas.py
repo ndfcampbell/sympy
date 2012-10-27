@@ -70,6 +70,21 @@ def test_inplace_fn():
     assert gemm.outputs == (alpha*A*B + beta*C,)
     assert gemm.inplace_fn()(gemm).outputs == (C,)
 
+def test_declarations():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
+    gemm = GEMM(alpha, A, B, beta, C)
+    expected = ["real*8, intent(in) :: A(m, k)",
+                "real*8, intent(in) :: B(k, n)",
+                "real*8, intent(inout) :: C(m, n)",
+                "real*8, intent(in) :: alpha",
+                "real*8, intent(in) :: beta",
+                "integer, intent(in) :: k",
+                "integer, intent(in) :: m",
+                "integer, intent(in) :: n",]
+    assert set(expected) == set(gemm.declarations(str))
+
 def test_gemm_trsv():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, n)
@@ -96,6 +111,6 @@ def test_gemm_trsv():
     assert 'real*8, intent(in) :: alpha' in comp.declarations(str)
     assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
     assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
-    assert all(c in comp.calls(str, context) for c in calls)
+    assert set(calls) == set(comp.calls(str, context))
     assert set(comp.dimensions()) == set([n])
     assert 'integer, intent(in) :: n' in comp.declarations(str)
