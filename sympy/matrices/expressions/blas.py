@@ -266,7 +266,8 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
 
     def header(self, namefn):
         return "subroutine %(name)s(%(inputs)s)" % {
-            'name': self.name, 'inputs': ', '.join(map(namefn, self.inputs))}
+            'name': self.name,
+            'inputs': ', '.join(map(namefn, self.inputs+tuple(self.dimensions())))}
 
     def footer(self):
         return "RETURN\nEND\n"
