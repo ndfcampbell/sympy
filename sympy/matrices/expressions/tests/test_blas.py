@@ -37,30 +37,30 @@ def test_GEMM():
     B = MatrixSymbol('B', k, n)
     C = MatrixSymbol('C', m, n)
     assert GEMM(alpha, A,   B, beta, C).print_Fortran(str) == \
-            "GEMM('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"
+            "call gemm('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"
 
     D = MatrixSymbol('D', k, m)
     assert GEMM(alpha, D.T, B, beta, C).print_Fortran(str) == \
-            "GEMM('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"
+            "call gemm('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"
 
 def test_SYMM():
     A = MatrixSymbol('A', m, m)
     B = MatrixSymbol('B', m, n)
     C = MatrixSymbol('C', m, n)
     assert SYMM(alpha, A, B, beta, C).print_Fortran(str, Q.symmetric(A)) == \
-            "SYMM('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"
+            "call symm('L', 'U', m, n, alpha, A, m, B, m, beta, C, m)"
 
 def test_TRMM():
     A = MatrixSymbol('A', m, m)
     B = MatrixSymbol('B', m, n)
     assert TRMM(alpha, A, B).print_Fortran(str, Q.upper_triangular(A)) == \
-            "TRMM('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
+            "call trmm('L', 'U', 'N', 'N', m, n, alpha, A, m, B, m)"
 
 def test_TRSV():
     A = MatrixSymbol('A', m, m)
     x = MatrixSymbol('x', m, 1)
     assert TRSV(A, x).print_Fortran(str, Q.upper_triangular(A)) == \
-            "TRSV('U', 'N', 'N', m, A, m, x, 1)"
+            "call trsv('U', 'N', 'N', m, A, m, x, 1)"
 
 def test_inplace_fn():
     A = MatrixSymbol('A', m, k)
@@ -85,8 +85,8 @@ def test_gemm_trsv():
     comp.declarations(str)
 
     computation_string = \
-"""GEMM('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
-TRSV('L', 'N', 'N', n, C, n, x, 1)"""
+"""call gemm('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
+call trsv('L', 'N', 'N', n, C, n, x, 1)"""
     assert comp.outputs == (expr,)
     assert comp.shapes()[x] == x.shape
     assert all(q in comp.shapes() for q in (A,B,C,x,expr,))
