@@ -261,7 +261,8 @@ class MatrixRoutine(CompositeComputation, InplaceComputation):
             if x in inplace.shapes():
                 s += "%s" % str(inplace.shapes()[x])
             return s
-        return map(declaration, inplace.variables() | inplace.dimensions())
+        return map(declaration,
+                   sorted(inplace.variables() | inplace.dimensions(), key=str))
 
     def header(self, namefn):
         return "subroutine %(name)s(%(inputs)s)" % {
