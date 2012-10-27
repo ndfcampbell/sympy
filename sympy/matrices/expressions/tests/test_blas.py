@@ -62,7 +62,14 @@ def test_TRSV():
     assert TRSV(A, x).print_Fortran(str, Q.upper_triangular(A)) == \
             "TRSV('U', 'N', 'N', m, A, m, x, 1)"
 
-@XFAIL
+def test_inplace_fn():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
+    gemm = GEMM(alpha, A,   B, beta, C)
+    assert gemm.outputs == (alpha*A*B + beta*C,)
+    assert gemm.inplace_fn()(gemm).outputs == (C,)
+
 def test_gemm_trsv():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, n)
@@ -74,9 +81,19 @@ def test_gemm_trsv():
     expr = (alpha*A*B + beta*C).I*x
     gemm = GEMM(alpha, A, B, beta, C)
     trsv = TRSV(alpha*A*B + beta*C, x)
-    comp = MatrixRoutine((gemm, trsv), (alpha, A, B, beta, C, x), (x,))
+    comp = MatrixRoutine((gemm, trsv), (alpha, A, B, beta, C, x), (expr,))
+    comp.declarations(str)
 
     computation_string = \
 """GEMM('N', 'N', n, n, n, alpha, A, n, B, n, beta, C, n)
 TRSV('L', 'N', 'N', n, C, n, x, 1)"""
+    assert comp.outputs == (expr,)
+    assert comp.shapes()[x] == x.shape
+    assert all(q in comp.shapes() for q in (A,B,C,x,expr,))
+    assert not any(q in comp.shapes() for q in (alpha, beta, n))
+    assert comp.types()[n] == 'integer'
+    assert comp.types()[A] == GEMM.basetype
+    assert 'real, intent(in) :: alpha' in comp.declarations(str)
+    assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
+    assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
     assert computation_string in comp.print_Fortran(str, context)

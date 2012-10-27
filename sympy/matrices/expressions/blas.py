@@ -1,4 +1,4 @@
-from sympy.computations import InplaceComputation
+from sympy.computations import InplaceComputation, CompositeComputation
 from sympy import Basic, Tuple, Symbol, Q, symbols, ask
 from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy.rules.tools import subs
@@ -6,6 +6,7 @@ from sympy.utilities.iterables import merge
 
 class BLAS(InplaceComputation):
     # TODO: metaclass magic for s/d/z prefixes
+    basetype = "real"
     def __new__(cls, *inputs):
         mapping = dict(zip(cls._inputs, inputs))
         outputs = subs(mapping)(Tuple(*cls._outputs))
@@ -13,6 +14,18 @@ class BLAS(InplaceComputation):
 
     def print_Fortran(self, namefn, assumptions=True):
         return self.fortran_template % self.codemap(namefn, assumptions)
+
+    @property
+    def variables(self):
+        return self.inputs + self.outputs
+
+    def types(self):
+        return merge({v: self.basetype  for v in self.variables},
+                     {d: 'integer' for v in [v for v in self.variables
+                                                if hasattr(v, 'shape')]
+                                   for d in v.shape})
+    def shapes(self):
+        return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
 
 alpha = Symbol('alpha')
 beta  = Symbol('beta')
@@ -105,7 +118,7 @@ class TRMV(MV):
 class SV(BLAS):
     _inputs   = (S, x)
     _outputs  = (S.I*x,)
-    view_map  = {0: 2}
+    view_map  = {0: 1}
     condition = True
 
 class TRSV(SV):
@@ -194,3 +207,53 @@ def basic_names(x):
 basic_names._cache = {}
 basic_names._id = 1
 
+class MatrixRoutine(CompositeComputation, InplaceComputation):
+    name = 'f'
+    def print_Fortran(self, namefn, assumptions=True):
+        s = ""
+        rl = self.inplace_fn()
+        for c in map(rl, self.toposort()):
+            s += c.print_Fortran(namefn, assumptions) + "\n"
+        return s
+
+    def types(self):
+        return merge(*map(lambda x: x.types(), self.computations))
+
+    def shapes(self):
+        return merge(*map(lambda x: x.shapes(), self.computations))
+
+    def variables(self):
+        return set([x for c in self.computations for x in c.variables])
+
+    def intents(self):
+        def intent(x):
+            if x in self.inputs and x in self.outputs:
+                return 'inout'
+            if x in self.inputs:
+                return 'in'
+            if x in self.outputs:
+                return 'out'
+        return {x: intent(x) for x in self.variables() if intent(x)}
+
+    def declarations(self, namefn):
+        inplace = self.inplace_fn()(self)
+        def declaration(x):
+            s = "%s" % inplace.types()[x]
+            if x in inplace.intents():
+                s += ", intent(%s)" % inplace.intents()[x]
+            s += " :: "
+            s += "%s" % namefn(x)
+            if x in inplace.shapes():
+                s += "%s" % str(inplace.shapes()[x])
+            return s
+        return map(declaration, inplace.variables())
+
+    def header(self, namefn):
+        return "subroutine %(name)s(%(inputs)s)" % {
+            'name': self.name, 'inputs': ', '.join(map(namefn, self.inputs))}
+
+    def footer(self):
+        return "RETURN\nEND\n"
+
+    def replacements(self):
+        return merge(*[c.replacements() for c in self.computations])

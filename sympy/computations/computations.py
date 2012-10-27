@@ -1,4 +1,6 @@
 from sympy import Basic, Tuple, Dict
+from sympy.rules.tools import subs
+from sympy.rules import chain
 
 class Computation(Basic):
     """ Represents a computation graph """
@@ -33,7 +35,9 @@ class CompositeComputation(Computation):
         if outputs is None:
             outputs = Tuple(*sorted(alloutputs - allinputs, key=str))
 
-        return Basic.__new__(cls, computations, inputs, outputs)
+        return Basic.__new__(cls, Tuple(*computations),
+                                  Tuple(*inputs),
+                                  Tuple(*outputs))
 
     @property
     def computations(self):
@@ -69,9 +73,28 @@ class CompositeComputation(Computation):
         from sympy.utilities.iterables import _toposort
         return _toposort(self.dag_io())
 
+
 class InplaceComputation(Computation):
     def inplace(self):
         return not self.view_map
+    def replacements(self):
+        return {self.outputs[k]: self.inputs[v] for k, v in
+                self.view_map.items()}
+    def inplace_fn(self, seen = set([])):
+        """ Return a version of self with all inplace variables replaced """
+        replacements = Tuple(*[Tuple(k, v) for k, v in
+            self.replacements().items()])
+        seen = set([])
+        unseen = set(replacements) - seen
+        rl = lambda x: x
+        while unseen:
+            k, v = unseen.pop()
+            newrl = subs({k: v})
+            replacements = newrl(replacements)
+            seen.add(Tuple(k, k))
+            unseen = set(replacements) - seen
+            rl = chain(rl, newrl) # Build up rl as we go
+        return rl
 
 class Pure(InplaceComputation):
     view_map = {}
