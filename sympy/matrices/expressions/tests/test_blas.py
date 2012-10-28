@@ -95,13 +95,15 @@ def test_build():
     assert callable(f)
 
     import numpy as np
-    A,B,C = [np.matrix(np.asarray([[1,2],[3,4]], order='F', dtype='float64'))
-                for i in range(3)]
     a, b = 2.0, 3.0
+    A,B,C = [np.matrix(np.asarray([[1,2],[3,4]], dtype='float64'))
+                for i in range(3)]
 
     result = a*A*B + b*C
+    A,B,C = [np.asarray([[1,2],[3,4]], order='F', dtype='float64')
+            for i in range(3)]
     f(a, A, B, b, C)
-    assert C == result
+    assert (C == result).all()
 
 def test_gemm_trsv():
     A = MatrixSymbol('A', n, n)
