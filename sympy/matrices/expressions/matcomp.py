@@ -67,8 +67,9 @@ class MatrixComputation(InplaceComputation):
 
     def build(self, *args, **kwargs):
         import os
+        _id = abs(hash(args))
         src = kwargs.get('src', 'tmp.f90')
-        mod = kwargs.get('mod', 'blasmod')
+        mod = kwargs.get('mod', 'blasmod'+str(_id))
         self.write(src, *args, **kwargs)
 
         command = 'f2py -c %(src)s -m %(mod)s -lblas' % locals()
