@@ -137,3 +137,20 @@ def test_gemm_trsv():
 
     f = comp.build(str, context)
     assert callable(f)
+
+    try:
+        import numpy as np
+        nalpha, nbeta = 2.0, 3.0
+        nA,nB,nC = [np.asarray([[1,0],[3,4]], order='F', dtype='float64')
+                for i in range(3)]
+        nx = np.asarray((2.3, 4.5), order='F', dtype='float64')
+
+        mA,mB,mC = map(np.matrix, (nA, nB, nC))
+        mx = np.matrix(nx).T
+        result = (nalpha*mA*mB + nbeta*mC).I*mx
+
+        f(nalpha, nA, nB, nbeta, nC, nx)
+        assert np.linalg.norm(nx - result.flatten()) < 1e-7
+
+    except ImportError:
+        pass
