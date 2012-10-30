@@ -296,7 +296,10 @@ def test_MatMul():
 def test_MatPow():
     A = MatrixSymbol('A', n, n)
 
+    assert isinstance(sqrt(A), MatPow)
+
     AA = MatPow(A, 2)
+    assert AA == A**2
     assert AA.exp == 2
     assert AA.base == A
     assert (A**n).exp == n
