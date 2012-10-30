@@ -13,7 +13,8 @@ class BLAS(MatrixComputation):
     def __new__(cls, *inputs, **kwargs):
         typecode = kwargs.get('typecode', 'D')
         mapping = dict(zip(cls._inputs, inputs))
-        outputs = subs(mapping)(Tuple(*cls._outputs))
+        outputs = map(lambda x: x.canonicalize(),
+                subs(mapping)(Tuple(*cls._outputs)))
         return Basic.__new__(cls, Tuple(*inputs),
                                   Tuple(*outputs),
                                   typecode)
@@ -31,7 +32,8 @@ class BLAS(MatrixComputation):
 
     @property
     def variables(self):
-        return self.inputs + self.outputs
+        return filter(lambda x: isinstance(x, Basic) and not x.is_number,
+                      self.inputs + self.outputs)
 
     def fnname(self):
         """ GEMM(...).fnname -> dgemm """
