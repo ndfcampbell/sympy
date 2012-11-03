@@ -93,3 +93,13 @@ class InplaceComputation(Computation):
     def inplace_fn(self, seen = set([])):
         """ Return a function to substitute outputs with overwritten inputs """
         return subs(self.replacements())
+
+    @property
+    def inplace_outputs(self):
+        d = self.replacements()
+        return tuple(d.get(o, o) for o in self.outputs)
+
+    @property
+    def inplace_variables(self):
+        d = self.replacements()
+        return tuple(d.get(v, v) for v in self.variables)
