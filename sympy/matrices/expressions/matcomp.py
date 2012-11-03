@@ -20,18 +20,17 @@ class MatrixComputation(InplaceComputation):
                      for d in shape if isinstance(d, Symbol))
 
     def declarations(self, namefn):
-        inplace = self.inplace_fn()(self)
         def declaration(x):
-            s = "%s" % inplace.types()[x]
-            if x in inplace.intents():
-                s += ", intent(%s)" % inplace.intents()[x]
+            s = "%s" % self.types()[x]
+            if x in self.intents():
+                s += ", intent(%s)" % self.intents()[x]
             s += " :: "
             s += "%s" % namefn(x)
-            if x in inplace.shapes():
-                s += "%s" % str(inplace.shapes()[x])
+            if x in self.shapes():
+                s += "%s" % str(self.shapes()[x])
             return s
         return map(declaration,
-                sorted(set(inplace.variables) | set(inplace.dimensions()), key=str))
+                sorted(set(self.inplace_variables) | set(self.dimensions()), key=str))
 
     def intents(self):
         def intent(x):
