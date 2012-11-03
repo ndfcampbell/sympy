@@ -24,6 +24,7 @@ class Computation(Basic):
     def _composite(self):
         return CompositeComputation
 
+
 def intersect(a, b):
     return len(set(a).intersection(set(b))) != 0
 
@@ -91,16 +92,4 @@ class InplaceComputation(Computation):
 
     def inplace_fn(self, seen = set([])):
         """ Return a function to substitute outputs with overwritten inputs """
-        replacements = Tuple(*[Tuple(k, v) for k, v in
-            self.replacements().items()])
-        seen = set([])
-        unseen = set(replacements) - seen
-        rl = lambda x: x
-        while unseen:
-            k, v = unseen.pop()
-            newrl = subs({k: v})
-            replacements = newrl(replacements)
-            seen.add(Tuple(k, k))
-            unseen = set(replacements) - seen
-            rl = chain(rl, newrl) # Build up rl as we go
-        return rl
+        return subs(self.replacements())
