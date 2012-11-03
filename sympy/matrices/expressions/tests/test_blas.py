@@ -1,6 +1,6 @@
 from sympy.matrices.expressions.blas import *
 from sympy.matrices.expressions.matcomp import *
-from sympy import *
+from sympy import Q
 from sympy.utilities.pytest import XFAIL
 
 n,m,k = symbols('n,m,k')
@@ -154,3 +154,8 @@ def test_gemm_trsv():
 
     except ImportError:
         pass
+
+def test_valid():
+    assert GEMM.valid((1, A, B, 2, C), True)
+    assert not SYMM.valid((1, A, B, 2, C), True)
+    assert SYMM.valid((1, A, B, 2, C), Q.symmetric(A))

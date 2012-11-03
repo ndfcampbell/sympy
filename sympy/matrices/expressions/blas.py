@@ -39,6 +39,16 @@ class BLAS(MatrixComputation):
         """ GEMM(...).fnname -> dgemm """
         return (self.typecode+self.__class__.__name__).lower()
 
+    @classmethod
+    def valid(cls, inputs, assumptions):
+        d = dict(zip(cls._inputs, inputs))
+        if cls.condition is True:
+            return True
+        if cls is SYMM and assumptions is not True:
+            assert False
+        return ask(cls.condition.subs(d), assumptions)
+
+
 # Pattern variables
 alpha = Symbol('alpha')
 beta  = Symbol('beta')
