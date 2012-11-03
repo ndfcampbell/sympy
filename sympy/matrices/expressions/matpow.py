@@ -34,5 +34,7 @@ class MatPow(MatrixExpr):
             # Make an explicity MatMul out of the MatPow
             return Basic.__new__(MatMul,
                     *[self.base for k in range(self.exp)])._entry(i, j)
+        else:
+            raise NotImplementedError("Indexing not supported on MatPows")
 
 from matmul import MatMul
