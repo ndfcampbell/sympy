@@ -33,6 +33,9 @@ def test_composite():
     assert cc.dag_oi() == {sv: set([mm]), mm: set([])}
     assert cc.toposort() == [mm, sv]
 
+    assert mm + sv == MatrixRoutine((mm, sv))
+    assert (mm + sv + cc).inputs == MatrixRoutine((mm, sv, cc)).inputs
+
 def test_GEMM():
     A = MatrixSymbol('A', m, k)
     B = MatrixSymbol('B', k, n)

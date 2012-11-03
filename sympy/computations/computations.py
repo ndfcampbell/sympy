@@ -17,6 +17,13 @@ class Computation(Basic):
     def outputs(self):
         return self.args[1]
 
+    def __add__(self, other):
+        return self._composite((self, other))
+
+    @property
+    def _composite(self):
+        return CompositeComputation
+
 def intersect(a, b):
     return len(set(a).intersection(set(b))) != 0
 

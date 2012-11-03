@@ -15,7 +15,6 @@ class MatrixComputation(InplaceComputation):
     def shapes(self):
         return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
 
-
     def dimensions(self):
         return set(d for x, shape in self.shapes().items()
                      for d in shape if isinstance(d, Symbol))
@@ -76,6 +75,11 @@ class MatrixComputation(InplaceComputation):
         file = os.popen(command); file.read()
         module = __import__(mod)
         return module.__dict__[self.name]
+
+    @property
+    def _composite(self):
+        return MatrixRoutine
+
 
 class CopyMatrix(InplaceComputation):
     _id = 0
