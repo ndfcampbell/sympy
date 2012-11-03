@@ -1,5 +1,6 @@
 from matexpr import ShapeError
 from matpow import MatPow
+from sympy import Basic
 
 
 class Inverse(MatPow):
@@ -33,7 +34,7 @@ class Inverse(MatPow):
         try:
             return mat._eval_inverse(**kwargs)
         except (AttributeError, NotImplementedError):
-            return MatPow.__new__(cls, mat, -1)
+            return Basic.__new__(cls, mat)
 
     @property
     def arg(self):
