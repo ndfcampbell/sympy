@@ -44,8 +44,6 @@ class BLAS(MatrixComputation):
         d = dict(zip(cls._inputs, inputs))
         if cls.condition is True:
             return True
-        if cls is SYMM and assumptions is not True:
-            assert False
         return ask(cls.condition.subs(d), assumptions)
 
 

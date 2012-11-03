@@ -156,6 +156,10 @@ def test_gemm_trsv():
         pass
 
 def test_valid():
+    A = MatrixSymbol('A', n, n)
+    B = MatrixSymbol('B', n, n)
+    C = MatrixSymbol('C', n, n)
     assert GEMM.valid((1, A, B, 2, C), True)
     assert not SYMM.valid((1, A, B, 2, C), True)
     assert SYMM.valid((1, A, B, 2, C), Q.symmetric(A))
+    assert SYMM.valid((1, A, B, 2, C), Q.symmetric(B))
