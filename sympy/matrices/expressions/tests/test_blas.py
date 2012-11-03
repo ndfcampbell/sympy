@@ -40,11 +40,11 @@ def test_GEMM():
     A = MatrixSymbol('A', m, k)
     B = MatrixSymbol('B', k, n)
     C = MatrixSymbol('C', m, n)
-    assert GEMM(alpha, A,   B, beta, C, typecode='D').calls(str) == \
+    assert GEMM(alpha, A,   B, beta, C, 'D').calls(str) == \
             ["call dgemm('N', 'N', m, n, k, alpha, A, m, B, k, beta, C, m)"]
 
     D = MatrixSymbol('D', k, m)
-    assert GEMM(alpha, D.T, B, beta, C, typecode='S').calls(str) == \
+    assert GEMM(alpha, D.T, B, beta, C, 'S').calls(str) == \
             ["call sgemm('T', 'N', m, n, k, alpha, D, k, B, k, beta, C, m)"]
 
 def test_SYMM():
@@ -72,7 +72,7 @@ def test_inplace_fn():
     C = MatrixSymbol('C', m, n)
     gemm = GEMM(alpha, A,   B, beta, C)
     assert gemm.outputs == (alpha*A*B + beta*C,)
-    assert gemm.inplace_fn()(gemm).outputs == (C,)
+    assert gemm.inplace_outputs == (C,)
 
 def test_declarations():
     A = MatrixSymbol('A', m, k)
@@ -166,3 +166,11 @@ def test_valid():
     assert not SYMM.valid((1, A, B, 2, C), True)
     assert SYMM.valid((1, A, B, 2, C), Q.symmetric(A))
     assert SYMM.valid((1, A, B, 2, C), Q.symmetric(B))
+
+def test_rebuild_from_args():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
+    gemm = GEMM(alpha, A, B, beta, C)
+
+    assert gemm == type(gemm)(*gemm.args)

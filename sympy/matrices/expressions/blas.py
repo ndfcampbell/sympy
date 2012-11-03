@@ -10,22 +10,29 @@ basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
 
 class BLAS(MatrixComputation):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
-    def __new__(cls, *inputs, **kwargs):
-        typecode = kwargs.get('typecode', 'D')
-        mapping = dict(zip(cls._inputs, inputs))
-        outputs = map(lambda x: x.canonicalize(),
-                subs(mapping)(Tuple(*cls._outputs)))
-        return Basic.__new__(cls, Tuple(*inputs),
-                                  Tuple(*outputs),
-                                  typecode)
+    def __new__(cls, *args):
+        if args[-1] not in basetypes:
+            typecode = 'D'
+            args = args + (typecode,)
+        return Basic.__new__(cls, *args)
+
+    @property
+    def inputs(self):
+        return tuple(self.args[:-1])
+
+    @property
+    def outputs(self):
+        cls = self.__class__
+        mapping = dict(zip(cls._inputs, self.inputs))
+        return tuple(map(lambda x: x.canonicalize(),
+                         subs(mapping)(Tuple(*cls._outputs))))
+    @property
+    def typecode(self):
+        return self.args[-1]
 
     def types(self):
         return merge({v: basetypes[self.typecode] for v in self.variables},
                      {d: 'integer' for d in self.dimensions()})
-
-    @property
-    def typecode(self):
-        return self.args[2]
 
     def calls(self, namefn, assumptions=True):
         return [self.fortran_template % self.codemap(namefn, assumptions)]
