@@ -47,7 +47,5 @@ def test_traverse():
     assumptions = (Q.lower_triangular(3*X*Y+2*Z) & Q.symmetric(Y))
     expr = (3*X*Y + 2*Z).I*x
     blas_rule = top_down(build_rule(assumptions))
-    return blas_rule(expr)
-    comp = blas_rule(expr).next()
-    return comp
-    assert False
+    comps = list(blas_rule(expr))
+    assert len(comps) == 2
