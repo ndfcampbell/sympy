@@ -1,5 +1,5 @@
 from sympy.matrices.expressions.blas import GEMM, TRSV, SYMM
-from sympy.unify.unify_sympy import unify, patternify
+from sympy.unify.usympy import unify, patternify
 from sympy.unify.rewrite import rewriterule
 from sympy.rules.branch import multiplex, condition
 from sympy import MatrixSymbol, MatrixExpr
