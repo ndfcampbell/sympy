@@ -108,6 +108,34 @@ def test_build():
     f(a, A, B, b, C)
     assert (C == result).all()
 
+def test_build_composite():
+    A = MatrixSymbol('A', n, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', n, n)
+    x = MatrixSymbol('x', n, 1)
+    gemm = GEMM(alpha, A, B, beta, C)
+    trsv = TRSV(alpha*A*B + beta*C, x)
+    comp = MatrixRoutine((gemm, trsv), (alpha, A, B, beta, C, x))
+
+    print comp.print_Fortran(basic_names, Q.lower_triangular(alpha*A*B + beta*C))
+    f = comp.build(basic_names, Q.lower_triangular(alpha*A*B + beta*C))
+
+    import numpy as np
+    a, b = 2.0, 3.0
+    A,B,C = [np.matrix(np.asarray([[1,0],[3,4]], dtype='float64'))
+                for i in range(3)]
+    x = np.matrix(([1], [2]), dtype='float64')
+
+    result = np.linalg.solve(a*A*B + b*C, x)
+    result = np.asarray(result).squeeze()
+    A,B,C = [np.asarray([[1,0],[3,4]], order='F', dtype='float64')
+            for i in range(3)]
+    x = np.asarray((1, 2), dtype='float64')
+    f(a, A, B, b, C, x)
+    print x
+    print result
+    assert (x == result).all()
+
 def test_gemm_trsv():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, n)
