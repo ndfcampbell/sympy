@@ -35,14 +35,14 @@ def top_down(brule):
     """ Apply a rule down a tree running it on the top nodes first """
     ident = "_identity"
     def top_down_rl(expr):
-        print "In:  ", expr
+        # print "In:  ", expr
         anything = False
         for comp in brule(expr):
             anything = True
             for comps in product(*map(top_down_rl, comp.inputs)):
                 x = comp._composite(filter(lambda x: not x is ident, comps) +
                                       (comp,))
-                print "Out: ", x
+                # print "Out: ", x
                 yield x
         if not anything:
             yield ident

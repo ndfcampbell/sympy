@@ -1,6 +1,7 @@
 from sympy.matrices.expressions.gen import build_rule, top_down, rr_from_blas
 # from sympy.matrices.expressions.gen import blas_rule
 from sympy.matrices.expressions.blas import TRSV, GEMM, SYMM
+from sympy.matrices.expressions.matcomp import basic_names
 from sympy.matrices.expressions import MatrixSymbol
 from sympy import Q
 
@@ -51,3 +52,18 @@ def test_traverse():
     assert len(comps) == 2
     assert all('f(X, Y, Z, x)' in comp.header(str) for comp in comps)
     assert all(set(comp.outputs) == set((expr,)) for comp in comps)
+
+def test_build_many():
+    assumptions = (Q.lower_triangular(3*X*Y+2*Z) & Q.symmetric(Y))
+    expr = (3*X*Y + 2*Z).I*x
+    blas_rule = top_down(build_rule(assumptions))
+    comps = list(blas_rule(expr))
+
+    import numpy as np
+    A,B,C = [np.asarray([[1,2,3],[4,0,6],[7,8,9]], order='F', dtype='float64')
+            for i in range(3)]
+    xx     = np.asarray([1,2,3], order='F', dtype='float64')
+    for comp in comps:
+        f = comp.build(basic_names, assumptions)
+        assert callable(f)
+        f(A, B, C, xx) # Ensure that this works
