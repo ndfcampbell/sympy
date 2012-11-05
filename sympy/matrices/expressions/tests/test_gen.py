@@ -1,4 +1,4 @@
-from sympy.matrices.expressions.gen import build_rule, top_down
+from sympy.matrices.expressions.gen import build_rule, top_down, rr_from_blas
 # from sympy.matrices.expressions.gen import blas_rule
 from sympy.matrices.expressions.blas import TRSV, GEMM, SYMM
 from sympy.matrices.expressions import MatrixSymbol
@@ -28,9 +28,9 @@ def test_blas_rule():
 
 
     expr = (3*X*Y + 2*Z).I*x
-    comp = blas_rule(expr).next()
+    comp = translate(expr).next()
     assert isinstance(comp, TRSV)
-    comp2 = blas_rule(comp.inputs[0]).next()
+    comp2 = translate(comp.inputs[0]).next()
     assert isinstance(comp2, GEMM)
 
 def test_multiple_outs():
