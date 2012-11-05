@@ -165,7 +165,7 @@ class TRSV(SV):
     """ Triangular Matrix Vector Solve """
     fortran_template = ("call %(fn)s('%(UPLO)s', '%(TRANS)s', '%(DIAG)s', "
                         "%(N)s, %(A)s, %(LDA)s, %(x)s, %(INCX)s)")
-    condition = Q.lower_triangular(A) | Q.lower_triangular(B)
+    condition = Q.lower_triangular(S) | Q.upper_triangular(S)
     def codemap(self, namefn, assumptions=True):
         varnames = 'A x'.split()
         A, x = self.inputs
