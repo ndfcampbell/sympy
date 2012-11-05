@@ -10,6 +10,14 @@ def remove_numbers(coll):
                 isinstance(x, Expr) and x.is_Number)
     return filter(lambda x: not is_number(x), coll)
 
+def shape_str(shape):
+    if shape[0] == 1:
+        return "(%d)"%shape[1]
+    elif shape[1] == 1:
+        return "(%d)"%shape[0]
+    else:
+        return "(%d, %d)"%shape
+
 class MatrixComputation(InplaceComputation):
     """ A Computation for Matrix operations
 
@@ -32,7 +40,7 @@ class MatrixComputation(InplaceComputation):
             s += " :: "
             s += "%s" % namefn(x)
             if x in self.shapes():
-                s += "%s" % str(self.shapes()[x])
+                s += "%s" % shape_str(self.shapes()[x])
             return s
         return map(declaration,
                 sorted(remove_numbers(set(self.inplace_variables) |
