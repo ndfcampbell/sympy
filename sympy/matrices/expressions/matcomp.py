@@ -4,10 +4,11 @@ from sympy import Symbol, Expr
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.utilities.iterables import merge
 
+def is_number(x):
+    return (isinstance(x, (int, float)) or
+            isinstance(x, Expr) and x.is_Number)
+
 def remove_numbers(coll):
-    def is_number(x):
-        return (isinstance(x, (int, float)) or
-                isinstance(x, Expr) and x.is_Number)
     return filter(lambda x: not is_number(x), coll)
 
 def shape_str(shape):
@@ -109,6 +110,9 @@ def basic_names(x):
 
     if X is a MatrixSymbol return X.name
     Otherwise return a name like "_123" consistently for repeated inputs """
+
+    if is_number(x):
+        return str(x)
     if x in basic_names._cache:
         return basic_names._cache[x]
     if isinstance(x, (MatrixSymbol, Symbol)):
@@ -116,6 +120,12 @@ def basic_names(x):
     else:
         result = "_%d"%basic_names._id
         basic_names._id += 1
+
+    # TODO: replace this with a collection-wise name function
+    lower = lambda x: x.lower()
+    while(result.lower() in map(lower, basic_names._cache.values())):
+        result += '_'
+
     basic_names._cache[x] = result
     return result
 basic_names._cache = {}
