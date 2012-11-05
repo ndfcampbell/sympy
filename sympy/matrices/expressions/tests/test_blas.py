@@ -1,6 +1,6 @@
 from sympy.matrices.expressions.blas import *
 from sympy.matrices.expressions.matcomp import *
-from sympy import Q
+from sympy import Q, Integer
 from sympy.utilities.pytest import XFAIL
 
 n,m,k = symbols('n,m,k')
@@ -133,10 +133,11 @@ def test_gemm_trsv():
     assert comp.intents()[x] == comp.intents()[C] == 'inout'
     assert 'real*8, intent(in) :: alpha' in comp.declarations(str)
     assert ':: A(n, n)' in '\n'.join(comp.declarations(str))
-    assert 'intent(inout) :: x(n, 1)' in '\n'.join(comp.declarations(str))
+    assert 'intent(inout) :: x(n)' in '\n'.join(comp.declarations(str))
     assert set(calls) == set(comp.calls(str, context))
-    assert set(comp.dimensions()) == set([n])
+    assert set(comp.dimensions()) == set([n, Integer(1)])
     assert 'integer, intent(in) :: n' in comp.declarations(str)
+    assert 'integer, intent(in) :: 1' not in comp.declarations(str)
 
     f = comp.build(str, context)
     assert callable(f)
@@ -175,17 +176,15 @@ def test_rebuild_from_args():
 
     assert gemm == type(gemm)(*gemm.args)
 
-def test_remove_numbers():
-    assert remove_numbers([x, X, 1, 1.0, S.One]) == [x, X]
-
 def test_header_no_numbers():
     A = MatrixSymbol('A', m, k)
     B = MatrixSymbol('B', k, n)
     C = MatrixSymbol('C', m, n)
-    assert '2' not in GEMM(2, A, B, beta, c).header(str)
+
+    assert '2' not in GEMM(Integer(2), A, B, beta, C).header(str)
 
 def test_declarations_no_numbers():
     A = MatrixSymbol('A', m, k)
     B = MatrixSymbol('B', k, n)
     C = MatrixSymbol('C', m, n)
-    assert 2 not in GEMM(2, A, B, beta, c).declarations(str)
+    assert 2 not in GEMM(Integer(2), A, B, beta, C).declarations(str)

@@ -60,7 +60,7 @@ def test_build_many():
     comps = list(blas_rule(expr))
 
     import numpy as np
-    A,B,C = [np.asarray([[1,2,3],[4,0,6],[7,8,9]], order='F', dtype='float64')
+    A,B,C = [np.asarray([[1,0,0],[4,5,0],[7,8,9]], order='F', dtype='float64')
             for i in range(3)]
     xx     = np.asarray([1,2,3], order='F', dtype='float64')
     for comp in comps:
