@@ -17,7 +17,7 @@ def test_rr_from_blas():
     assert rr(expr).next() == TRSV(3*X*Y + 2*Z, x)
 
     rr = rr_from_blas(TRSV)
-    assert len(rr(expr)) == 0
+    assert len(list(rr(expr))) == 0
 
 def test_blas_rule():
     assumptions = (Q.lower_triangular(X) & Q.lower_triangular(Y) &
