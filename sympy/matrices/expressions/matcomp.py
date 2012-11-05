@@ -13,11 +13,11 @@ def remove_numbers(coll):
 
 def shape_str(shape):
     if shape[0] == 1:
-        return "(%d)"%shape[1]
+        return "(%s)"%str(shape[1])
     elif shape[1] == 1:
-        return "(%d)"%shape[0]
+        return "(%s)"%str(shape[0])
     else:
-        return "(%d, %d)"%shape
+        return "(%s, %s)"%(str(shape[0]), str(shape[1]))
 
 class MatrixComputation(InplaceComputation):
     """ A Computation for Matrix operations
