@@ -174,3 +174,18 @@ def test_rebuild_from_args():
     gemm = GEMM(alpha, A, B, beta, C)
 
     assert gemm == type(gemm)(*gemm.args)
+
+def test_remove_numbers():
+    assert remove_numbers([x, X, 1, 1.0, S.One]) == [x, X]
+
+def test_header_no_numbers():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
+    assert '2' not in GEMM(2, A, B, beta, c).header(str)
+
+def test_declarations_no_numbers():
+    A = MatrixSymbol('A', m, k)
+    B = MatrixSymbol('B', k, n)
+    C = MatrixSymbol('C', m, n)
+    assert 2 not in GEMM(2, A, B, beta, c).declarations(str)

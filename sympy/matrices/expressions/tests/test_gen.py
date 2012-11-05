@@ -49,3 +49,5 @@ def test_traverse():
     blas_rule = top_down(build_rule(assumptions))
     comps = list(blas_rule(expr))
     assert len(comps) == 2
+    assert all('f(X, Y, Z, x)' in comp.header(str) for comp in comps)
+    assert all(set(comp.outputs) == set((expr,)) for comp in comps)

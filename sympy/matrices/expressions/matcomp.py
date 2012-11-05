@@ -1,8 +1,14 @@
 
 from sympy.computations import InplaceComputation, CompositeComputation
-from sympy import Symbol
+from sympy import Symbol, Expr
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.utilities.iterables import merge
+
+def remove_numbers(coll):
+    def is_number(x):
+        return (isinstance(x, (int, float)) or
+                isinstance(x, Expr) and x.is_Number)
+    return filter(lambda x: not is_number(x), coll)
 
 class MatrixComputation(InplaceComputation):
     """ A Computation for Matrix operations
@@ -16,8 +22,7 @@ class MatrixComputation(InplaceComputation):
         return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
 
     def dimensions(self):
-        return set(d for x, shape in self.shapes().items()
-                     for d in shape if isinstance(d, Symbol))
+        return set(d for x, shape in self.shapes().items() for d in shape)
 
     def declarations(self, namefn):
         def declaration(x):
@@ -30,7 +35,8 @@ class MatrixComputation(InplaceComputation):
                 s += "%s" % str(self.shapes()[x])
             return s
         return map(declaration,
-                sorted(set(self.inplace_variables) | set(self.dimensions()), key=str))
+                sorted(remove_numbers(set(self.inplace_variables) |
+                                      set(self.dimensions())), key=str))
 
     def intents(self):
         def intent(x):
@@ -47,7 +53,8 @@ class MatrixComputation(InplaceComputation):
     def header(self, namefn):
         return "subroutine %(name)s(%(inputs)s)" % {
             'name': self.name,
-            'inputs': ', '.join(map(namefn, self.inputs+tuple(self.dimensions())))}
+            'inputs': ', '.join(map(namefn,
+                remove_numbers(self.inputs+tuple(self.dimensions()))))}
 
     def footer(self):
         return "RETURN\nEND\n"
