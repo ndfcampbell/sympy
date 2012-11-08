@@ -1,8 +1,9 @@
 
 from sympy.computations import InplaceComputation, CompositeComputation
-from sympy import Symbol, Expr
+from sympy import Symbol, Expr, Basic, ask, Tuple
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.utilities.iterables import merge
+from sympy.rules.tools import subs
 
 def is_number(x):
     return (isinstance(x, (int, float)) or
@@ -148,3 +149,53 @@ class MatrixRoutine(CompositeComputation, MatrixComputation):
 
     def replacements(self):
         return merge(*[c.replacements() for c in self.computations])
+
+
+basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
+
+class MatrixCall(MatrixComputation):
+    """ An atomic call, superclass for BLAS and LAPACK """
+    def __new__(cls, *args):
+        if args[-1] not in basetypes:
+            typecode = 'D'
+            args = args + (typecode,)
+        return Basic.__new__(cls, *args)
+
+    @property
+    def inputs(self):
+        return tuple(self.args[:-1])
+
+    @property
+    def outputs(self):
+        cls = self.__class__
+        mapping = dict(zip(cls._inputs, self.inputs))
+        return tuple(map(lambda x: x.canonicalize(),
+                         subs(mapping)(Tuple(*cls._outputs))))
+
+    @property
+    def typecode(self):
+        return self.args[-1]
+
+    def types(self):
+        return merge({v: basetypes[self.typecode] for v in self.variables},
+                     {d: 'integer' for d in self.dimensions()})
+
+    def calls(self, namefn, assumptions=True):
+        return [self.fortran_template % self.codemap(namefn, assumptions)]
+
+    @property
+    def variables(self):
+        return filter(lambda x: isinstance(x, Basic) and not x.is_number,
+                      self.inputs + self.outputs)
+
+    def fnname(self):
+        """ GEMM(...).fnname -> dgemm """
+        return (self.typecode+self.__class__.__name__).lower()
+
+    @classmethod
+    def valid(cls, inputs, assumptions):
+        d = dict(zip(cls._inputs, inputs))
+        if cls.condition is True:
+            return True
+        return ask(cls.condition.subs(d), assumptions)
+
