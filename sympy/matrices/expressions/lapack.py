@@ -5,7 +5,7 @@ from sympy.utilities.iterables import merge
 from calls import MatrixCall, basetypes
 from calls import alpha, beta, n, m, k, A, B, C, S, x, a, b
 
-IPIV = MatrixSymbol('IPIV', n, 1) # TODO: encode integer type
+IPIV = MatrixSymbol('IPIV', n, 1)
 INFO = Symbol('INFO', integer=True)
 
 class LAPACK(MatrixCall):
@@ -16,6 +16,7 @@ class GESV(LAPACK):
     """ General Matrix Vector Solve """
     _inputs   = (S, C)
     _outputs  = (S.I*C, IPIV, INFO)
+    _out_types = (None, 'integer', 'integer')
     fortran_template = ("call %(fn)s('%(N)s', '%(NRHS)s', '%(A)s', "
                         "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s)")
     condition = True  # TODO: maybe require S to be invertible?

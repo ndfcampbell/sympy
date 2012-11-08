@@ -48,7 +48,8 @@ class MatrixCall(MatrixComputation):
         return self.args[-1]
 
     def types(self):
-        return merge({v: basetypes[self.typecode] for v in self.variables},
+        return merge(dict(zip(self.inputs, self.in_types)),
+                     dict(zip(self.outputs, self.out_types)),
                      {d: 'integer' for d in self.dimensions()})
 
     def calls(self, namefn, assumptions=True):
@@ -69,6 +70,19 @@ class MatrixCall(MatrixComputation):
         if cls.condition is True:
             return True
         return ask(cls.condition.subs(d), assumptions)
+
+    basetype = property(lambda self:  basetypes[self.typecode])
+    _in_types = property(lambda self: (None,)*len(self._inputs))
+    _out_types = property(lambda self: (None,)*len(self._outputs))
+
+    @property
+    def in_types(self):
+        return tuple(it or self.basetype for it in self._in_types)
+
+    @property
+    def out_types(self):
+        return tuple(ot or self.basetype for ot in self._out_types)
+
 
 def trans(A):
     """ Return 'T' if A is a transpose, else 'N' """
