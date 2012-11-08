@@ -26,11 +26,30 @@ class MatrixComputation(InplaceComputation):
     """
     name = 'f'
 
+
+    def varcmp(self):
+        def my_varcmp(a, b):
+            if a in self.inputs and b in self.inputs:
+                return self.inputs.index(a) - self.inputs.index(b)
+            elif a in self.inputs:
+                return -1
+            elif b in self.inputs:
+                return 1
+            else:
+                return cmp(str(a), str(b))
+        return my_varcmp
+
     def shapes(self):
         return {x: x.shape for x in self.variables if hasattr(x, 'shape')}
 
     def dimensions(self):
         return set(d for x, shape in self.shapes().items() for d in shape)
+
+    @property
+    def declared_variables(self):
+        return sorted(remove_numbers(set(self.inplace_variables) |
+                                     set(self.dimensions())),
+                      cmp = self.varcmp())
 
     def declarations(self, namefn):
         def declaration(x):
@@ -42,9 +61,7 @@ class MatrixComputation(InplaceComputation):
             if x in self.shapes():
                 s += "%s" % shape_str(self.shapes()[x])
             return s
-        return map(declaration,
-                sorted(remove_numbers(set(self.inplace_variables) |
-                                      set(self.dimensions())), key=str))
+        return map(declaration, self.declared_variables)
 
     def intents(self):
         def intent(x):
@@ -55,14 +72,13 @@ class MatrixComputation(InplaceComputation):
             if x in self.outputs:
                 return 'out'
 
-        return {x: intent(x) for x in set(self.variables) | self.dimensions()
-                             if intent(x)}
+        return {x: intent(x) for x in self.declared_variables if intent(x)}
 
     def header(self, namefn):
+        intents = self.intents()
         return "subroutine %(name)s(%(inputs)s)" % {
             'name': self.name,
-            'inputs': ', '.join(map(namefn,
-                remove_numbers(self.inputs+tuple(self.dimensions()))))}
+            'inputs': ', '.join(map(namefn, self.declared_variables))}
 
     def footer(self):
         return "RETURN\nEND\n"

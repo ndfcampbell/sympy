@@ -36,7 +36,6 @@ def test_composite():
     assert mm + sv == MatrixRoutine((mm, sv))
     assert (mm + sv + cc).inputs == MatrixRoutine((mm, sv, cc)).inputs
 
-    print cc.flags
     assert set(cc.flags) == set(['-lblas'])
 
 def test_GEMM():

@@ -22,6 +22,10 @@ def test_in_out_types():
 
 def test_ipiv_header_declaration():
     assert 'integer, intent(out) :: IPIV(n)' in gesv.print_Fortran(str)
+    assert 'IPIV' in gesv.header(str)
+
+def test_compiles():
+    assert callable(gesv.build(str))
 
 def test_types():
     A = MatrixSymbol('A', n, n)
