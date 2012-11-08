@@ -3,23 +3,12 @@
 from sympy import Basic, Symbol, Q, symbols, ask
 from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy.utilities.iterables import merge
-from matcomp import MatrixCall
+from calls import MatrixCall, basetypes, SV
+from calls import alpha, beta, n, m, k, A, B, C, S, x, a, b
 
 class BLAS(MatrixCall):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
     flags = ["-lblas"]
-
-# Pattern variables
-alpha = Symbol('alpha')
-beta  = Symbol('beta')
-n,m,k = symbols('n,m,k')
-A = MatrixSymbol('A', n, m)
-B = MatrixSymbol('B', m, k)
-C = MatrixSymbol('C', n, k)
-S = MatrixSymbol('S', n, n)
-x = MatrixSymbol('x', n, 1)
-a = MatrixSymbol('a', m, 1)
-b = MatrixSymbol('b', k, 1)
 
 class MM(BLAS):
     """ Matrix Multiply """
@@ -109,14 +98,7 @@ class TRMV(MV):
     """ Triangular Matrix Vector Multiply """
     condition = Q.triangular(A) | Q.triangular(B)
 
-class SV(BLAS):
-    """ Matrix Vector Solve """
-    _inputs   = (S, x)
-    _outputs  = (S.I*x,)
-    view_map  = {0: 1}
-    condition = True
-
-class TRSV(SV):
+class TRSV(SV, BLAS):
     """ Triangular Matrix Vector Solve """
     fortran_template = ("call %(fn)s('%(UPLO)s', '%(TRANS)s', '%(DIAG)s', "
                         "%(N)s, %(A)s, %(LDA)s, %(x)s, %(INCX)s)")
