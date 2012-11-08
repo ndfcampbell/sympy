@@ -20,6 +20,13 @@ def test_GESV():
 
     assert 'integer, intent(out) :: IPIV(n)' in gesv.print_Fortran(str)
 
+def test_types():
+    A = MatrixSymbol('A', n, n)
+    B = MatrixSymbol('B', n, k)
+    gesv = GESV(A, B, 'Z')
+    assert gesv.in_types == ('complex*16', 'complex*16')
+    assert gesv.out_types == ('complex*16', 'integer', 'integer')
+
 def test_GETRF():
     A = MatrixSymbol('A', n, n)
     getrf = GETRF(A)
