@@ -18,6 +18,8 @@ def test_GESV():
     assert gesv.out_types == ('real*8', 'integer', 'integer')
     assert gesv.types()[gesv.outputs[1]] == 'integer'
 
+    assert 'integer, intent(out) :: IPIV(n)' in gesv.print_Fortran(str)
+
 def test_GETRF():
     A = MatrixSymbol('A', n, n)
     getrf = GETRF(A)
