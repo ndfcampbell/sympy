@@ -4,9 +4,18 @@ from sympy.utilities.iterables import merge
 
 from calls import MatrixCall, basetypes
 from calls import alpha, beta, n, m, k, A, B, C, S, x, a, b
+from calls import LD
 
-IPIV = MatrixSymbol('IPIV', n, 1)
 INFO = Symbol('INFO', integer=True)
+
+class IPIV(MatrixSymbol):
+    def __new__(cls, A, token='None'):
+        return Basic.__new__(cls, A, token)
+
+    A = property(lambda self: self.args[0])
+    token = property(lambda self: self.args[1])
+    shape = property(lambda self: (self.A.shape[1], 1))
+    name = property(lambda self: 'IPIV')
 
 class LAPACK(MatrixCall):
     """ Linear Algebra PACKage - Dense Matrix computation """
@@ -15,9 +24,10 @@ class LAPACK(MatrixCall):
 class GESV(LAPACK):
     """ General Matrix Vector Solve """
     _inputs   = (S, C)
-    _outputs  = (S.I*C, IPIV, INFO)
+    _outputs  = (S.I*C, IPIV(S), INFO)
     _out_types = (None, 'integer', 'integer')
-    fortran_template = ("call %(fn)s('%(N)s', '%(NRHS)s', '%(A)s', "
+    view_map = {0: 1}
+    fortran_template = ("call %(fn)s(%(N)s, %(NRHS)s, %(A)s, "
                         "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s)")
     condition = True  # TODO: maybe require S to be invertible?
     def codemap(self, namefn, assumptions=True):
@@ -27,6 +37,7 @@ class GESV(LAPACK):
         names    = map(namefn, (A, B, IPIV, INFO))
         namemap  = dict(zip(varnames, names))
         other = {'LDA': LD(A),
+                 'LDB': LD(B),
                  'N': str(A.shape[0]),
                  'NRHS': str(B.shape[1]),
                  'fn': self.fnname()}

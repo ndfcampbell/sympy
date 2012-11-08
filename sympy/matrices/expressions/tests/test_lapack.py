@@ -14,7 +14,6 @@ def test_GESV():
     gesv = GESV(A, B)
     assert gesv.inputs  == (A, B)
     assert gesv.outputs[0] == A.I*B
-    print gesv.in_types
     assert gesv.in_types == ('real*8', 'real*8')
     assert gesv.out_types == ('real*8', 'integer', 'integer')
     assert gesv.types()[gesv.outputs[1]] == 'integer'
