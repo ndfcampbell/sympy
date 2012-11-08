@@ -49,7 +49,7 @@ class POSV(LAPACK):
     _outputs  = (S.I*C, INFO)
     _out_types = (None, 'integer')
     view_map = {0: 1}
-    fortran_template = ("call %(fn)s(%(UPLO)s, %(N)s %(NRHS)s, %(A)s, "
+    fortran_template = ("call %(fn)s(%(UPLO)s, %(N)s, %(NRHS)s, %(A)s, "
                         "%(LDA)s, %(B)s, %(LDB)s, %(INFO)s)")
     condition = Q.positive_definite(S) & Q.symmetric(S)
 
