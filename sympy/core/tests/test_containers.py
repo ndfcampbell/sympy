@@ -27,6 +27,7 @@ def test_Tuple():
     assert Tuple.fromiter(t2) == Tuple(*t2)
     assert Tuple.fromiter(x for x in xrange(4)) == Tuple(0, 1, 2, 3)
     assert st2.fromiter(st2.args) == st2
+    assert st.index(2) == 1
 
 
 def test_Tuple_contains():

@@ -87,6 +87,9 @@ class Tuple(Basic):
     def __le__(self, other):
         return self.args <= other.args
 
+    def index(self, other):
+        return self.args.index(other)
+
 converter[tuple] = lambda tup: Tuple(*tup)
 
 
