@@ -83,6 +83,7 @@ class MatrixCall(MatrixComputation):
     def out_types(self):
         return tuple(ot or self.basetype for ot in self._out_types)
 
+    flags = []
 
 def trans(A):
     """ Return 'T' if A is a transpose, else 'N' """

@@ -78,6 +78,10 @@ class MatrixComputation(InplaceComputation):
         file.write(self.print_Fortran(*args, **kwargs))
         file.close()
 
+    def compile_command(self, src, mod):
+        flagstr = ' '.join(self.flags)
+        return 'f2py -c %(src)s -m %(mod)s %(flagstr)s' % locals()
+
     def build(self, *args, **kwargs):
         import os
         _id = abs(hash(args))
@@ -85,8 +89,7 @@ class MatrixComputation(InplaceComputation):
         mod = kwargs.pop('mod', 'blasmod'+str(_id))
         self.write(src, *args, **kwargs)
 
-        command = 'f2py -c %(src)s -m %(mod)s -lblas' % locals()
-        file = os.popen(command); file.read()
+        file = os.popen(self.compile_command(src, mod)); file.read()
         module = __import__(mod)
         return module.__dict__[self.name]
 
@@ -147,3 +150,7 @@ class MatrixRoutine(CompositeComputation, MatrixComputation):
 
     def replacements(self):
         return merge(*[c.replacements() for c in self.computations])
+
+    @property
+    def flags(self):
+        return set([flag for c in self.computations for flag in c.flags])
