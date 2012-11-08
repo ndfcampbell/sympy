@@ -125,18 +125,3 @@ class TRSV(SV):
                  'UPLO': uplo(A, assumptions),
                  'INCX': '1'}
         return merge(namemap, other)
-
-# TODO: Make these classes
-class Lof(Basic):    pass
-class Uof(Basic):    pass
-
-class LU(BLAS):
-    """ LU Decomposition """
-    _inputs   = (S,)
-    _outputs  = (Lof(S), Uof(S))
-    view_map  = {0: 0, 1: 0}
-    condition = True
-
-class Cholesky(LU):
-    """ Cholesky LU Decomposition """
-    condition = Q.symmetric(S) & Q.positive_definite(S)

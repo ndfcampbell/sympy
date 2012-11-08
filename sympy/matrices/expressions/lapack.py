@@ -31,3 +31,39 @@ class GESV(LAPACK):
                  'fn': self.fnname()}
         return merge(namemap, other)
 
+# TODO: Make these classes
+class Lof(Basic):    pass
+class Uof(Basic):    pass
+
+class LU(LAPACK):
+    _inputs = (S,)
+    _outputs = (Lof(S), Uof(S), IPIV, INFO)
+    view_map  = {0: 0, 1: 0}
+    condition = True
+
+    def codemap(self, namefn, assumptions=True):
+        varnames = 'A IPIV INFO'.split()
+        A = self.inputs
+        _, _, IPIV, INFO = self.outputs
+        names    = map(namefn, (A, IPIV, INFO))
+        namemap  = dict(zip(varnames, names))
+        other = {'LDA': LD(A),
+                 'M': str(A.shape[0]),
+                 'N': str(A.shape[1]),
+                 'UPLO': 'L',
+                 'fn': self.fnname()}
+        return merge(namemap, other)
+
+class GETRF(LU):
+    """ General Triangular Factorization - Basic LU """
+    fortran_template = ("call %(fn)s( %(M)s, %(N)s, %(A)s, %(LDA)s, "
+                                     "%(IPIV)s, %(INFO)s )")
+
+class POTRF(LU):
+    """ Cholesky LU Decomposition """
+    _outputs = (Lof(S), IPIV, INFO)
+    view_map  = {0: 0}
+    condition = Q.symmetric(S) & Q.positive_definite(S)
+
+    fortran_template = ("call %(fn)s( %(UPLO)s, %(N)s, %(A)s, "
+                                     "%(LDA)s, %(INFO)s )")
