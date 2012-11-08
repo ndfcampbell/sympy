@@ -10,6 +10,7 @@ S = MatrixSymbol('S', n, n)
 A = MatrixSymbol('A', n, n)
 B = MatrixSymbol('B', n, k)
 gesv = GESV(A, B)
+posv = POSV(A, B)
 
 def test_GESV():
     assert gesv.inputs  == (A, B)
@@ -24,8 +25,16 @@ def test_ipiv_header_declaration():
     assert 'integer, intent(out) :: IPIV(n)' in gesv.print_Fortran(str)
     assert 'IPIV' in gesv.header(str)
 
-def test_compiles():
+def test_gesv_compiles():
     assert callable(gesv.build(str))
+
+def test_POSV():
+    assert posv.outputs[0] == A.I*B
+    assert not POSV.valid(posv.inputs, True)
+    assert POSV.valid(posv.inputs, Q.symmetric(A) & Q.positive_definite(A))
+
+def test_posv_compiles():
+    assert callable(posv.build(str))
 
 def test_types():
     A = MatrixSymbol('A', n, n)

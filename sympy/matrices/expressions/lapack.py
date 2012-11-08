@@ -43,6 +43,30 @@ class GESV(LAPACK):
                  'fn': self.fnname()}
         return merge(namemap, other)
 
+class POSV(LAPACK):
+    """ Symmetric Positive Definite Vector Solve """
+    _inputs   = (S, C)
+    _outputs  = (S.I*C, INFO)
+    _out_types = (None, 'integer')
+    view_map = {0: 1}
+    fortran_template = ("call %(fn)s(%(UPLO)s, %(N)s %(NRHS)s, %(A)s, "
+                        "%(LDA)s, %(B)s, %(LDB)s, %(INFO)s)")
+    condition = Q.positive_definite(S) & Q.symmetric(S)
+
+    def codemap(self, namefn, assumptions=True):
+        varnames = 'A B INFO'.split()
+        A, B = self.inputs
+        _, INFO = self.outputs
+        names    = map(namefn, (A, B, INFO))
+        namemap  = dict(zip(varnames, names))
+        other = {'LDA': LD(A),
+                 'LDB': LD(B),
+                 'N': str(A.shape[0]),
+                 'NRHS': str(B.shape[1]),
+                 'UPLO': 'U',
+                 'fn': self.fnname()}
+        return merge(namemap, other)
+
 # TODO: Make these classes
 class Lof(Basic):    pass
 class Uof(Basic):    pass
