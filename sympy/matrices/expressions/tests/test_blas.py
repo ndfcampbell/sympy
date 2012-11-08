@@ -216,14 +216,5 @@ def test_declarations_no_numbers():
     C = MatrixSymbol('C', m, n)
     assert 2 not in GEMM(Integer(2), A, B, beta, C).declarations(str)
 
-def test_compile_command():
-    A = MatrixSymbol('A', m, k)
-    B = MatrixSymbol('B', k, n)
-    C = MatrixSymbol('C', m, n)
-    gemm = GEMM(Integer(2), A, B, beta, C)
-
-    assert gemm.compile_command('gemm.f90', 'linalg') ==\
-            "f2py -c gemm.f90 -m linalg -lblas"
-
 def test_flags():
     assert set(BLAS.flags) == set(['-lblas'])

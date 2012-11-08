@@ -94,18 +94,13 @@ class MatrixComputation(InplaceComputation):
         file.write(self.print_Fortran(*args, **kwargs))
         file.close()
 
-    def compile_command(self, src, mod):
-        flagstr = ' '.join(self.flags)
-        return 'f2py -c %(src)s -m %(mod)s %(flagstr)s' % locals()
-
     def build(self, *args, **kwargs):
-        import os
         _id = abs(hash(args))
         src = kwargs.pop('src', 'tmp.f90')
         mod = kwargs.pop('mod', 'blasmod'+str(_id))
         self.write(src, *args, **kwargs)
+        compile(src, mod, self.flags)
 
-        file = os.popen(self.compile_command(src, mod)); file.read()
         module = __import__(mod)
         return module.__dict__[self.name]
 
@@ -113,6 +108,18 @@ class MatrixComputation(InplaceComputation):
     def _composite(self):
         return MatrixRoutine
 
+def compile(src, mod, flags):
+    """ Compile src file to module with flags using f2py """
+    import os
+    flagstr = ' '.join(flags)
+    command = 'f2py -c %(src)s -m %(mod)s %(flagstr)s' % locals()
+    if os.path.exists(mod+'.so'):
+        return
+    file = os.popen(command)
+    s = file.read()
+    if 'error' in s:
+        print s
+        raise Exception("File %s did not compile" % src)
 
 class CopyMatrix(InplaceComputation):
     _id = 0
