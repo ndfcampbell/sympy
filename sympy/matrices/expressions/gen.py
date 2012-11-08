@@ -1,4 +1,5 @@
 from sympy.matrices.expressions.blas import GEMM, TRSV, SYMM
+from sympy.matrices.expressions.lapack import GESV, POSV
 from sympy.unify.usympy import unify, patternify
 from sympy.unify.rewrite import rewriterule
 from sympy.rules.branch import multiplex, condition
@@ -16,7 +17,7 @@ def rr_from_blas(cls, assumptions=True):
     return blas_brl
 
 
-classes = (GEMM, TRSV, SYMM)
+classes = (SYMM, GEMM, TRSV, POSV, GESV)
 def build_rule(assumptions, classes=classes):
     return multiplex(*[rr_from_blas(cls, assumptions) for cls in classes])
 

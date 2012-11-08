@@ -49,9 +49,9 @@ def test_traverse():
     expr = (3*X*Y + 2*Z).I*x
     blas_rule = top_down(build_rule(assumptions))
     comps = list(blas_rule(expr))
-    assert len(comps) == 2
-    assert all('f(X, Y, Z, x)' in comp.header(str) for comp in comps)
-    assert all(set(comp.outputs) == set((expr,)) for comp in comps)
+    assert len(comps) > 1
+    assert all('X, Y, Z, x' in comp.header(str) for comp in comps)
+    assert all(expr in comp.outputs for comp in comps)
 
 def test_build_many():
     assumptions = (Q.lower_triangular(3*X*Y+2*Z) & Q.symmetric(Y))
