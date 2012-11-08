@@ -1,6 +1,5 @@
-
-from sympy import Basic, Symbol, Q, symbols, ask, Tuple
-from sympy.matrices.expressions import MatrixSymbol, Transpose
+from sympy import Basic, Symbol, Q, symbols, ask, Tuple, Expr
+from sympy.matrices.expressions import MatrixSymbol, Transpose, MatrixExpr
 from sympy.utilities.iterables import merge
 from matcomp import MatrixComputation
 from sympy.rules.tools import subs
@@ -35,8 +34,14 @@ class MatrixCall(MatrixComputation):
     def outputs(self):
         cls = self.__class__
         mapping = dict(zip(cls._inputs, self.inputs))
-        return tuple(map(lambda x: x.canonicalize(),
-                         subs(mapping)(Tuple(*cls._outputs))))
+        def canonicalize(x):
+            if isinstance(x, MatrixExpr):
+                return x.canonicalize()
+            if isinstance(x, Symbol):
+                return x
+            if isinstance(x, Expr):
+                return type(x)(*x.args)
+        return tuple(map(canonicalize, subs(mapping)(Tuple(*cls._outputs))))
 
     @property
     def typecode(self):
@@ -65,10 +70,42 @@ class MatrixCall(MatrixComputation):
             return True
         return ask(cls.condition.subs(d), assumptions)
 
-class SV(MatrixCall):
-    """ Matrix Vector Solve """
-    _inputs   = (S, x)
-    _outputs  = (S.I*x,)
-    view_map  = {0: 1}
-    condition = True
+def trans(A):
+    """ Return 'T' if A is a transpose, else 'N' """
+    if isinstance(A, Transpose):
+        return 'T'
+    else:
+        return 'N'
 
+def uplo(A, assumptions):
+    """ Return 'U' if A is stored in the upper Triangular 'U' if lower """
+    if ask(Q.upper_triangular(A), assumptions):
+        return 'U'
+    if ask(Q.lower_triangular(A), assumptions):
+        return 'L'
+
+def LD(A):
+    """ Leading dimension of matrix """
+    # TODO make sure we don't use transposed matrices in untransposable slots
+    return str(detranspose(A).shape[0])
+
+def left_or_right(A, B, predicate, assumptions):
+    """ Return 'L' if predicate is true of A, 'R' if predicate is true of B """
+    if ask(predicate(A), assumptions):
+        return 'L'
+    if ask(predicate(B), assumptions):
+        return 'R'
+
+def diag(A, assumptions):
+    """ Return 'U' if A is unit_triangular """
+    if ask(Q.unit_triangular(A), assumptions):
+        return 'U'
+    else:
+        return 'N'
+
+def detranspose(A):
+    """ Unpack a transposed matrix """
+    if isinstance(A, Transpose):
+        return A.arg
+    else:
+        return A
