@@ -216,5 +216,10 @@ def test_declarations_no_numbers():
     C = MatrixSymbol('C', m, n)
     assert 2 not in GEMM(Integer(2), A, B, beta, C).declarations(str)
 
+def test_inputs_no_numbers():
+    A = MatrixSymbol('A', m, m)
+    B = MatrixSymbol('B', m, m)
+    assert GEMM(Integer(2), A, B, beta, B).inputs == (A, B, beta)
+
 def test_flags():
     assert set(BLAS.flags) == set(['-lblas'])

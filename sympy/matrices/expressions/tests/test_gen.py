@@ -38,6 +38,7 @@ def test_multiple_outs():
     expr = (3*X*Y + 2*Z)
     assumptions = Q.symmetric(X)
     blas_rule = build_rule(assumptions)
+
     assert set(map(type, blas_rule(expr))) == {SYMM, GEMM}
 
     assumptions = True
@@ -52,6 +53,7 @@ def test_traverse():
     assert len(comps) > 1
     assert all('X, Y, Z, x' in comp.header(str) for comp in comps)
     assert all(expr in comp.outputs for comp in comps)
+    assert all(callable(c.build(basic_names, assumptions)) for c in comps)
 
 def test_build_many():
     assumptions = (Q.lower_triangular(3*X*Y+2*Z) & Q.symmetric(Y))
@@ -67,3 +69,18 @@ def test_build_many():
         f = comp.build(basic_names, assumptions)
         assert callable(f)
         f(A, B, C, xx) # Ensure that this works
+
+def test_transpose_posv():
+    assumptions = (Q.positive_definite(X) & Q.positive_definite(Z) &
+                   Q.symmetric(Z))
+    target_expression = (3*X*X.T + 2*Z).I*X
+    blas_rule = top_down(build_rule(assumptions))
+    computations = list(top_down(build_rule(assumptions))(target_expression))
+    c = computations[0]
+    assert c.inputs == (X, Z)
+    assert target_expression in c.outputs
+    src = c.print_Fortran(str, assumptions)
+    assert '_1' not in src
+    print src
+    assert "call dgemm('N', 'T', 3, 3, 3, 3, X, 3, X, 3, 2, Z, 3)" in src
+    assert "call dposv(U, 3, 3, Z, 3, X, 3, INFO)" in src

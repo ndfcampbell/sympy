@@ -10,6 +10,13 @@ def is_number(x):
 def remove_numbers(coll):
     return filter(lambda x: not is_number(x), coll)
 
+def remove_repeats(coll):
+    coll2 = []
+    for i in coll:
+        if i not in coll2:
+            coll2.append(i)
+    return type(coll)(coll2)
+
 def shape_str(shape):
     if shape[0] == 1:
         return "(%s)"%str(shape[1])

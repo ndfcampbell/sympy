@@ -12,7 +12,7 @@ def rr_from_blas(cls, assumptions=True):
     rr = rewriterule(pattern_in, pattern_out)
     def blas_brl(expr):
         for blas in rr(expr):
-            if cls.valid(blas.inputs, assumptions):
+            if cls.valid(blas.raw_inputs, assumptions):
                 yield blas
     return blas_brl
 

@@ -6,6 +6,7 @@ from sympy.utilities.iterables import merge
 from calls import MatrixCall, basetypes
 from calls import alpha, beta, n, m, k, A, B, C, S, x, a, b
 from calls import detranspose, uplo, diag, LD, left_or_right, trans
+from matcomp import remove_repeats, remove_numbers
 
 class BLAS(MatrixCall):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
@@ -20,8 +21,8 @@ class MM(BLAS):
 
     def codemap(self, namefn, assumptions=True):
         varnames = 'alpha A B beta C'.split()
-        alpha, A, B, beta, C = self.inputs
-        names    = map(namefn, (alpha, detranspose(A), B, beta, C))
+        alpha, A, B, beta, C = self.raw_inputs
+        names    = map(namefn, (alpha, detranspose(A), detranspose(B), beta, C))
         namemap  = dict(zip(varnames, names))
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
@@ -32,12 +33,19 @@ class MM(BLAS):
                  'UPLO': 'U'} # TODO: symmetric matrices might be stored low
         return merge(namemap, other)
 
+    @property
+    def inputs(self):
+        alpha, A, B, beta, C = self.raw_inputs
+        coll = (alpha, detranspose(A), detranspose(B), beta, C)
+        return remove_repeats(remove_numbers(coll))
+
 class GEMM(MM):
     """ General Matrix Multiply """
     fortran_template = ("call %(fn)s('%(TRANSA)s', '%(TRANSB)s', "
                         "%(M)s, %(N)s, %(K)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, "
                         "%(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
+
 
 class SYMM(MM):
     """ Symmetric Matrix Multiply """
@@ -57,7 +65,7 @@ class TRMM(MM):
                         "%(B)s, %(LDB)s)")
     def codemap(self, namefn, assumptions=True):
         varnames = 'alpha A B'.split()
-        alpha, A, B = self.inputs
+        alpha, A, B = self.raw_inputs
         names    = map(namefn, (alpha, detranspose(A), B))
         namemap  = dict(zip(varnames, names))
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
@@ -68,6 +76,11 @@ class TRMM(MM):
                  'DIAG': diag(A, assumptions),
                  'UPLO': uplo(A, assumptions)}
         return merge(namemap, other)
+
+    @property
+    def inputs(self):
+        alpha, A, B = self.raw_inputs
+        return remove_repeats(remove_numbers(alpha, detranspose(A), B))
 
 class SM(BLAS):
     """ Matrix Solve """
@@ -114,7 +127,7 @@ class TRSV(SV):
     condition = Q.lower_triangular(S) | Q.upper_triangular(S)
     def codemap(self, namefn, assumptions=True):
         varnames = 'A x'.split()
-        A, x = self.inputs
+        A, x = self.raw_inputs
         names    = map(namefn, (detranspose(A), x))
         namemap  = dict(zip(varnames, names))
         other = {'TRANS': trans(A),
@@ -125,3 +138,8 @@ class TRSV(SV):
                  'UPLO': uplo(A, assumptions),
                  'INCX': '1'}
         return merge(namemap, other)
+
+    @property
+    def inputs(self):
+        A, x = self.raw_inputs
+        return (detranspose(A), x)

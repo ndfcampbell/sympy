@@ -10,8 +10,9 @@ class Computation(Basic):
                                   Tuple(*outputs))
 
     @property
-    def inputs(self):
+    def raw_inputs(self):
         return self.args[0]
+    inputs = raw_inputs
 
     @property
     def outputs(self):
@@ -52,8 +53,9 @@ class CompositeComputation(Computation):
         return self.args[0]
 
     @property
-    def inputs(self):
+    def raw_inputs(self):
         return self.args[1]
+    inputs = raw_inputs
 
     @property
     def outputs(self):
@@ -87,7 +89,7 @@ class InplaceComputation(Computation):
         return not self.view_map
 
     def replacements(self):
-        return {self.outputs[k]: self.inputs[v] for k, v in
+        return {self.outputs[k]: self.raw_inputs[v] for k, v in
                 self.view_map.items()}
 
     def inplace_fn(self, seen = set([])):

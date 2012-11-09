@@ -1,7 +1,7 @@
 from sympy import Basic, Symbol, Q, symbols, ask, Tuple, Expr
 from sympy.matrices.expressions import MatrixSymbol, Transpose, MatrixExpr
 from sympy.utilities.iterables import merge
-from matcomp import MatrixComputation
+from matcomp import MatrixComputation, remove_numbers, remove_repeats
 from sympy.rules.tools import subs
 
 # Pattern variables
@@ -26,14 +26,15 @@ class MatrixCall(MatrixComputation):
             args = args + (typecode,)
         return Basic.__new__(cls, *args)
 
-    @property
-    def inputs(self):
-        return tuple(self.args[:-1])
+    raw_inputs = property(lambda self: tuple(self.args[:-1]))
+    inputs = property(lambda self:
+            remove_repeats(remove_numbers(self.raw_inputs)))
+
 
     @property
     def outputs(self):
         cls = self.__class__
-        mapping = dict(zip(cls._inputs, self.inputs))
+        mapping = dict(zip(cls._inputs, self.raw_inputs))
         def canonicalize(x):
             if isinstance(x, MatrixExpr):
                 return x.canonicalize()
