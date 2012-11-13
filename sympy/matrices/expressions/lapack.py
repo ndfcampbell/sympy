@@ -44,7 +44,7 @@ class GESV(LAPACK):
         return merge(namemap, other)
 
 class POSV(LAPACK):
-    """ Symmetric Positive Definite Vector Solve """
+    """ Symmetric Positive Definite Matrix Solve """
     _inputs   = (S, C)
     _outputs  = (S.I*C, INFO)
     _out_types = (None, 'integer')
@@ -73,7 +73,7 @@ class Uof(Basic):    pass
 
 class LU(LAPACK):
     _inputs = (S,)
-    _outputs = (Lof(S), Uof(S), IPIV, INFO)
+    _outputs = (Lof(S), Uof(S), IPIV(S), INFO)
     view_map  = {0: 0, 1: 0}
     condition = True
 
@@ -103,3 +103,24 @@ class POTRF(LU):
 
     fortran_template = ("call %(fn)s( %(UPLO)s, %(N)s, %(A)s, "
                                      "%(LDA)s, %(INFO)s )")
+
+class GETRS(LAPACK):
+    _inputs = (Lof(S), Uof(S), C, IPIV(Lof(S)*Uof(S)))
+    _outputs = ((Lof(S)*Uof(S)).I*C, INFO)
+    view_map = {0: 2}
+
+    fortran_template = ("call %(fn)s( %(TRANS)s, %(N)s, %(NHRS)s, %(A)s, "
+                        "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s )")
+
+    def codemap(self, namefn, assumptions=True):
+        varnames = 'A B IPIV INFO'.split()
+        _, A, B, IPIV = self.inputs
+        _, INFO = self.outputs
+        names    = map(namefn, (A, B, IPIV, INFO))
+        namemap  = dict(zip(varnames, names))
+        other = {'LDA': LD(A),
+                 'M': str(A.shape[0]),
+                 'N': str(A.shape[1]),
+                 'UPLO': 'L',
+                 'fn': self.fnname()}
+        return merge(namemap, other)
