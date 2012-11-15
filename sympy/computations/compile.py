@@ -18,17 +18,17 @@ def input_crunch(etc):
     return input_brl
 
 def multi_input_rule(sources, target, *wilds):
-    from iterables import chain
-    from sympy import FiniteSet
+    from itertools import chain
+    from sympy import FiniteSet, Symbol
 
-    other = '_foo'
+    other = Symbol('_foo')
     source = FiniteSet(*sources)
     source2 = FiniteSet(other, *sources)
-    rule = rewriterule(source, target, *wilds)
-    rule2 = rewriterule(source2, target, other, *wilds)
+    rule = rewriterule(patternify(source, *wilds), target)
+    rule2 = rewriterule(patternify(source2, other, *wilds), target)
 
     def inputs_brl(comp):
-        inputs = FiniteSet(comp.inputs)
+        inputs = FiniteSet(*comp.inputs)
         for c in chain(rule(inputs), rule2(inputs)):
             yield comp + c
     return inputs_brl
