@@ -18,3 +18,14 @@ def bottom_up(rule):
         else:
             return rule(new(type(expr), *map(bottom_up_rl, expr.args)))
     return bottom_up_rl
+
+def top_down_once(rule):
+    """ Apply a rule down a tree stopping once successful  """
+    def top_down_once_rl(expr):
+        newexpr = rule(expr)
+        if newexpr != expr:
+            return newexpr
+        if is_leaf(newexpr):
+            return newexpr
+        return new(type(newexpr), *map(top_down_once_rl, newexpr.args))
+    return top_down_once_rl

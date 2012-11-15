@@ -1,6 +1,6 @@
 import rl
 from strat import do_one
-from traverse import top_down
+from traverse import top_down_once
 
 def subs(d):
     """ Full simultaneous exact substitution
@@ -15,4 +15,4 @@ def subs(d):
     >>> subs(mapping)(expr)
     Basic(4, Basic(2, 3), Basic(1, Basic(6, 7)))
     """
-    return top_down(do_one(*map(rl.subs, *zip(*d.items()))))
+    return top_down_once(do_one(*map(rl.subs, *zip(*d.items()))))
