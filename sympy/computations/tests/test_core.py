@@ -59,8 +59,8 @@ def test_multi_out():
     A =  TComp('foo', (d,), (f,))
     B =  TComp('bar', (a, f), (g, h))
     C =  CompositeComputation(MM, A, B)
-    assert C.inputs == (a, b)
-    assert C.outputs == (e, g, h)
+    assert set(C.inputs) == set((a, b))
+    assert set(C.outputs) == set((e, g, h))
     assert tuple(C.toposort()) == (MM, A, B)
 
 def test_add():
@@ -69,8 +69,8 @@ def test_add():
     B =  TComp('bar', (a, f), (g, h))
     C =  CompositeComputation(MM, A, B)
     C2 = MM+A+B
-    assert C.inputs == C2.inputs
-    assert C.outputs == C2.outputs
+    assert set(C.inputs) == set(C2.inputs)
+    assert set(C.outputs) == set(C2.outputs)
 
 def test_computation_eq():
     assert TComp('foo', (a,), (b,)) == TComp('foo', (a,), (b,))
