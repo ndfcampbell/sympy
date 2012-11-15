@@ -32,3 +32,9 @@ class Copy(Basic):
 
     name = property(lambda self: self.arg.name if hasattr(self.arg, 'name')
                                                else 'copy')
+
+def inplace(x):
+    try:
+        return x.inplace
+    except AttributeError:
+        return {}
