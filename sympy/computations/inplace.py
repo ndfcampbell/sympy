@@ -45,6 +45,15 @@ class CopyComp(Computation):
     inputs = property(lambda self: (self.args[0],))
     outputs = property(lambda self: (Copy(self.args[0], self.tag),))
 
-def purify_one(comp, numseq=iter(xrange(1, int(1e9)))):
-    return CompositeComputation(comp, *[CopyComp(comp.inputs[idx], id)
-        for idx, id in zip(inplace(comp).values(), numseq)])
+def make_idinc():
+    cache = {}
+    def idinc(x):
+        id = cache.get(x, 0) + 1
+        cache[x] = id
+        return id
+    return idinc
+
+def purify_one(comp, idinc=make_idinc()):
+    return CompositeComputation(comp,
+                           *[CopyComp(comp.inputs[idx], idinc(comp.inputs[idx]))
+                                for idx in inplace(comp).values()])
