@@ -49,9 +49,9 @@ class CompositeComputation(Computation):
                         *[c.inputs  for c in self.computations])))
         allout = tuple(unique(itertools.chain(
                         *[c.outputs for c in self.computations])))
-        inputs  = tuple(i for i in allin  if i not in allout)
-        outputs = tuple(o for o in allout if o not in allin)
-        return inputs, outputs
+        inputs  = [i for i in allin  if i not in allout]
+        outputs = [o for o in allout if o not in allin]
+        return tuple(inputs), tuple(outputs)
 
     @property
     def inputs(self):
@@ -96,6 +96,5 @@ class CompositeComputation(Computation):
         return _toposort(self.dag_io())
 
 class Identity(Computation):
-    def __init__(self, inputs):
-        self.inputs = tuple(inputs)
-        self.outputs = tuple(inputs)
+    inputs = property(lambda self: self.args)
+    outputs = inputs
