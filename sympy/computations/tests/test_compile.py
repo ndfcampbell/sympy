@@ -31,24 +31,24 @@ def test_add():
     assert set(rule(expr)) == set([add(S(3), y), add(y, S(3))])
     rule = multiplex(*map(input_crunch, rules))
     comp = Identity(expr)
-    assert set(rule(comp)) == set([comp + add(S(3), y), comp + add(y, S(3))])
+    assert set(rule(comp)) == set([add(S(3), y), add(y, S(3))])
 
 def test_rule():
     y = Symbol('y')
     expr = 2*y + 1
     comp = Identity(expr)
-    assert set(rule(comp)) == set([comp + add(2*y, S(1)) + double(y),
-                                   comp + add(S(1), 2*y) + double(y),
-                                   comp + inc(2*y) + double(y)])
+    assert set(rule(comp)) == set([add(2*y, S(1)) + double(y),
+                                   add(S(1), 2*y) + double(y),
+                                   inc(2*y) + double(y)])
 
 def test_multi_input():
     expr = y + 1, y - 1
-    comp = Identity(expr)
+    comp = Identity(*expr)
     rule = multi_input_rule((x + 1, x - 1), incdec(x), x)
-    assert list(rule(comp)) == [comp + incdec(y)]
+    assert list(rule(comp)) == [incdec(y)]
 
 def test_multi_input_with_extra_inputs():
     expr = y + 1, y - 1, x + 1
-    comp = Identity(expr)
+    comp = Identity(*expr)
     rule = multi_input_rule((x + 1, x - 1), incdec(x), x)
-    assert list(rule(comp)) == [comp + incdec(y)]
+    assert list(rule(comp)) == [incdec(y) + Identity(x+1) ]

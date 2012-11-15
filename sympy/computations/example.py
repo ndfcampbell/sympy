@@ -18,7 +18,7 @@ class double(Computation):
 
 class add(Computation):
     inputs = property(lambda self: self.args)
-    outputs= property(lambda self: (Basic.__new__(Add, *self.args),))
+    outputs= property(lambda self: (self.args[0] + self.args[1],))
 
 
 class incdec(Computation):
