@@ -21,9 +21,12 @@ class add(Computation):
     outputs= property(lambda self: (Basic.__new__(Add, *self.args),))
 
 
+class incdec(Computation):
+    inputs  = property(lambda self: self.args)
+    outputs = property(lambda self: (self.args[0] + 1, self.args[0] - 1))
+
+
 class minmax(Computation):
-    def __init__(self, x, y):
-        self.args = x, y
     inputs = property(lambda self: self.args)
     outputs= property(lambda self: (Min(self.args[0], self.args[1]),
                                     Max(self.args[0], self.args[1])))
