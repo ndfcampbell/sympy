@@ -53,7 +53,25 @@ def make_idinc():
         return id
     return idinc
 
-def purify_one(comp, idinc=make_idinc()):
-    return CompositeComputation(comp,
+def copies_one(comp, idinc=make_idinc()):
+    return CompositeComputation(
                            *[CopyComp(comp.inputs[idx], idinc(comp.inputs[idx]))
                                 for idx in inplace(comp).values()])
+
+def purify_one(comp, idinc=make_idinc()):
+    return comp + copies_one(comp, idinc)
+
+class ExprToken(Basic):
+    expr = property(lambda self: self.args[0])
+    token = property(lambda self: self.args[1])
+
+class OpComp(Computation):
+    op = property(lambda self: self.args[0])
+    inputs = property(lambda self: self.args[1])
+    outputs = property(lambda self: self.args[2])
+    inplace = property(lambda self: self.op.inplace)
+
+def naive_tokenize_one(mathcomp, tokenizer = make_getname()):
+    return OpComp(type(mathcomp),
+                  tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
+                  tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
