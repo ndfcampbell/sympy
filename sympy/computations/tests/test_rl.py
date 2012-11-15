@@ -21,14 +21,13 @@ def test_flatten():
     A =  TComp('foo', (d,), (f,))
     B =  TComp('bar', (a, f), (g, h))
     C =  CompositeComputation(MM, A, B)
-    C2 = MM+A+B
-    assert len(C2.computations) == 2
+    C2 = CompositeComputation(CompositeComputation(MM, A), B)
     assert len(flatten(C2).computations) == 3
     assert C.inputs == C2.inputs
     assert C.outputs == C2.outputs
 
 def test_unpack():
-
+    from sympy import Basic
     A =  TComp('foo', (d,), (f,))
-    C =  CompositeComputation(A)
+    C =  Basic.__new__(CompositeComputation, A)
     assert unpack(C) == A

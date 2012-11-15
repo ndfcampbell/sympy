@@ -41,6 +41,12 @@ class Computation(Basic):
 class CompositeComputation(Computation):
     """ A computation composed of other computations """
 
+
+    def __new__(cls, *args):
+        obj = Basic.__new__(cls, *args)
+        obj = obj.canonicalize()
+        return obj
+
     computations = property(lambda self: self.args)
 
     def _input_outputs(self):
@@ -94,6 +100,25 @@ class CompositeComputation(Computation):
         """ Order computations in an executable order """
         from sympy.utilities.iterables import _toposort
         return _toposort(self.dag_io())
+
+    def canonicalize(self):
+        from sympy.rules import exhaust, do_one, flatten, unpack, typed, sort
+        return exhaust(typed({CompositeComputation:
+                       do_one(rm_identity, flatten, unpack, sort(str))}))(self)
+
+def rm_identity(comp):
+    """ Remove or reduce unnecessary identities """
+    for c in comp.computations:
+        if isinstance(c, Identity):
+            others = [x for x in comp.computations if x != c]
+            other_outputs = set([o for other in others for o in other.outputs])
+            outputs = [o for o in c.outputs if o not in other_outputs]
+            if not outputs:
+                return type(comp)(*others)
+            if tuple(outputs) != c.outputs:
+                newident = Identity(*outputs)
+                return type(comp)(newident, *others)
+    return comp
 
 class Identity(Computation):
     inputs = property(lambda self: self.args)

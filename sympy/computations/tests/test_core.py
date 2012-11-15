@@ -1,4 +1,5 @@
-from sympy.computations.core import Computation, unique, CompositeComputation
+from sympy.computations.core import (Computation, unique, CompositeComputation,
+        Identity)
 
 a,b,c,d,e,f,g,h = 'abcdefgh'
 
@@ -79,3 +80,17 @@ def test_computation_eq():
     A =  TComp('foo', (d,), (f,))
     B =  TComp('bar', (a, f), (g, h))
     assert A+B == A+B
+
+def test_canonicalize():
+    A = TComp('foo', (d,), (f,))
+    B = TComp('bar', (a,), (b,))
+
+    assert A + B == B + A
+
+    I = Identity(f)
+    assert I + A is A
+    assert CompositeComputation(A) is A
+    I2 = Identity(f, e)
+    I3 = Identity(e)
+
+    assert I2 + A == I3 + A
