@@ -17,6 +17,22 @@ def input_crunch(etc):
                 yield comp + c
     return input_brl
 
+def multi_input_rule(sources, target, *wilds):
+    from iterables import chain
+    from sympy import FiniteSet
+
+    other = '_foo'
+    source = FiniteSet(*sources)
+    source2 = FiniteSet(other, *sources)
+    rule = rewriterule(source, target, *wilds)
+    rule2 = rewriterule(source2, target, other, *wilds)
+
+    def inputs_brl(comp):
+        inputs = FiniteSet(comp.inputs)
+        for c in chain(rule(inputs), rule2(inputs)):
+            yield comp + c
+    return inputs_brl
+
 def output_crunch(etc):
     """ Turn an Expr->Comp rule into a Comp->Comp rule by looking at outputs
 
