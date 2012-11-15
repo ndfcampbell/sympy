@@ -1,3 +1,4 @@
+from sympy import Basic
 
 def make_getname():
     cache = {}
@@ -25,3 +26,9 @@ def make_getname():
     return getname
 
 
+class Copy(Basic):
+    arg = property(lambda self: self.args[0])
+    tag = property(lambda self: self.args[1])
+
+    name = property(lambda self: self.arg.name if hasattr(self.arg, 'name')
+                                               else 'copy')
