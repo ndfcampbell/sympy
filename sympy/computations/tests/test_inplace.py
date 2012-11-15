@@ -1,5 +1,5 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
-        purify_one, CopyComp, make_idinc)
+        purify_one, CopyComp, make_idinc, purify, naive_tokenize_one, ExprToken)
 
 from sympy import Symbol, symbols
 from sympy.computations.example import inc, minmax
@@ -36,10 +36,9 @@ def test_idinc():
     assert idinc(1) == 3
     assert idinc(2) == 1
 
-def test_purify_one():
-    assert purify_one(inc(3)) == inc(3)
-    assert purify_one(inc_inplace(3)) == inc_inplace(3) + CopyComp(3, 1)
 
-    assert purify_one(minmax(x, y)) == minmax(x, y)
-    assert purify_one(minmax_inplace(x, y)) == (minmax_inplace(x, y) +
-            CopyComp(x, 1) + CopyComp(y, 1))
+def test_naive_tokenize_one():
+    comp = naive_tokenize_one(inc(3))
+    assert comp.op == inc
+    assert comp.inputs[0].expr == 3
+    assert comp.outputs[0].expr == 4
