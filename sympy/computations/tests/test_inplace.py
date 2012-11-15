@@ -1,4 +1,6 @@
-from sympy.computations.inplace import make_getname, Copy, inplace
+from sympy.computations.inplace import (make_getname, Copy, inplace,
+        purify_one, CopyComp)
+
 from sympy import Symbol
 from sympy.computations.example import inc
 
@@ -20,3 +22,7 @@ class inc_inplace(inc):
 def test_inplace():
     assert inplace(inc(3)) == {}
     assert inplace(inc_inplace(3)) == {0: 0}
+
+def test_purify_one():
+    assert purify_one(inc(3)) == inc(3)
+    assert purify_one(inc_inplace(3)) == inc_inplace(3) + CopyComp(3, 1)

@@ -1,4 +1,5 @@
 from sympy import Basic
+from sympy.computations.core import Computation, CompositeComputation
 
 def make_getname():
     cache = {}
@@ -38,3 +39,12 @@ def inplace(x):
         return x.inplace
     except AttributeError:
         return {}
+
+class CopyComp(Computation):
+    tag = property(lambda self: self.args[1])
+    inputs = property(lambda self: (self.args[0],))
+    outputs = property(lambda self: (Copy(self.args[0], self.tag),))
+
+def purify_one(comp, numseq=iter(xrange(1, int(1e9)))):
+    return CompositeComputation(comp, *[CopyComp(comp.inputs[idx], id)
+        for idx, id in zip(inplace(comp).values(), numseq)])
