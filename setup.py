@@ -210,6 +210,7 @@ tests = [
     'sympy.assumptions.tests',
     'sympy.categories.tests',
     'sympy.combinatorics.tests',
+    'sympy.computations.tests',
     'sympy.concrete.tests',
     'sympy.core.tests',
     'sympy.diffgeom.tests',
