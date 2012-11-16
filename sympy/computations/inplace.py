@@ -70,6 +70,12 @@ def purify_one(comp, getname=make_getname()):
 
     return CompositeComputation(newcomp, *copies)
 
+def purify(comp, getname=make_getname()):
+    if not isinstance(comp, CompositeComputation):
+        return purify_one(comp, getname)
+    return CompositeComputation(*[purify_one(c, getname)
+                                    for c in comp.computations])
+
 class ExprToken(Basic):
     expr = property(lambda self: self.args[0])
     token = property(lambda self: self.args[1])
@@ -83,7 +89,7 @@ class OpComp(Computation):
     def __str__(self):
         ins  = "["+', '.join(map(str, self.inputs)) +"]"
         outs = "["+', '.join(map(str, self.outputs))+"]"
-        return "%s -> %s -> %s"%(ins, str(self.op), outs)
+        return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
 
 def tokenize_one(mathcomp, tokenizer=make_getname()):
     return OpComp(type(mathcomp),
