@@ -3,6 +3,12 @@ from sympy.computations.core import Computation, CompositeComputation
 from sympy.rules.tools import subs
 
 def make_getname():
+    """ Make a new tokenizer
+
+    Tokenizers maintian state for which variables they have already seen.
+    This function makes a new function with a new bound cache
+    """
+
     cache = {}
     seen = set(['', None])
 
@@ -30,6 +36,10 @@ def make_getname():
 
 
 def inplace(x):
+    """ Get a dict mapping storage location of each output
+
+    {1: 2} means that the output of index 1 is stored in the input with index 2
+    """
     try:
         return x.inplace
     except AttributeError:
@@ -40,17 +50,11 @@ def inplace(x):
     return {}
 
 class Copy(Computation):
+    """ A Copy computation """
     pass
 
-def make_idinc():
-    cache = {}
-    def idinc(x):
-        id = cache.get(x, 0) + 1
-        cache[x] = id
-        return id
-    return idinc
-
 def copies_one(comp, getname=make_getname()):
+    """ The necessary copies to make an impure computation pure """
     def new_comp(inp, out):
         newtoken = getname((inp.expr, out.expr), inp.token)
         out = ExprToken(inp.expr, newtoken)
@@ -60,6 +64,13 @@ def copies_one(comp, getname=make_getname()):
                  for k, v in inplace(comp).items()]
 
 def purify_one(comp, getname=make_getname()):
+    """ A pure version of a single impure computation.
+
+    Adds copies and returns a Composite
+
+    See Also
+        purify
+    """
     copies = copies_one(comp, getname)
     d = dict((cp.inputs[0], cp.outputs[0]) for cp in copies)
     if not d:
@@ -72,16 +83,31 @@ def purify_one(comp, getname=make_getname()):
     return CompositeComputation(newcomp, *copies)
 
 def purify(comp, getname=make_getname()):
+    """ Pure version of an impure computation
+
+    Adds copies and returns a Composite
+
+    See Also
+        purify_one
+    """
     if not isinstance(comp, CompositeComputation):
         return purify_one(comp, getname)
     return CompositeComputation(*[purify_one(c, getname)
                                     for c in comp.computations])
 
 class ExprToken(Basic):
+    """ A pair of mathematical Expr and computational Token
+
+    The expr contains all necessary mathematical information.
+    The token contains all variable information. It is a valid variable name.
+    """
     expr = property(lambda self: self.args[0])
     token = property(lambda self: self.args[1])
 
 class OpComp(Computation):
+    """ A computation that is a triple of (Operation, inputs, outputs)
+
+    Analagous to theano.Apply"""
 
     def __new__(cls, op, inputs, outputs):
         return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs))
@@ -97,16 +123,35 @@ class OpComp(Computation):
         return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
 
 def tokenize_one(mathcomp, tokenizer=make_getname()):
+    """ Transform mathematical computation into a computation of ExprTokens
+
+    This is the switch from pure math to thinking about variables and memory
+
+    Works on only a single computaion (not a composite)
+
+    See Also
+        tokenize
+    """
     return OpComp(type(mathcomp),
                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
 
 def tokenize(mathcomp, tokenizer=make_getname()):
+    """ Transform mathematical computation into a computation of ExprTokens
+
+    This is the switch from pure math to thinking about variables and memory
+
+    Works on composites
+
+    See Also
+        tokenize_one
+    """
     if not isinstance(mathcomp, CompositeComputation):
         return tokenize_one(mathcomp, tokenizer)
     return CompositeComputation(*map(tokenize_one, mathcomp.computations))
 
 def inplace_tokenize(comp):
+    """ Change tokens to be consistent with inplace dictionaries """
     computations = comp.toposort()
     for i in range(len(computations)):
         c = computations[i]
@@ -117,6 +162,16 @@ def inplace_tokenize(comp):
     return CompositeComputation(*computations)
 
 def remove_single_copies(comp):
+    """ Remove unnecessary copies
+
+    The following changes
+    In:  a -> Copy -> b -> A -> c
+    Out: a -> A -> c
+
+    The following does not change
+    In:  a -> Copy -> b -> A -> C
+           ->  B   -> c
+    """
     users = {}
     computations = comp.toposort()
     for c in computations:
