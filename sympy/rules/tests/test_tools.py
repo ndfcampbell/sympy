@@ -14,3 +14,6 @@ def test_subs_no_repeat():
     d = {Basic(2, 3): Basic(4, 5), 5: 6}
     expected = Basic(1, Basic(4, 5))  # note that the 5 is not a 6
     assert subs(d)(expr) == expected
+
+def test_subs_empty():
+    assert subs({})(2) is 2
