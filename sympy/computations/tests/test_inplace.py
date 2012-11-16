@@ -1,5 +1,5 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
-        purify_one, CopyComp, make_idinc, purify, naive_tokenize_one, ExprToken)
+        purify_one, CopyComp, make_idinc, tokenize_one, ExprToken)
 
 from sympy import Symbol, symbols
 from sympy.computations.example import inc, minmax
@@ -8,7 +8,6 @@ a,b,c,x,y,z = symbols('a,b,c,x,y,z')
 
 def test_getname():
     getname = make_getname()
-    print getname(Symbol('x'))
     assert getname(Symbol('x')) == 'x'
     assert getname(Symbol('y')) == 'y'
     assert getname(Symbol('x', real=True)) == 'x_2'
@@ -37,8 +36,8 @@ def test_idinc():
     assert idinc(2) == 1
 
 
-def test_naive_tokenize_one():
-    comp = naive_tokenize_one(inc(3))
+def test_tokenize_one():
+    comp = tokenize_one(inc(3))
     assert comp.op == inc
     assert comp.inputs[0].expr == 3
     assert comp.outputs[0].expr == 4

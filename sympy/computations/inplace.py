@@ -71,7 +71,7 @@ class OpComp(Computation):
     outputs = property(lambda self: self.args[2])
     inplace = property(lambda self: self.op.inplace)
 
-def naive_tokenize_one(mathcomp, tokenizer = make_getname()):
+def tokenize_one(mathcomp, tokenizer = make_getname()):
     return OpComp(type(mathcomp),
                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
