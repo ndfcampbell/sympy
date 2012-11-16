@@ -1,6 +1,7 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, tokenize_one, ExprToken, tokenize,
-        copies_one, purify, OpComp, inplace_tokenize, remove_single_copies)
+        copies_one, purify, OpComp, inplace_tokenize, remove_single_copies,
+        inplace_compile)
 from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
@@ -115,14 +116,10 @@ def test_integrative():
     from sympy import Basic
     tokenizer = make_getname()
     comp = inci(x) + flipflopi(x+1, y)
-    tcomp = tokenize(comp, tokenizer)
-    pcomp = purify(tcomp, tokenizer)
-    nccomp = remove_single_copies(pcomp)
-    icomp = inplace_tokenize(nccomp)
 
     expected = (OpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
                 OpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, 'y')),
                                   (ExprToken(Basic(x+1, y), 'x'),
                                    ExprToken(Basic(y, x+1), 'y'))))
 
-    assert icomp == expected
+    assert inplace_compile(comp) == expected
