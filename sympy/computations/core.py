@@ -37,6 +37,9 @@ class Computation(Basic):
         outs = "["+', '.join(map(str, self.outputs))+"]"
         return "%s -> %s -> %s"%(ins, str(self.__class__.__name__), outs)
 
+    def toposort(self):
+        return [self]
+
 
 class CompositeComputation(Computation):
     """ A computation composed of other computations """
