@@ -17,8 +17,9 @@ def make_getname():
         if key in cache:
             return cache[key]
 
-        name = requested
-        if not name and hasattr(key, 'name'):
+        if requested:
+            name = requested
+        elif hasattr(key, 'name'):
             name = key.name
         else:
             name = ''
@@ -27,6 +28,9 @@ def make_getname():
             while(name + '_%d'%id in seen):
                 id += 1
             name = name + '_%d'%id
+
+        assert name not in cache.values()
+        assert name not in seen
 
         cache[key] = name
         seen.add(name)
@@ -53,7 +57,7 @@ class Copy(Computation):
     """ A Copy computation """
     pass
 
-def copies_one(comp, getname=make_getname()):
+def copies_one(comp, getname):
     """ The necessary copies to make an impure computation pure """
     def new_comp(inp, out):
         newtoken = getname((inp.expr, out.expr), inp.token)
@@ -63,7 +67,7 @@ def copies_one(comp, getname=make_getname()):
     return [new_comp(comp.inputs[v], comp.outputs[k])
                  for k, v in inplace(comp).items()]
 
-def purify_one(comp, getname=make_getname()):
+def purify_one(comp, getname):
     """ A pure version of a single impure computation.
 
     Adds copies and returns a Composite
@@ -82,7 +86,7 @@ def purify_one(comp, getname=make_getname()):
 
     return CompositeComputation(newcomp, *copies)
 
-def purify(comp, getname=make_getname()):
+def purify(comp, getname):
     """ Pure version of an impure computation
 
     Adds copies and returns a Composite
@@ -122,7 +126,7 @@ class OpComp(Computation):
         outs = "["+', '.join(map(str, self.outputs))+"]"
         return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
 
-def tokenize_one(mathcomp, tokenizer=make_getname()):
+def tokenize_one(mathcomp, tokenizer):
     """ Transform mathematical computation into a computation of ExprTokens
 
     This is the switch from pure math to thinking about variables and memory
@@ -136,7 +140,7 @@ def tokenize_one(mathcomp, tokenizer=make_getname()):
                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
 
-def tokenize(mathcomp, tokenizer=make_getname()):
+def tokenize(mathcomp, tokenizer):
     """ Transform mathematical computation into a computation of ExprTokens
 
     This is the switch from pure math to thinking about variables and memory
@@ -148,7 +152,8 @@ def tokenize(mathcomp, tokenizer=make_getname()):
     """
     if not isinstance(mathcomp, CompositeComputation):
         return tokenize_one(mathcomp, tokenizer)
-    return CompositeComputation(*map(tokenize_one, mathcomp.computations))
+    return CompositeComputation(*[tokenize_one(c, tokenizer)
+                                    for c in mathcomp.computations])
 
 def inplace_tokenize(comp):
     """ Change tokens to be consistent with inplace dictionaries """
