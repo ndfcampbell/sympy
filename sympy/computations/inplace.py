@@ -38,7 +38,11 @@ def inplace(x):
     try:
         return x.inplace
     except AttributeError:
-        return {}
+        try:
+            return x.op.inplace
+        except AttributeError:
+            pass
+    return {}
 
 class CopyComp(Computation):
     tag = property(lambda self: self.args[1])
@@ -75,3 +79,8 @@ def tokenize_one(mathcomp, tokenizer = make_getname()):
     return OpComp(type(mathcomp),
                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
+
+def tokenize(mathcomp, tokenizer=make_getname()):
+    if not isinstance(mathcomp, CompositeComputation):
+        return tokenize_one(mathcomp, tokenizer)
+    return CompositeComputation(*map(tokenize_one, mathcomp.computations))
