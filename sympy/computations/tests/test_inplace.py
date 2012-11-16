@@ -1,5 +1,7 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
-        purify_one, CopyComp, make_idinc, tokenize_one, ExprToken, tokenize)
+        purify_one, make_idinc, tokenize_one, ExprToken, tokenize,
+        copies_one)
+from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
 from sympy.computations.example import inc, minmax
@@ -11,11 +13,8 @@ def test_getname():
     assert getname(Symbol('x')) == 'x'
     assert getname(Symbol('y')) == 'y'
     assert getname(Symbol('x', real=True)) == 'x_2'
+    assert getname((Symbol('x'), 'foo'), 'x') != 'x'
     assert len(set(map(getname, (1, 2, 2, 2, 3, 3, 4)))) == 4
-
-def test_copy():
-    c = Copy(Symbol('x'))
-    assert c.name == 'x'
 
 class inc_inplace(inc):
     inplace = {0: 0}
@@ -51,3 +50,37 @@ def test_tokenize():
     assert len(comp2.computations) == 2
     assert comp2.inputs[0].expr == 3
     assert comp2.outputs[0].expr == 5
+
+def test_copies_one():
+    tokenizer = make_getname()
+    comp = tokenize(inc(3), tokenizer)
+    assert copies_one(comp, tokenizer) == []
+
+    comp = tokenize(inc_inplace(3), tokenizer)
+    copy = copies_one(comp, tokenizer)[0]
+    assert copy.op == Copy
+    assert copy.inputs[0].expr == comp.inputs[0].expr
+    assert copy.inputs[0].token == comp.inputs[0].token
+    assert copy.outputs[0].token != comp.inputs[0].token
+
+    comp = tokenize(minmax_inplace(x, y), tokenizer)
+    assert len(copies_one(comp)) == 2
+
+def test_purify_one():
+    tokenizer = make_getname()
+    comp = tokenize(inc(3), tokenizer)
+    assert purify_one(comp, tokenizer) == comp
+
+    comp = tokenize(inc_inplace(3), tokenizer)
+    purecomp = purify_one(comp, tokenizer)
+    assert len(purecomp.computations) == 2
+    a, b = purecomp.computations
+    cp, inci = (a, b) if a.op==Copy else (b, a)
+    assert cp.outputs == inci.inputs
+    assert cp.inputs == comp.inputs
+    assert inci.outputs == comp.outputs
+    assert purecomp.inputs == comp.inputs
+    assert purecomp.outputs == comp.outputs
+
+    comp = tokenize(minmax_inplace(x, y), tokenizer)
+    assert len(purify_one(comp, tokenizer).computations) == 3
