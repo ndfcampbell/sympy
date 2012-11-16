@@ -76,7 +76,7 @@ class CompositeComputation(Computation):
                         *[c.variables for c in self.computations]))
 
     def __str__(self):
-        return "[[" + ", ".join(map(str, self.computations)) + "]]"
+        return "[[" + ", ".join(map(str, self.toposort())) + "]]"
 
     def edges(self):
         return itertools.chain(*[c.edges() for c in self.computations])
