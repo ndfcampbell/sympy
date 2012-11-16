@@ -1,5 +1,5 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
-        purify_one, make_idinc, tokenize_one, ExprToken, tokenize,
+        purify_one, tokenize_one, ExprToken, tokenize,
         copies_one, purify, OpComp, inplace_tokenize, remove_single_copies)
 from sympy.computations.core import CompositeComputation
 
@@ -29,14 +29,6 @@ def test_getname():
 def test_inplace():
     assert inplace(inc(3)) == {}
     assert inplace(inci(3)) == {0: 0}
-
-
-def test_idinc():
-    idinc = make_idinc()
-    assert idinc(1) == 1
-    assert idinc(1) == 2
-    assert idinc(1) == 3
-    assert idinc(2) == 1
 
 def test_tokenize_one():
     comp = tokenize_one(inc(3))
