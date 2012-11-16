@@ -80,6 +80,11 @@ class OpComp(Computation):
     outputs = property(lambda self: self.args[2])
     inplace = property(lambda self: self.op.inplace)
 
+    def __str__(self):
+        ins  = "["+', '.join(map(str, self.inputs)) +"]"
+        outs = "["+', '.join(map(str, self.outputs))+"]"
+        return "%s -> %s -> %s"%(ins, str(self.op), outs)
+
 def tokenize_one(mathcomp, tokenizer=make_getname()):
     return OpComp(type(mathcomp),
                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
