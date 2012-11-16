@@ -114,7 +114,7 @@ def test_remove_single_copies():
 
 def test_integrative():
     from sympy import Basic
-    tokenizer = make_getname()
+    from sympy.unify import patternify, unify
     comp = inci(x) + flipflopi(x+1, y)
 
     expected = (OpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
@@ -123,3 +123,17 @@ def test_integrative():
                                    ExprToken(Basic(y, x+1), 'y'))))
 
     assert inplace_compile(comp) == expected
+
+    comp = inci(x) + flipflopi(x+1, y) + inc(y)
+
+    # We don't care about the variable names used. Let them be anything.
+    expected = patternify(
+                OpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
+                OpComp(inc , (ExprToken(y, 'y'),), (ExprToken(y+1, '_1'),)) +
+                OpComp(Copy, (ExprToken(y, 'y'),), (ExprToken(y, '_2'),)) +
+                OpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, '_2')),
+                                  (ExprToken(Basic(x+1, y), 'x'),
+                                   ExprToken(Basic(y, x+1), '_2'))),
+                '_1', '_2')
+
+    assert len(list(unify(inplace_compile(comp), expected))) > 0
