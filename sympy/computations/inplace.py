@@ -115,3 +115,21 @@ def inplace_tokenize(comp):
         if d:
             computations[i:] = map(subs(d), computations[i:])
     return CompositeComputation(*computations)
+
+def remove_single_copies(comp):
+    users = {}
+    computations = comp.toposort()
+    for c in computations:
+        for inp in c.inputs:
+            s = users.get(inp, set())
+            s.add(c)
+            users[inp] = s
+
+    single_copies = [cp for s in users.values() for cp in s
+                        if len(s) == 1 and cp.op == Copy]
+
+    subsrl = subs(dict((cp.outputs[0].token, cp.inputs[0].token)
+                        for cp in single_copies))
+
+    return CompositeComputation(*[subsrl(c) for c in computations
+                                            if c not in single_copies])

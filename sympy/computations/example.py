@@ -25,6 +25,10 @@ class incdec(Computation):
     inputs  = property(lambda self: self.args)
     outputs = property(lambda self: (self.args[0] + 1, self.args[0] - 1))
 
+class flipflop(Computation):
+    inputs  = property(lambda self: self.args)
+    outputs = property(lambda self: (Basic(self.args[0], self.args[1]),
+                                     Basic(self.args[1], self.args[0])))
 
 class minmax(Computation):
     inputs = property(lambda self: self.args)
