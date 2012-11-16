@@ -27,12 +27,6 @@ def make_getname():
     return getname
 
 
-class Copy(Basic):
-    arg = property(lambda self: self.args[0])
-    tag = property(lambda self: self.args[1])
-
-    name = property(lambda self: self.arg.name if hasattr(self.arg, 'name')
-                                               else 'copy')
 
 def inplace(x):
     try:
@@ -44,10 +38,8 @@ def inplace(x):
             pass
     return {}
 
-class CopyComp(Computation):
-    tag = property(lambda self: self.args[1])
-    inputs = property(lambda self: (self.args[0],))
-    outputs = property(lambda self: (Copy(self.args[0], self.tag),))
+class Copy(Computation):
+    pass
 
 def make_idinc():
     cache = {}
@@ -57,13 +49,26 @@ def make_idinc():
         return id
     return idinc
 
-def copies_one(comp, idinc=make_idinc()):
-    return CompositeComputation(
-                           *[CopyComp(comp.inputs[idx], idinc(comp.inputs[idx]))
-                                for idx in inplace(comp).values()])
+def copies_one(comp, getname=make_getname()):
+    def new_comp(inp, out):
+        newtoken = getname((inp.expr, out.expr), inp.token)
+        out = ExprToken(inp.expr, newtoken)
+        return OpComp(Copy, (inp,), (out,))
 
-def purify_one(comp, idinc=make_idinc()):
-    return comp + copies_one(comp, idinc)
+    return [new_comp(comp.inputs[v], comp.outputs[k])
+                 for k, v in inplace(comp).items()]
+
+def purify_one(comp, getname=make_getname()):
+    copies = copies_one(comp, getname)
+    d = dict((cp.inputs[0], cp.outputs[0]) for cp in copies)
+    if not d:
+        return comp
+
+    inputs = tuple(d[i] if i in d else i for i in comp.inputs)
+
+    newcomp = OpComp(comp.op, inputs, comp.outputs)  #.canonicalize() ??
+
+    return CompositeComputation(newcomp, *copies)
 
 class ExprToken(Basic):
     expr = property(lambda self: self.args[0])
@@ -75,7 +80,7 @@ class OpComp(Computation):
     outputs = property(lambda self: self.args[2])
     inplace = property(lambda self: self.op.inplace)
 
-def tokenize_one(mathcomp, tokenizer = make_getname()):
+def tokenize_one(mathcomp, tokenizer=make_getname()):
     return OpComp(type(mathcomp),
                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
