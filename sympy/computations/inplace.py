@@ -1,5 +1,6 @@
-from sympy import Basic
+from sympy import Basic, Tuple
 from sympy.computations.core import Computation, CompositeComputation
+from sympy.rules.tools import subs
 
 def make_getname():
     cache = {}
@@ -81,6 +82,10 @@ class ExprToken(Basic):
     token = property(lambda self: self.args[1])
 
 class OpComp(Computation):
+
+    def __new__(cls, op, inputs, outputs):
+        return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs))
+
     op = property(lambda self: self.args[0])
     inputs = property(lambda self: self.args[1])
     outputs = property(lambda self: self.args[2])
@@ -100,3 +105,13 @@ def tokenize(mathcomp, tokenizer=make_getname()):
     if not isinstance(mathcomp, CompositeComputation):
         return tokenize_one(mathcomp, tokenizer)
     return CompositeComputation(*map(tokenize_one, mathcomp.computations))
+
+def inplace_tokenize(comp):
+    computations = comp.toposort()
+    for i in range(len(computations)):
+        c = computations[i]
+        d = dict((c.outputs[k], ExprToken(c.outputs[v].expr,c.inputs[k].token))
+                for k,v in inplace(c).items())
+        if d:
+            computations[i:] = map(subs(d), computations[i:])
+    return CompositeComputation(*computations)

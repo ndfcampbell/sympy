@@ -1,6 +1,6 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, make_idinc, tokenize_one, ExprToken, tokenize,
-        copies_one, purify)
+        copies_one, purify, OpComp, inplace_tokenize)
 from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
@@ -94,8 +94,17 @@ def test_purify():
     comp = tokenize(inc(3) + inc_inplace(4) + inc_inplace(5), tokenizer)
     purecomp = purify(comp, tokenizer)
 
-    print
-    print purecomp
     assert len(purecomp.computations) == 5
     assert purecomp.inputs == comp.inputs
     assert purecomp.outputs == comp.outputs
+
+def test_inplace_tokenize():
+    comp     = OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 2),))
+    expected = OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 1),))
+    assert inplace_tokenize(comp) == expected
+
+    comp     = (OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 2),)) +
+                OpComp(inc_inplace, (ExprToken(2, 2),), (ExprToken(3, 3),)))
+    expected = (OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 1),)) +
+                OpComp(inc_inplace, (ExprToken(2, 1),), (ExprToken(3, 1),)))
+    assert inplace_tokenize(comp) == expected
