@@ -1,6 +1,6 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, make_idinc, tokenize_one, ExprToken, tokenize,
-        copies_one)
+        copies_one, purify)
 from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
@@ -84,3 +84,18 @@ def test_purify_one():
 
     comp = tokenize(minmax_inplace(x, y), tokenizer)
     assert len(purify_one(comp, tokenizer).computations) == 3
+
+def test_purify():
+    assert purify(tokenize(inc(3))) == tokenize(inc(3))
+    assert purify(tokenize(inc_inplace(3))) == \
+            purify_one(tokenize(inc_inplace(3)))
+
+    tokenizer = make_getname()
+    comp = tokenize(inc(3) + inc_inplace(4) + inc_inplace(5), tokenizer)
+    purecomp = purify(comp, tokenizer)
+
+    print
+    print purecomp
+    assert len(purecomp.computations) == 5
+    assert purecomp.inputs == comp.inputs
+    assert purecomp.outputs == comp.outputs
