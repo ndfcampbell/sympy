@@ -8,6 +8,13 @@ from sympy.computations.example import inc, minmax
 
 a,b,c,x,y,z = symbols('a,b,c,x,y,z')
 
+class inci(inc):
+    inplace = {0: 0}
+
+class minmax_inplace(minmax):
+    inplace = {0: 0, 1: 1}
+
+
 def test_getname():
     getname = make_getname()
     assert getname(Symbol('x')) == 'x'
@@ -16,15 +23,9 @@ def test_getname():
     assert getname((Symbol('x'), 'foo'), 'x') != 'x'
     assert len(set(map(getname, (1, 2, 2, 2, 3, 3, 4)))) == 4
 
-class inc_inplace(inc):
-    inplace = {0: 0}
-
-class minmax_inplace(minmax):
-    inplace = {0: 0, 1: 1}
-
 def test_inplace():
     assert inplace(inc(3)) == {}
-    assert inplace(inc_inplace(3)) == {0: 0}
+    assert inplace(inci(3)) == {0: 0}
 
 
 def test_idinc():
@@ -56,7 +57,7 @@ def test_copies_one():
     comp = tokenize(inc(3), tokenizer)
     assert copies_one(comp, tokenizer) == []
 
-    comp = tokenize(inc_inplace(3), tokenizer)
+    comp = tokenize(inci(3), tokenizer)
     copy = copies_one(comp, tokenizer)[0]
     assert copy.op == Copy
     assert copy.inputs[0].expr == comp.inputs[0].expr
@@ -71,14 +72,14 @@ def test_purify_one():
     comp = tokenize(inc(3), tokenizer)
     assert purify_one(comp, tokenizer) == comp
 
-    comp = tokenize(inc_inplace(3), tokenizer)
+    comp = tokenize(inci(3), tokenizer)
     purecomp = purify_one(comp, tokenizer)
     assert len(purecomp.computations) == 2
     a, b = purecomp.computations
-    cp, inci = (a, b) if a.op==Copy else (b, a)
-    assert cp.outputs == inci.inputs
+    cp, incinpl = (a, b) if a.op==Copy else (b, a)
+    assert cp.outputs == incinpl.inputs
     assert cp.inputs == comp.inputs
-    assert inci.outputs == comp.outputs
+    assert incinpl.outputs == comp.outputs
     assert purecomp.inputs == comp.inputs
     assert purecomp.outputs == comp.outputs
 
@@ -87,11 +88,11 @@ def test_purify_one():
 
 def test_purify():
     assert purify(tokenize(inc(3))) == tokenize(inc(3))
-    assert purify(tokenize(inc_inplace(3))) == \
-            purify_one(tokenize(inc_inplace(3)))
+    assert purify(tokenize(inci(3))) == \
+            purify_one(tokenize(inci(3)))
 
     tokenizer = make_getname()
-    comp = tokenize(inc(3) + inc_inplace(4) + inc_inplace(5), tokenizer)
+    comp = tokenize(inc(3) + inci(4) + inci(5), tokenizer)
     purecomp = purify(comp, tokenizer)
 
     assert len(purecomp.computations) == 5
@@ -99,12 +100,12 @@ def test_purify():
     assert purecomp.outputs == comp.outputs
 
 def test_inplace_tokenize():
-    comp     = OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 2),))
-    expected = OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 1),))
+    comp     = OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),))
+    expected = OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),))
     assert inplace_tokenize(comp) == expected
 
-    comp     = (OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 2),)) +
-                OpComp(inc_inplace, (ExprToken(2, 2),), (ExprToken(3, 3),)))
-    expected = (OpComp(inc_inplace, (ExprToken(1, 1),), (ExprToken(2, 1),)) +
-                OpComp(inc_inplace, (ExprToken(2, 1),), (ExprToken(3, 1),)))
+    comp     = (OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),)) +
+                OpComp(inci, (ExprToken(2, 2),), (ExprToken(3, 3),)))
+    expected = (OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),)) +
+                OpComp(inci, (ExprToken(2, 1),), (ExprToken(3, 1),)))
     assert inplace_tokenize(comp) == expected
