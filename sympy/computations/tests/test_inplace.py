@@ -32,18 +32,18 @@ def test_inplace():
     assert inplace(inci(3)) == {0: 0}
 
 def test_tokenize_one():
-    comp = tokenize_one(inc(3))
+    comp = tokenize_one(inc(3), make_getname())
     assert comp.op == inc
     assert comp.inputs[0].expr == 3
     assert comp.outputs[0].expr == 4
 
 def test_tokenize():
-    comp = tokenize(inc(3))
+    comp = tokenize(inc(3), make_getname())
     assert comp.op == inc
     assert comp.inputs[0].expr == 3
     assert comp.outputs[0].expr == 4
 
-    comp2 = tokenize(inc(3) + inc(4))
+    comp2 = tokenize(inc(3) + inc(4), make_getname())
     assert len(comp2.computations) == 2
     assert comp2.inputs[0].expr == 3
     assert comp2.outputs[0].expr == 5
@@ -58,10 +58,11 @@ def test_copies_one():
     assert copy.op == Copy
     assert copy.inputs[0].expr == comp.inputs[0].expr
     assert copy.inputs[0].token == comp.inputs[0].token
+    assert copy.inputs[0].token != copy.outputs[0].token
     assert copy.outputs[0].token != comp.inputs[0].token
 
     comp = tokenize(minmax_inplace(x, y), tokenizer)
-    assert len(copies_one(comp)) == 2
+    assert len(copies_one(comp, tokenizer)) == 2
 
 def test_purify_one():
     tokenizer = make_getname()
@@ -83,9 +84,11 @@ def test_purify_one():
     assert len(purify_one(comp, tokenizer).computations) == 3
 
 def test_purify():
-    assert purify(tokenize(inc(3))) == tokenize(inc(3))
-    assert purify(tokenize(inci(3))) == \
-            purify_one(tokenize(inci(3)))
+    tokenizer = make_getname()
+    assert purify(tokenize(inc(3), tokenizer), tokenizer) == \
+            tokenize(inc(3), tokenizer)
+    assert purify(tokenize(inci(3), tokenizer), tokenizer) == \
+            purify_one(tokenize(inci(3), tokenizer), tokenizer)
 
     tokenizer = make_getname()
     comp = tokenize(inc(3) + inci(4) + inci(5), tokenizer)
