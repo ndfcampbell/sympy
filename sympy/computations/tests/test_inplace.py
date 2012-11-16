@@ -1,10 +1,11 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, make_idinc, tokenize_one, ExprToken, tokenize,
-        copies_one, purify, OpComp, inplace_tokenize)
+        copies_one, purify, OpComp, inplace_tokenize, remove_single_copies)
 from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
-from sympy.computations.example import inc, minmax
+from sympy.computations.example import inc, minmax, flipflop
+from sympy.rules.strat_pure import debug
 
 a,b,c,x,y,z = symbols('a,b,c,x,y,z')
 
@@ -14,6 +15,8 @@ class inci(inc):
 class minmax_inplace(minmax):
     inplace = {0: 0, 1: 1}
 
+class flipflopi(flipflop):
+    inplace = {0: 0, 1: 1}
 
 def test_getname():
     getname = make_getname()
@@ -109,3 +112,25 @@ def test_inplace_tokenize():
     expected = (OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),)) +
                 OpComp(inci, (ExprToken(2, 1),), (ExprToken(3, 1),)))
     assert inplace_tokenize(comp) == expected
+
+def test_remove_single_copies():
+    comp     = (OpComp(inci, (ExprToken(1, '1'),), (ExprToken(2, '2'),)) +
+                OpComp(Copy, (ExprToken(1, '0'),), (ExprToken(1, '1'),)))
+    expected =  OpComp(inci, (ExprToken(1, '0'),), (ExprToken(2, '2'),))
+    assert remove_single_copies(comp) == expected
+
+def test_integrative():
+    from sympy import Basic
+    tokenizer = make_getname()
+    comp = inci(x) + flipflopi(x+1, y)
+    tcomp = tokenize(comp, tokenizer)
+    pcomp = purify(tcomp, tokenizer)
+    nccomp = remove_single_copies(pcomp)
+    icomp = inplace_tokenize(nccomp)
+
+    expected = (OpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
+                OpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, 'y')),
+                                  (ExprToken(Basic(x+1, y), 'x'),
+                                   ExprToken(Basic(y, x+1), 'y'))))
+
+    assert icomp == expected
