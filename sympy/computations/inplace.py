@@ -188,3 +188,12 @@ def remove_single_copies(comp):
 
     return CompositeComputation(*[subsrl(c) for c in computations
                                             if c not in single_copies])
+
+def inplace_compile(comp):
+    tokenizer = make_getname()
+    stage0 = comp
+    stage1 = tokenize(stage0, tokenizer)
+    stage2 = purify(stage1, tokenizer)
+    stage3 = remove_single_copies(stage2)
+    stage4 = inplace_tokenize(stage3)
+    return stage4
