@@ -94,3 +94,12 @@ def test_canonicalize():
     I3 = Identity(e)
 
     assert I2 + A == I3 + A
+
+def test_dot():
+    MM = TComp('minmax', (a, b), (d, e))
+    A =  TComp('foo', (d,), (f,))
+    B =  TComp('bar', (a, f), (g, h))
+    C =  CompositeComputation(MM, A, B)
+
+    assert isinstance(MM.dot(), str)
+    assert isinstance(C.dot(), str)

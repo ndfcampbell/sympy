@@ -126,6 +126,10 @@ class OpComp(Computation):
         outs = "["+', '.join(map(str, self.outputs))+"]"
         return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
 
+    def dot_nodes(self):
+        return ['"%s" [shape=box, label=%s]' % (str(self), str(self.op))]
+
+
 def tokenize_one(mathcomp, tokenizer):
     """ Transform mathematical computation into a computation of ExprTokens
 
