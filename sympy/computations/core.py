@@ -158,7 +158,8 @@ class OpComp(Computation):
     def __str__(self):
         ins  = "["+', '.join(map(str, self.inputs)) +"]"
         outs = "["+', '.join(map(str, self.outputs))+"]"
-        return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
+        opstr = self.op.__name__ if isinstance(self.op, type) else str(self.op)
+        return "%s -> %s -> %s"%(ins, opstr, outs)
 
     def dot_nodes(self):
         return ['"%s" [shape=box, label=%s]' % (str(self), str(self.op))]

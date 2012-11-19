@@ -96,10 +96,12 @@ def test_canonicalize():
     assert I2 + A == I3 + A
 
 def test_dot():
-    MM = TComp('minmax', (a, b), (d, e))
-    A =  TComp('foo', (d,), (f,))
-    B =  TComp('bar', (a, f), (g, h))
+    from sympy.computations.core import OpComp
+    MM = OpComp('minmax', (a, b), (d, e))
+    A =  OpComp('foo', (d,), (f,))
+    B =  OpComp('bar', (a, f), (g, h))
     C =  CompositeComputation(MM, A, B)
 
+    print C.dot()
     assert isinstance(MM.dot(), str)
     assert isinstance(C.dot(), str)
