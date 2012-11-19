@@ -1,8 +1,8 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, tokenize_one, ExprToken, tokenize,
-        copies_one, purify, OpComp, inplace_tokenize, remove_single_copies,
+        copies_one, purify, inplace_tokenize, remove_single_copies,
         inplace_compile)
-from sympy.computations.core import CompositeComputation
+from sympy.computations.core import CompositeComputation, OpComp
 
 from sympy import Symbol, symbols
 from sympy.computations.example import inc, minmax, flipflop

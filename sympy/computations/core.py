@@ -1,5 +1,5 @@
 import itertools
-from sympy import Basic
+from sympy import Basic, Tuple
 
 def unique(seq):
     seen = set()
@@ -140,3 +140,26 @@ def rm_identity(comp):
 class Identity(Computation):
     inputs = property(lambda self: self.args)
     outputs = inputs
+
+
+class OpComp(Computation):
+    """ A computation that is a triple of (Operation, inputs, outputs)
+
+    Analagous to theano.Apply"""
+
+    def __new__(cls, op, inputs, outputs):
+        return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs))
+
+    op = property(lambda self: self.args[0])
+    inputs = property(lambda self: self.args[1])
+    outputs = property(lambda self: self.args[2])
+    inplace = property(lambda self: self.op.inplace)
+
+    def __str__(self):
+        ins  = "["+', '.join(map(str, self.inputs)) +"]"
+        outs = "["+', '.join(map(str, self.outputs))+"]"
+        return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
+
+    def dot_nodes(self):
+        return ['"%s" [shape=box, label=%s]' % (str(self), str(self.op))]
+
