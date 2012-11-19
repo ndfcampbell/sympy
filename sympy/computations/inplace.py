@@ -178,6 +178,16 @@ def remove_single_copies(comp):
                                             if c not in single_copies])
 
 def inplace_compile(comp):
+    """ Compile a mathematical computation into a nice inplace one
+
+    This is a master function that calls the following in order
+
+    See Also
+        tokenize
+        purify
+        remove_single_copies
+        inplace_tokenize
+    """
     tokenizer = make_getname()
     stage0 = comp
     stage1 = tokenize(stage0, tokenizer)

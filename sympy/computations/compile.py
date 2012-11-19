@@ -2,6 +2,7 @@ from sympy.unify.usympy import patternify
 from sympy.unify.rewrite import rewriterule
 
 def brulify(source, target, *wilds):
+    """ Turn a source/target/wild set into a branching rule """
     pattern = patternify(source, *wilds)
     return rewriterule(pattern, target)
 
