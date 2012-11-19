@@ -37,6 +37,18 @@ class Computation(Basic):
         outs = "["+', '.join(map(str, self.outputs))+"]"
         return "%s -> %s -> %s"%(ins, str(self.__class__.__name__), outs)
 
+    def dot_nodes(self):
+        return ['"%s" [shape=box, label=%s]' % (
+                str(self), str(self.__class__.__name__))]
+
+    def dot_edges(self):
+        return ['"%s" -> "%s"' % tuple(map(str, edge)) for edge in self.edges()]
+
+    def dot(self):
+        nodes = "\n\t".join(self.dot_nodes())
+        edges = "\n\t".join(self.dot_edges())
+        return "digraph{\n\trankdir=LR\n\t" + nodes + '\n\n\t' + edges + '\n}'
+
     def toposort(self):
         return [self]
 
@@ -81,6 +93,8 @@ class CompositeComputation(Computation):
     def edges(self):
         return itertools.chain(*[c.edges() for c in self.computations])
 
+    def dot_nodes(self):
+        return (n for c in self.computations for n in c.dot_nodes())
     def dag_io(self):
         """ Return a dag of computations from inputs to outputs
 
