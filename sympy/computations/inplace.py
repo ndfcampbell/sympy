@@ -1,5 +1,5 @@
 from sympy import Basic, Tuple
-from sympy.computations.core import Computation, CompositeComputation
+from sympy.computations.core import Computation, CompositeComputation, OpComp
 from sympy.rules.tools import subs
 
 def make_getname():
@@ -107,27 +107,6 @@ class ExprToken(Basic):
     """
     expr = property(lambda self: self.args[0])
     token = property(lambda self: self.args[1])
-
-class OpComp(Computation):
-    """ A computation that is a triple of (Operation, inputs, outputs)
-
-    Analagous to theano.Apply"""
-
-    def __new__(cls, op, inputs, outputs):
-        return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs))
-
-    op = property(lambda self: self.args[0])
-    inputs = property(lambda self: self.args[1])
-    outputs = property(lambda self: self.args[2])
-    inplace = property(lambda self: self.op.inplace)
-
-    def __str__(self):
-        ins  = "["+', '.join(map(str, self.inputs)) +"]"
-        outs = "["+', '.join(map(str, self.outputs))+"]"
-        return "%s -> %s -> %s"%(ins, str(self.op.__name__), outs)
-
-    def dot_nodes(self):
-        return ['"%s" [shape=box, label=%s]' % (str(self), str(self.op))]
 
 
 def tokenize_one(mathcomp, tokenizer):
