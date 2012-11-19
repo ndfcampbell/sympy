@@ -21,6 +21,7 @@ class Computation(Basic):
     outputs = None
 
     def edges(self):
+        """ A sequence of edges """
         inedges  = ((i, self) for i in self.inputs)
         outedges = ((self, o) for o in self.outputs)
         return itertools.chain(inedges, outedges)
@@ -45,17 +46,18 @@ class Computation(Basic):
         return ['"%s" -> "%s"' % tuple(map(str, edge)) for edge in self.edges()]
 
     def dot(self):
+        """ A DOT language representation of the graph """
         nodes = "\n\t".join(self.dot_nodes())
         edges = "\n\t".join(self.dot_edges())
         return "digraph{\n\trankdir=LR\n\t" + nodes + '\n\n\t' + edges + '\n}'
 
     def toposort(self):
+        """ Order computations in an executable order """
         return [self]
 
 
 class CompositeComputation(Computation):
     """ A computation composed of other computations """
-
 
     def __new__(cls, *args):
         obj = Basic.__new__(cls, *args)
@@ -95,6 +97,7 @@ class CompositeComputation(Computation):
 
     def dot_nodes(self):
         return (n for c in self.computations for n in c.dot_nodes())
+
     def dag_io(self):
         """ Return a dag of computations from inputs to outputs
 
@@ -138,15 +141,15 @@ def rm_identity(comp):
     return comp
 
 class Identity(Computation):
+    """ An Identity computation """
     inputs = property(lambda self: self.args)
     outputs = inputs
 
 
 class OpComp(Computation):
-    """ A computation that is a triple of (Operation, inputs, outputs)
+    """ A Computation represented by (Operation, inputs, outputs)
 
     Analagous to theano.Apply"""
-
     def __new__(cls, op, inputs, outputs):
         return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs))
 
