@@ -1,9 +1,9 @@
 from sympy.computations.matrices.core import MatrixCall, remove_numbers
 from sympy.computations.core import unique
 from sympy.computations.matrices.shared import detranspose
-from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C, S,
+from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b)
-from sympy import Q
+from sympy import Q, S
 
 class BLAS(MatrixCall):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
@@ -30,11 +30,10 @@ class SYMM(MM):
     """ Symmetric Matrix Multiply """
     condition = Q.symmetric(A) | Q.symmetric(B)
 
-def test_valid():
-    A = MatrixSymbol('A', n, n)
-    B = MatrixSymbol('B', n, n)
-    C = MatrixSymbol('C', n, n)
-    assert GEMM.valid((1, A, B, 2, C), True)
-    assert not SYMM.valid((1, A, B, 2, C), True)
-    assert SYMM.valid((1, A, B, 2, C), Q.symmetric(A))
-    assert SYMM.valid((1, A, B, 2, C), Q.symmetric(B))
+# pattern is (source expression, target expression, wilds, condition)
+patterns = [
+    (GEMM._outputs[0], GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
+    (alpha*A*B, GEMM(alpha, A, B, S.Zero, B), (alpha, A, B), True),
+    (SYMM._outputs[0], SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
+    (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition)
+]

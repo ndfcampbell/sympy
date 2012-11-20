@@ -102,6 +102,5 @@ def test_dot():
     B =  OpComp('bar', (a, f), (g, h))
     C =  CompositeComputation(MM, A, B)
 
-    print C.dot()
     assert isinstance(MM.dot(), str)
     assert isinstance(C.dot(), str)
