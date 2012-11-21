@@ -61,3 +61,12 @@ class MatrixCall(Computation):
     @property
     def out_types(self):
         return tuple(ot or self.basetype for ot in self._out_types)
+
+    @property
+    def inplace(self):
+        rv = {}
+        for outind, inind in self.view_map.items():
+            rawinput = self.raw_inputs[inind]
+            inputind = self.inputs.index(rawinput)
+            rv[outind] = inputind
+        return rv

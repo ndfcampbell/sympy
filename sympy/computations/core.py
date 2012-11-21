@@ -180,7 +180,6 @@ class OpComp(Computation):
     op = property(lambda self: self.args[0])
     inputs = property(lambda self: self.args[1])
     outputs = property(lambda self: self.args[2])
-    inplace = property(lambda self: self.op.inplace)
 
     def __str__(self):
         ins  = "["+', '.join(map(str, self.inputs)) +"]"
@@ -190,4 +189,3 @@ class OpComp(Computation):
 
     def dot_nodes(self):
         return ['"%s" [shape=box, label=%s]' % (str(self), str(self.op))]
-

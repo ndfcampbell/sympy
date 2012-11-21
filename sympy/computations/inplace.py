@@ -1,5 +1,5 @@
 from sympy import Basic, Tuple
-from sympy.computations.core import Computation, CompositeComputation, OpComp
+from sympy.computations.core import (Computation, CompositeComputation, OpComp)
 from sympy.rules.tools import subs
 
 def make_getname():
@@ -38,7 +38,6 @@ def make_getname():
     return getname
 
 
-
 def inplace(x):
     """ Get a dict mapping storage location of each output
 
@@ -53,6 +52,7 @@ def inplace(x):
             pass
     return {}
 
+
 class Copy(Computation):
     """ A Copy computation """
     pass
@@ -62,7 +62,7 @@ def copies_one(comp, getname):
     def new_comp(inp, out):
         newtoken = getname((inp.expr, out.expr), inp.token)
         out = ExprToken(inp.expr, newtoken)
-        return OpComp(Copy, (inp,), (out,))
+        return IOpComp(Copy, (inp,), (out,))
 
     return [new_comp(comp.inputs[v], comp.outputs[k])
                  for k, v in inplace(comp).items()]
@@ -82,7 +82,7 @@ def purify_one(comp, getname):
 
     inputs = tuple(d[i] if i in d else i for i in comp.inputs)
 
-    newcomp = OpComp(comp.op, inputs, comp.outputs)  #.canonicalize() ??
+    newcomp = IOpComp(comp.op, inputs, comp.outputs, inplace(comp))  #.canonicalize() ??
 
     return CompositeComputation(newcomp, *copies)
 
@@ -119,9 +119,10 @@ def tokenize_one(mathcomp, tokenizer):
     See Also
         tokenize
     """
-    return OpComp(type(mathcomp),
-                  tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
-                  tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs))
+    return IOpComp(type(mathcomp),
+                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
+                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs),
+                   inplace(mathcomp))
 
 def tokenize(mathcomp, tokenizer):
     """ Transform mathematical computation into a computation of ExprTokens
@@ -143,8 +144,8 @@ def inplace_tokenize(comp):
     computations = comp.toposort()
     for i in range(len(computations)):
         c = computations[i]
-        d = dict((c.outputs[k], ExprToken(c.outputs[v].expr,c.inputs[k].token))
-                for k,v in inplace(c).items())
+        d = dict((c.outputs[k], ExprToken(c.outputs[k].expr, c.inputs[v].token))
+                for k, v in inplace(c).items())
         if d:
             computations[i:] = map(subs(d), computations[i:])
     return CompositeComputation(*computations)
@@ -195,3 +196,13 @@ def inplace_compile(comp):
     stage3 = remove_single_copies(stage2)
     stage4 = inplace_tokenize(stage3)
     return stage4
+
+class IOpComp(OpComp):
+    """ Inplace version of OpComp """
+
+    def __new__(cls, op, inputs, outputs, inpl=None):
+        inpl = inpl or inplace(op) or {}
+        return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs),
+                Tuple(*sorted(inpl.items())))
+
+    inplace = property(lambda self: dict(self.args[3]))

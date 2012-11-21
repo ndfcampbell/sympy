@@ -1,8 +1,8 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, tokenize_one, ExprToken, tokenize,
         copies_one, purify, inplace_tokenize, remove_single_copies,
-        inplace_compile)
-from sympy.computations.core import CompositeComputation, OpComp
+        inplace_compile, IOpComp)
+from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
 from sympy.computations.example import inc, minmax, flipflop
@@ -99,20 +99,20 @@ def test_purify():
     assert purecomp.outputs == comp.outputs
 
 def test_inplace_tokenize():
-    comp     = OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),))
-    expected = OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),))
+    comp     = IOpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),))
+    expected = IOpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),))
     assert inplace_tokenize(comp) == expected
 
-    comp     = (OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),)) +
-                OpComp(inci, (ExprToken(2, 2),), (ExprToken(3, 3),)))
-    expected = (OpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),)) +
-                OpComp(inci, (ExprToken(2, 1),), (ExprToken(3, 1),)))
+    comp     = (IOpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),)) +
+                IOpComp(inci, (ExprToken(2, 2),), (ExprToken(3, 3),)))
+    expected = (IOpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),)) +
+                IOpComp(inci, (ExprToken(2, 1),), (ExprToken(3, 1),)))
     assert inplace_tokenize(comp) == expected
 
 def test_remove_single_copies():
-    comp     = (OpComp(inci, (ExprToken(1, '1'),), (ExprToken(2, '2'),)) +
-                OpComp(Copy, (ExprToken(1, '0'),), (ExprToken(1, '1'),)))
-    expected =  OpComp(inci, (ExprToken(1, '0'),), (ExprToken(2, '2'),))
+    comp     = (IOpComp(inci, (ExprToken(1, '1'),), (ExprToken(2, '2'),)) +
+                IOpComp(Copy, (ExprToken(1, '0'),), (ExprToken(1, '1'),)))
+    expected =  IOpComp(inci, (ExprToken(1, '0'),), (ExprToken(2, '2'),))
     assert remove_single_copies(comp) == expected
 
 def test_integrative():
@@ -120,8 +120,8 @@ def test_integrative():
     from sympy.unify import patternify, unify
     comp = inci(x) + flipflopi(x+1, y)
 
-    expected = (OpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
-                OpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, 'y')),
+    expected = (IOpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
+                IOpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, 'y')),
                                   (ExprToken(Basic(x+1, y), 'x'),
                                    ExprToken(Basic(y, x+1), 'y'))))
 
@@ -131,10 +131,10 @@ def test_integrative():
 
     # We don't care about the variable names used. Let them be anything.
     expected = patternify(
-                OpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
-                OpComp(inc , (ExprToken(y, 'y'),), (ExprToken(y+1, '_1'),)) +
-                OpComp(Copy, (ExprToken(y, 'y'),), (ExprToken(y, '_2'),)) +
-                OpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, '_2')),
+                IOpComp(inci, (ExprToken(x, 'x'),), (ExprToken(x+1, 'x'),)) +
+                IOpComp(inc , (ExprToken(y, 'y'),), (ExprToken(y+1, '_1'),)) +
+                IOpComp(Copy, (ExprToken(y, 'y'),), (ExprToken(y, '_2'),)) +
+                IOpComp(flipflopi, (ExprToken(x+1, 'x'), ExprToken(y, '_2')),
                                   (ExprToken(Basic(x+1, y), 'x'),
                                    ExprToken(Basic(y, x+1), '_2'))),
                 '_1', '_2')
