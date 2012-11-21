@@ -1,4 +1,5 @@
 from sympy.computations import Computation
+from sympy.computations.core import unique
 from sympy import Symbol, Expr, Basic, ask, Tuple
 from sympy.matrices.expressions import MatrixExpr
 from sympy.rules.tools import subs
