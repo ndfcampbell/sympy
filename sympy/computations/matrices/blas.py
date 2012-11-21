@@ -2,7 +2,7 @@ from sympy.computations.matrices.core import MatrixCall, remove_numbers
 from sympy.computations.core import unique
 from sympy.computations.matrices.shared import detranspose
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
-        x, a, b)
+        x, a, b, X, Y)
 from sympy import Q, S
 
 class BLAS(MatrixCall):
@@ -29,3 +29,10 @@ class GEMM(MM):
 class SYMM(MM):
     """ Symmetric Matrix Multiply """
     condition = Q.symmetric(A) | Q.symmetric(B)
+
+class AXPY(BLAS):
+    """ Matrix Matrix Addition `alpha X + Y` """
+    _inputs   = (alpha, X, Y)
+    _outputs  = (alpha*X + Y,)
+    view_map  = {0: 2}
+    condition = True
