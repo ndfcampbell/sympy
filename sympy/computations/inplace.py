@@ -60,7 +60,8 @@ class Copy(Computation):
 def copies_one(comp, getname):
     """ The necessary copies to make an impure computation pure """
     def new_comp(inp, out):
-        newtoken = getname((inp.expr, out.expr), inp.token)
+        requested = inp.token if inp.token[0]!='_' else None
+        newtoken = getname((inp.expr, out.expr), requested)
         out = ExprToken(inp.expr, newtoken)
         return IOpComp(Copy, (inp,), (out,))
 
