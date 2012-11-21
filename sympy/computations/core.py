@@ -45,11 +45,12 @@ class Computation(Basic):
     def dot_edges(self):
         return ['"%s" -> "%s"' % tuple(map(str, edge)) for edge in self.edges()]
 
-    def dot(self):
+    def dot(self, orientation='TD'):
         """ A DOT language representation of the graph """
         nodes = "\n\t".join(self.dot_nodes())
         edges = "\n\t".join(self.dot_edges())
-        return "digraph{\n\trankdir=LR\n\t" + nodes + '\n\n\t' + edges + '\n}'
+        return ("digraph{\n\trankdir=" + orientation +
+                "\n\t" + nodes + "\n\n\t" + edges + "\n}")
 
     def writepdf(self, filename='comp', extension='pdf'):
         import os
