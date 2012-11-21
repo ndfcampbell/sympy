@@ -1,8 +1,9 @@
-from sympy.computations.matrices.compile import patterns, make_rule
+from sympy.computations.matrices.compile import patterns, make_rule, wildtypes
 from sympy.computations.matrices.lapack import GESV, POSV
+from sympy.computations.matrices.blas import GEMM
 from sympy.computations.core import Identity
-from sympy import Symbol, symbols, S, Q
-from sympy.matrices.expressions import MatrixSymbol
+from sympy import Symbol, symbols, S, Q, Expr
+from sympy.matrices.expressions import MatrixSymbol, MatrixExpr
 from sympy.utilities.pytest import XFAIL, slow, skip
 
 
@@ -19,6 +20,22 @@ def test_GEMM():
     Z = MatrixSymbol('Z', 3, 3)
     expr = a*X*Y + b*Z
     assert _reduces(expr, (X, Y, Z, a, b))
+
+def test_wildtypes():
+    x = Symbol('x')
+    X = MatrixSymbol('X', 3, 3)
+    assert wildtypes((x, X)) == {x: Expr, X: MatrixExpr}
+
+def test_types():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    rule = make_rule(patterns, True)
+    expr = X*Y*Z
+    comp = Identity(expr)
+    results = list(rule(comp))
+    # We can't do this with a single GEMM
+    assert not any(isinstance(r, GEMM) for r in results)
 
 def test_alternative_patterns():
     X = MatrixSymbol('X', 3, 3)

@@ -3,11 +3,15 @@ from sympy.computations.matrices.lapack import GESV, POSV
 
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b)
-from sympy import Q, S, ask
+from sympy import Q, S, ask, Expr
+from sympy.matrices.expressions import MatrixExpr
 from sympy.computations.compile import input_crunch, brulify
 from sympy.unify import patternify, unify
 from sympy.rules.branch import multiplex, exhaust, debug
 from sympy.rules.tools import subs
+
+def wildtypes(wilds):
+    return {w: (Expr if isinstance(w, Expr) else MatrixExpr) for w in wilds}
 
 def expr_to_comp_rule(source, target, wilds, condition, assumptions):
     """
@@ -17,7 +21,7 @@ def expr_to_comp_rule(source, target, wilds, condition, assumptions):
     condition - A boolean on the wilds that must hold true
     assumptions - assumptions under which the condition must hold true
     """
-    pattern = patternify(source, *wilds)
+    pattern = patternify(source, *wilds, types=wildtypes(wilds))
     def matrix_expr_to_comp_brule(expr):
         for match in unify(expr, pattern):
             if (condition is True):
