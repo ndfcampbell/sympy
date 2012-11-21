@@ -51,6 +51,20 @@ class Computation(Basic):
         edges = "\n\t".join(self.dot_edges())
         return "digraph{\n\trankdir=LR\n\t" + nodes + '\n\n\t' + edges + '\n}'
 
+    def writepdf(self, filename='comp', extension='pdf'):
+        import os
+        dotfile = open(filename+'.dot', 'w')
+        dotfile.write(self.dot())
+        dotfile.close()
+
+        os.system('dot -T%s %s.dot -o %s.%s' % (
+                        extension, filename, filename, extension))
+
+    def show(self, filename='comp'):
+        self.writepdf(filename)
+        import os
+        os.system('evince %s.pdf' % filename)
+
     def toposort(self):
         """ Order computations in an executable order """
         return [self]
