@@ -30,8 +30,10 @@ def expr_to_comp_rule(source, target, wilds, condition, assumptions):
 blas_patterns = [
     (GEMM._outputs[0], GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
     (alpha*A*B, GEMM(alpha, A, B, S.Zero, B), (alpha, A, B), True),
+    (A*B, GEMM(S.One, A, B, S.Zero, B), (A, B), True),
     (SYMM._outputs[0], SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
-    (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition)
+    (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition),
+    (A*B, SYMM(S.One, A, B, S.Zero, B), (A, B), SYMM.condition),
 ]
 lapack_patterns = [
     (POSV._outputs[0], POSV(*POSV._inputs), POSV._inputs, POSV.condition),
