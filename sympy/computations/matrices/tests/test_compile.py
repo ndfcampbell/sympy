@@ -1,15 +1,9 @@
-from sympy.computations.matrices.compile import patterns
-from sympy.computations.matrices.lapack import GESV
-from sympy.computations.compile import input_crunch, brulify
-from sympy.rules.branch import multiplex, exhaust, debug
+from sympy.computations.matrices.compile import patterns, make_rule
+from sympy.computations.matrices.lapack import GESV, POSV
 from sympy.computations.core import Identity
-from sympy import Symbol, symbols, S
-from sympy.unify import patternify, unify, rewriterule, rebuild
+from sympy import Symbol, symbols, S, Q
 from sympy.matrices.expressions import MatrixSymbol
 
-rules = [brulify(source, target, *wilds) for source, target, wilds, _ in
-        patterns]
-rule = exhaust(multiplex(*map(input_crunch, rules)))
 
 a,b,c,d,e,x,y,z,m,n,l,k = map(Symbol, 'abcdexyzmnlk')
 
@@ -19,10 +13,12 @@ def test_GEMM():
     Z = MatrixSymbol('Z', 3, 3)
     expr = a*X*Y + b*Z
     comp = Identity(expr)
+    rule = make_rule(patterns, True)
     results = list(rule(comp))
     assert len(results) != 0
 
 def test_SV():
+    rule = make_rule(patterns, True)
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I * Y
@@ -31,6 +27,13 @@ def test_SV():
     assert len(results) != 0
     comptypes = map(type, results)
     assert GESV in comptypes
+    assert POSV not in comptypes
+
+    rule2 = make_rule(patterns, Q.symmetric(X) & Q.positive_definite(X))
+    results = list(rule2(comp))
+    comptypes = map(type, results)
+    assert GESV in comptypes
+    assert POSV in comptypes
 
 def test_non_trivial():
     X = MatrixSymbol('X', 3, 3)
@@ -38,5 +41,6 @@ def test_non_trivial():
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y + b*Z).I*Z
     comp = Identity(expr)
+    rule = make_rule(patterns, True)
     results = list(rule(comp))
     assert len(results) != 0
