@@ -123,8 +123,18 @@ class CompositeComputation(Computation):
 
     def canonicalize(self):
         from sympy.rules import exhaust, do_one, flatten, unpack, typed, sort
-        return exhaust(typed({CompositeComputation:
-                       do_one(rm_identity, flatten, unpack, sort(str))}))(self)
+        rl = do_one(rm_identity, flatten, unpack, canon_unique, sort(str))
+        return exhaust(typed({CompositeComputation: rl}))(self)
+
+def canon_unique(comp):
+    """ Remove repeat computations
+
+    TODO: Why do these exist?
+    """
+    if len(comp.computations) != len(set(comp.computations)):
+        return type(comp)(*tuple(unique(comp.computations)))
+    else:
+        return comp
 
 def rm_identity(comp):
     """ Remove or reduce unnecessary identities """
