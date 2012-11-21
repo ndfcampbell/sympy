@@ -1,4 +1,4 @@
-from sympy.computations.matrices.blas import patterns
+from sympy.computations.matrices.compile import patterns
 from sympy.computations.compile import input_crunch, brulify
 from sympy.rules.branch import multiplex, exhaust, debug
 from sympy.computations.core import Identity

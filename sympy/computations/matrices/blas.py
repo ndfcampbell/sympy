@@ -29,11 +29,3 @@ class GEMM(MM):
 class SYMM(MM):
     """ Symmetric Matrix Multiply """
     condition = Q.symmetric(A) | Q.symmetric(B)
-
-# pattern is (source expression, target expression, wilds, condition)
-patterns = [
-    (GEMM._outputs[0], GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
-    (alpha*A*B, GEMM(alpha, A, B, S.Zero, B), (alpha, A, B), True),
-    (SYMM._outputs[0], SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
-    (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition)
-]
