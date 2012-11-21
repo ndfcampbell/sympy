@@ -24,7 +24,6 @@ def test_alternative_patterns():
     comp = Identity(expr)
     rule = make_rule(patterns, True)
     results = list(rule(comp))
-    print results
     assert len(results) != 0
 
 def test_SV():
@@ -53,4 +52,38 @@ def test_non_trivial():
     comp = Identity(expr)
     rule = make_rule(patterns, True)
     results = list(rule(comp))
+    assert len(results) != 0
+
+def _reduces(expr, inputs, assumptions=True, patterns=patterns):
+    rule = make_rule(patterns, assumptions)
+    comp = Identity(expr)
+    return any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+
+def test_XYZ():
+    W = MatrixSymbol('W', 3, 3)
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    assert _reduces(X*Y, (X, Y))
+    assert _reduces(X*Y*Z, (X, Y, Z))
+    assert _reduces(W*X*Y*Z, (W, X, Y, Z))
+
+def test_XYinvZ():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    print _reduces(X*Y.I*Z, (X, Y, Z))
+    assert _reduces(X*Y.I*Z, (X, Y, Z))
+
+
+def test_more_non_trivial():
+    W = MatrixSymbol('X', 3, 3)
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    expr = (a*X*Y*Z*Y.I + b*Z*Y + c*W*W).I*(Z*W)
+    comp = Identity(expr)
+    rule = make_rule(patterns, True)
+    results = list(rule(comp))
+
     assert len(results) != 0
