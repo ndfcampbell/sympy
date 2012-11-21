@@ -1,4 +1,6 @@
 from sympy.computations.matrices.blas import GEMM, SYMM
+from sympy.computations.matrices.lapack import GESV, POSV
+
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b)
 from sympy import Q, S
@@ -10,5 +12,9 @@ blas_patterns = [
     (SYMM._outputs[0], SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
     (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition)
 ]
+lapack_patterns = [
+    (POSV._outputs[0], POSV(*POSV._inputs), POSV._inputs, POSV.condition),
+    (GESV._outputs[0], GESV(*GESV._inputs), GESV._inputs, GESV.condition),
+]
 
-patterns = blas_patterns
+patterns = lapack_patterns + blas_patterns
