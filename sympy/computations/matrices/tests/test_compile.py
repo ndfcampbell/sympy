@@ -17,6 +17,16 @@ def test_GEMM():
     results = list(rule(comp))
     assert len(results) != 0
 
+def test_alternative_patterns():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    expr = a*X*Y
+    comp = Identity(expr)
+    rule = make_rule(patterns, True)
+    results = list(rule(comp))
+    print results
+    assert len(results) != 0
+
 def test_SV():
     rule = make_rule(patterns, True)
     X = MatrixSymbol('X', 3, 3)
