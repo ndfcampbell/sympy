@@ -109,6 +109,9 @@ class ExprToken(Basic):
     expr = property(lambda self: self.args[0])
     token = property(lambda self: self.args[1])
 
+    def __str__(self):
+        return "%s @ %s" %(self.expr, self.token)
+
 
 def tokenize_one(mathcomp, tokenizer):
     """ Transform mathematical computation into a computation of ExprTokens

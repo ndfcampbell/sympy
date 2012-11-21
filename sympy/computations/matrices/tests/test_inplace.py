@@ -4,7 +4,7 @@ from sympy.computations.inplace import inplace_compile
 from sympy.computations.core import Identity
 from sympy.computations.matrices.compile import make_rule, patterns
 
-def test_test_inplace():
+def test_inplace():
     a,b,c, = map(Symbol, 'abc')
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
@@ -18,4 +18,4 @@ def test_test_inplace():
     mathcomp = next(rule(comp))
 
     icomp = inplace_compile(mathcomp)
-    return icomp
+    return rule(comp)
