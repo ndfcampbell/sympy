@@ -188,4 +188,5 @@ class OpComp(Computation):
         return "%s -> %s -> %s"%(ins, opstr, outs)
 
     def dot_nodes(self):
-        return ['"%s" [shape=box, label=%s]' % (str(self), str(self.op))]
+        oname = self.op.__name__ if isinstance(self.op, type) else str(self.op)
+        return ['"%s" [shape=box, label=%s]' % (str(self), oname)]
