@@ -17,11 +17,16 @@ class MM(BLAS):
     condition = True
 
     @property
+    def raw_inputs(self):
+        alpha, A, B, beta, C, typecode = self.args
+        # Sometimes we use C only as an output. It should be detransposed
+        C = detranspose(C) if not beta else C
+        return alpha, A, B, beta, C
+
+    @property
     def inputs(self):
         alpha, A, B, beta, C = self.raw_inputs
-        CC = detranspose(C) if not beta else C
-        # Sometimes we use C only as an output. It should be detransposed
-        coll = (alpha, detranspose(A), detranspose(B), beta, CC)
+        coll = (alpha, detranspose(A), detranspose(B), beta, C)
         return tuple(unique(remove_numbers(coll)))
 
 class GEMM(MM):
