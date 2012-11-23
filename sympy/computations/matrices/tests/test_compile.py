@@ -90,3 +90,9 @@ def _test_large():
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y*Z*Y.I*Z + b*Z*Y + c*W*W).I*Z*W
     assert _reduces(expr, (X, Y, Z, W), True)
+
+def test_transpose_inputs():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    expr = X*Y.T
+    assert _reduces(expr, (X, Y), True)
