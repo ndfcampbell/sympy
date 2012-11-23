@@ -2,7 +2,7 @@ from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV
 
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
-        x, a, b)
+        x, a, b, X, Y)
 from sympy import Q, S, ask, Expr
 from sympy.matrices.expressions import MatrixExpr
 from sympy.computations.compile import input_crunch, brulify
@@ -38,7 +38,8 @@ blas_patterns = [
     (GEMM._outputs[0], GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
     (alpha*A*B, GEMM(alpha, A, B, S.Zero, B), (alpha, A, B), True),
     (A*B, GEMM(S.One, A, B, S.Zero, B), (A, B), True),
-    (AXPY._outputs[0], AXPY(*AXPY._inputs), AXPY._inputs, AXPY.condition)
+    (AXPY._outputs[0], AXPY(*AXPY._inputs), AXPY._inputs, AXPY.condition),
+    (X + Y, AXPY(S.One, X, Y), (X, Y), True)
 ]
 lapack_patterns = [
     (POSV._outputs[0], POSV(*POSV._inputs), POSV._inputs, POSV.condition),
