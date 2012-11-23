@@ -31,6 +31,7 @@ class Inverse(MatPow):
     """
     is_Inverse = True
     exp = S(-1)
+    exp = -1
 
     def __new__(cls, mat):
         mat = _sympify(mat)
@@ -39,9 +40,7 @@ class Inverse(MatPow):
             raise ShapeError("Inverse of non-square matrix %s" % mat)
         return Basic.__new__(cls, mat)
 
-    @property
-    def arg(self):
-        return self.args[0]
+    arg = property(lambda self: self.args[0])
 
     @property
     def shape(self):
