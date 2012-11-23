@@ -3,6 +3,7 @@ from sympy.computations.core import unique
 from sympy import Symbol, Expr, Basic, ask, Tuple
 from sympy.matrices.expressions import MatrixExpr
 from sympy.rules.tools import subs
+from sympy.rules import exhaust
 
 def is_number(x):
     return (isinstance(x, (int, float)) or
@@ -37,7 +38,7 @@ class MatrixCall(Computation):
                 return x
             if isinstance(x, Expr):
                 return type(x)(*x.args)
-        return tuple(map(canonicalize, subs(mapping)(Tuple(*cls._outputs))))
+        return tuple(map(exhaust(canonicalize), subs(mapping)(Tuple(*cls._outputs))))
 
     @property
     def typecode(self):
