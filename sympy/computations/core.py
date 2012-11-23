@@ -89,7 +89,11 @@ class CompositeComputation(Computation):
                         *[c.outputs for c in self.computations])))
         inputs  = [i for i in allin  if i not in allout]
         outputs = [o for o in allout if o not in allin]
-        return tuple(inputs), tuple(outputs)
+        ident_inputs  = [i for c in self.computations if isinstance(c, Identity)
+                           for i in c.inputs]
+        ident_outputs = [o for c in self.computations if isinstance(c, Identity)
+                           for o in c.outputs]
+        return tuple(inputs + ident_inputs), tuple(outputs + ident_outputs)
 
     @property
     def inputs(self):

@@ -104,3 +104,9 @@ def test_dot():
 
     assert isinstance(MM.dot(), str)
     assert isinstance(C.dot(), str)
+
+def test_composite_with_identity_inputs():
+    A =  TComp('foo', (d,), (f,))
+    I = Identity(c)
+    C = A+I
+    assert set(C.inputs) == set((d, c))
