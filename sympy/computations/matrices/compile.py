@@ -46,6 +46,10 @@ lapack_patterns = [
     (GESV._outputs[0], GESV(*GESV._inputs), GESV._inputs, GESV.condition),
 ]
 
+def prepend_ones_to_matmuls(expr):
+    factor, matrices = expr.as_coeff_matrices()
+    return MatMul(factor, *matrices, **{'evaluate': False})
+
 patterns = lapack_patterns + blas_patterns
 
 def make_rule(patterns, assumptions):
