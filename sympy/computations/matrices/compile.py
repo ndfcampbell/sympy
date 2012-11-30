@@ -1,14 +1,18 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
+from sympy.computations.matrices.core import canonicalize
 from sympy.computations.matrices.lapack import GESV, POSV
 
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y)
 from sympy import Q, S, ask, Expr
-from sympy.matrices.expressions import MatrixExpr
+from sympy.matrices.expressions import MatrixExpr, MatMul
 from sympy.computations.compile import input_crunch, brulify
 from sympy.unify import patternify, unify
-from sympy.rules.branch import multiplex, exhaust, debug
+from sympy.rules.branch import (multiplex, exhaust, debug, chain, condition,
+        onaction)
 from sympy.rules.tools import subs
+from sympy import rules
+from sympy.rules import branch
 
 def wildtypes(wilds):
     return {w: (Expr if isinstance(w, Expr) else MatrixExpr) for w in wilds}
@@ -35,8 +39,12 @@ blas_patterns = [
     (SYMM._outputs[0], SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
     (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition),
     (A*B, SYMM(S.One, A, B, S.Zero, B), (A, B), SYMM.condition),
+    (A*B, SYMM(S.One, A, B, S.Zero, B), (A, B), SYMM.condition),
     (GEMM._outputs[0], GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
+    (A*B + beta*C, GEMM(S.One, A, B, beta, C), (A, B, beta, C), True),
+    (alpha*A*B + C, GEMM(alpha, A, B, S.One, C), (alpha, A, B, C), True),
     (alpha*A*B, GEMM(alpha, A, B, S.Zero, B), (alpha, A, B), True),
+    (A*B+C, GEMM(S.One, A, B, S.One, C), (A, B, C), True),
     (A*B, GEMM(S.One, A, B, S.Zero, B), (A, B), True),
     (AXPY._outputs[0], AXPY(*AXPY._inputs), AXPY._inputs, AXPY.condition),
     (X + Y, AXPY(S.One, X, Y), (X, Y), True)
@@ -46,13 +54,9 @@ lapack_patterns = [
     (GESV._outputs[0], GESV(*GESV._inputs), GESV._inputs, GESV.condition),
 ]
 
-def prepend_ones_to_matmuls(expr):
-    factor, matrices = expr.as_coeff_matrices()
-    return MatMul(factor, *matrices, **{'evaluate': False})
-
 patterns = lapack_patterns + blas_patterns
 
 def make_rule(patterns, assumptions):
-    rules = [expr_to_comp_rule(src, target, wilds, cond, assumptions)
+    brls = [expr_to_comp_rule(src, target, wilds, cond, assumptions)
             for src, target, wilds, cond in patterns]
-    return exhaust(multiplex(*map(input_crunch, rules)))
+    return exhaust(multiplex(*map(input_crunch, brls)))

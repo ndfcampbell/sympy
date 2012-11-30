@@ -64,6 +64,10 @@ class MatrixCall(Computation):
             return True
         return ask(cls.condition.subs(d), assumptions)
 
+def prepend_ones_to_matmuls(expr):
+    factor, matrices = expr.as_coeff_matrices()
+    return MatMul(factor, *matrices, **{'evaluate': False})
+
 def canonicalize(x):
     if isinstance(x, MatrixExpr):
         return x.canonicalize()
