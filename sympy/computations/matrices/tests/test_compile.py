@@ -96,3 +96,11 @@ def test_transpose_inputs():
     Y = MatrixSymbol('Y', 3, 3)
     expr = X*Y.T
     assert _reduces(expr, (X, Y), True)
+
+def test_GEMM_coefficients():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    exprs = (3*X*Y + 2*Z, X*Y + 2*Z, 3*X*Y + Z, X*Y + Z, X*Y)
+    rule = make_rule(patterns, True)
+    assert all(isinstance(next(rule(Identity(expr))), GEMM) for expr in exprs)
