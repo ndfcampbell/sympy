@@ -12,7 +12,10 @@ def is_number(x):
 def remove_numbers(coll):
     return filter(lambda x: not is_number(x), coll)
 
-basetypes = {'S': 'real*4', 'D': 'real*8', 'C': 'complex*8', 'Z': 'complex*16'}
+basetypes = {'S': 'real*4',
+             'D': 'real*8',
+             'C': 'complex*8',
+             'Z': 'complex*16'}
 
 class MatrixCall(Computation):
     """ An atomic call, superclass for BLAS and LAPACK """
@@ -23,6 +26,7 @@ class MatrixCall(Computation):
         return Basic.__new__(cls, *args)
 
     raw_inputs = property(lambda self: tuple(self.args[:-1]))
+    typecode   = property(lambda self: self.args[-1])
 
     inputs = property(lambda self:
                         tuple(unique(remove_numbers(self.raw_inputs))))
@@ -40,28 +44,14 @@ class MatrixCall(Computation):
                 return type(x)(*x.args)
         return tuple(map(exhaust(canonicalize), subs(mapping)(Tuple(*cls._outputs))))
 
-    @property
-    def typecode(self):
-        return self.args[-1]
-
-    @classmethod
-    def valid(cls, inputs, assumptions):
-        d = dict(zip(cls._inputs, inputs))
-        if cls.condition is True:
-            return True
-        return ask(cls.condition.subs(d), assumptions)
-
     basetype = property(lambda self:  basetypes[self.typecode])
     _in_types = property(lambda self: (None,)*len(self._inputs))
     _out_types = property(lambda self: (None,)*len(self._outputs))
 
-    @property
-    def in_types(self):
-        return tuple(it or self.basetype for it in self._in_types)
-
-    @property
-    def out_types(self):
-        return tuple(ot or self.basetype for ot in self._out_types)
+    in_types  = property(lambda self:
+                          tuple(it or self.basetype for it in self._in_types)
+    out_types = property(lambda self:
+                          tuple(ot or self.basetype for ot in self._out_types)
 
     @property
     def inplace(self):
@@ -71,3 +61,10 @@ class MatrixCall(Computation):
             inputind = self.inputs.index(rawinput)
             rv[outind] = inputind
         return rv
+
+    @classmethod
+    def valid(cls, inputs, assumptions):
+        d = dict(zip(cls._inputs, inputs))
+        if cls.condition is True:
+            return True
+        return ask(cls.condition.subs(d), assumptions)
