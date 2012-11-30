@@ -36,17 +36,21 @@ def expr_to_comp_rule(source, target, wilds, condition, assumptions):
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
-    (SYMM._outputs[0], SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
+    (alpha*A*B + beta*C, SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
+    (alpha*A*B + C, SYMM(alpha, A, B, S.One, C), (alpha, A, B, C), SYMM.condition),
+    (A*B + beta*C, SYMM(S.One, A, B, beta, C), (A, B, beta, C), SYMM.condition),
+    (A*B + C, SYMM(S.One, A, B, S.One, C), (A, B, C), SYMM.condition),
     (alpha*A*B, SYMM(alpha, A, B, S.Zero, B), (alpha, A, B), SYMM.condition),
     (A*B, SYMM(S.One, A, B, S.Zero, B), (A, B), SYMM.condition),
-    (A*B, SYMM(S.One, A, B, S.Zero, B), (A, B), SYMM.condition),
-    (GEMM._outputs[0], GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
-    (A*B + beta*C, GEMM(S.One, A, B, beta, C), (A, B, beta, C), True),
+
+    (alpha*A*B + beta*C, GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
     (alpha*A*B + C, GEMM(alpha, A, B, S.One, C), (alpha, A, B, C), True),
+    (A*B + beta*C, GEMM(S.One, A, B, beta, C), (A, B, beta, C), True),
+    (A*B + C, GEMM(S.One, A, B, S.One, C), (A, B, C), True),
     (alpha*A*B, GEMM(alpha, A, B, S.Zero, B), (alpha, A, B), True),
-    (A*B+C, GEMM(S.One, A, B, S.One, C), (A, B, C), True),
     (A*B, GEMM(S.One, A, B, S.Zero, B), (A, B), True),
-    (AXPY._outputs[0], AXPY(*AXPY._inputs), AXPY._inputs, AXPY.condition),
+
+    (alpha*X + Y, AXPY(*AXPY._inputs), AXPY._inputs, AXPY.condition),
     (X + Y, AXPY(S.One, X, Y), (X, Y), True)
 ]
 lapack_patterns = [
