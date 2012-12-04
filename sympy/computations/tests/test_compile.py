@@ -1,6 +1,6 @@
 from sympy.computations.example import patterns, inc, add, double, incdec
 from sympy.computations.compile import (input_crunch, output_crunch, brulify,
-        multi_input_rule)
+        multi_input_rule, multi_output_rule)
 from sympy.rules.branch import multiplex, exhaust, debug
 from sympy.computations.core import Identity
 from sympy import Symbol, symbols, S
@@ -41,14 +41,22 @@ def test_rule():
                                    add(S(1), 2*y) + double(y),
                                    inc(2*y) + double(y)])
 
-def test_multi_input():
+def _test_multi_rule(multi_rule):
     expr = y + 1, y - 1
     comp = Identity(*expr)
-    rule = multi_input_rule((x + 1, x - 1), incdec(x), x)
+    rule = multi_rule((x + 1, x - 1), incdec(x), x)
     assert list(rule(comp)) == [incdec(y)]
 
-def test_multi_input_with_extra_inputs():
+def _test_multi_with_extra_inputs(multi_rule):
     expr = y + 1, y - 1, x + 1
     comp = Identity(*expr)
-    rule = multi_input_rule((x + 1, x - 1), incdec(x), x)
+    rule = multi_rule((x + 1, x - 1), incdec(x), x)
     assert list(rule(comp)) == [incdec(y) + Identity(x+1) ]
+
+def test_multi_input():
+    _test_multi_rule(multi_input_rule)
+    _test_multi_with_extra_inputs(multi_input_rule)
+
+def test_multi_output():
+    _test_multi_rule(multi_output_rule)
+    _test_multi_with_extra_inputs(multi_output_rule)

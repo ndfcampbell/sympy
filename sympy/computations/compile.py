@@ -45,3 +45,19 @@ def output_crunch(etc):
             for c in etc(o):
                 yield comp + c
     return output_brl
+
+def multi_output_rule(sources, target, *wilds):
+    from itertools import chain
+    from sympy import FiniteSet, Symbol
+
+    other = Symbol('_foo')
+    source = FiniteSet(*sources)
+    source2 = FiniteSet(other, *sources)
+    rule = rewriterule(patternify(source, *wilds), target)
+    rule2 = rewriterule(patternify(source2, other, *wilds), target)
+
+    def outputs_brl(comp):
+        outputs = FiniteSet(*comp.outputs)
+        for c in chain(rule(outputs), rule2(outputs)):
+            yield comp + c
+    return outputs_brl
