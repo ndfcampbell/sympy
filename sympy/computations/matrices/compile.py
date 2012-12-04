@@ -1,18 +1,13 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
-from sympy.computations.matrices.core import canonicalize
 from sympy.computations.matrices.lapack import GESV, POSV
-
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y)
 from sympy import Q, S, ask, Expr
-from sympy.matrices.expressions import MatrixExpr, MatMul
-from sympy.computations.compile import input_crunch, brulify
+from sympy.matrices.expressions import MatrixExpr
+from sympy.computations.compile import input_crunch
 from sympy.unify import patternify, unify
-from sympy.rules.branch import (multiplex, exhaust, debug, chain, condition,
-        onaction)
+from sympy.rules.branch import multiplex, exhaust
 from sympy.rules.tools import subs
-from sympy import rules
-from sympy.rules import branch
 
 def wildtypes(wilds):
     return {w: (Expr if isinstance(w, Expr) else MatrixExpr) for w in wilds}

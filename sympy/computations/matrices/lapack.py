@@ -1,6 +1,4 @@
-from sympy.computations.matrices.core import MatrixCall, remove_numbers
-from sympy.computations.core import unique
-from sympy.computations.matrices.shared import detranspose
+from sympy.computations.matrices.core import MatrixCall
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, C,
         x, a, b)
 from sympy import Q, S, Symbol, Basic

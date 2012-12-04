@@ -3,7 +3,7 @@ from sympy.computations.core import unique
 from sympy import Symbol, Expr, Basic, ask, Tuple
 from sympy.matrices.expressions import MatrixExpr, MatMul
 from sympy.rules.tools import subs
-from sympy.rules import exhaust, chain, typed
+from sympy.rules import exhaust
 from sympy.rules.traverse import bottom_up
 
 def is_number(x):
