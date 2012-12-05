@@ -59,3 +59,19 @@ class POSV(LAPACK):
     _outputs  = (A.I*B, INFO)
     view_map = {0: 1}
     condition = Q.positive_definite(A) & Q.symmetric(A)
+
+    fortran_template = ("call %(fn)s('%(UPLO)s', %(N)s, %(NRHS)s, %(A)s, "
+                        "%(LDA)s, %(B)s, %(LDB)s, %(INFO)s)")
+
+    @classmethod
+    def codemap(cls, inputs, names, typecode, assumptions):
+        varnames = 'A B INFO'.split()
+        A, B = inputs
+        namemap  = dict(zip(varnames, names))
+        other = {'LDA': LD(A),
+                 'LDB': LD(B),
+                 'N': str(A.shape[0]),
+                 'NRHS': str(B.shape[1]),
+                 'UPLO': 'U',
+                 'fn': cls.fnname(typecode)}
+        return merge(namemap, other)

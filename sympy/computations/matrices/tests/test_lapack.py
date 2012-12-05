@@ -24,6 +24,14 @@ def test_GESV_codemap():
     B = MatrixSymbol('B', n, m)
     codemap = GESV.codemap((A, B), 'A B IPIV INFO'.split(), 'd', True)
     call = GESV.fortran_template % codemap
-    print call
     assert '(n, m, A, n, IPIV, B, n, INFO)' in call
     assert 'dgesv' in call.lower()
+
+def test_POSV_codemap():
+    A = MatrixSymbol('A', n, n)
+    B = MatrixSymbol('B', n, m)
+    assumptions = Q.positive_definite(A) & Q.symmetric(A)
+    codemap = POSV.codemap((A, B), 'A B INFO'.split(), 'd', assumptions)
+    call = POSV.fortran_template % codemap
+    assert "('U', n, m, A, n, B, n, INFO)" in call
+    assert 'dposv' in call.lower()
