@@ -58,15 +58,13 @@ def test_SV():
     comp = Identity(expr)
     results = list(rule(comp))
     assert len(results) != 0
-    comptypes = map(type, results)
-    assert GESV in comptypes
-    assert POSV not in comptypes
+    assert any(result.has(GESV) for result in results)
+    assert not any(result.has(POSV) for result in results)
 
     rule2 = make_rule(patterns, Q.symmetric(X) & Q.positive_definite(X))
     results = list(rule2(comp))
-    comptypes = map(type, results)
-    assert GESV in comptypes
-    assert POSV in comptypes
+    assert any(result.has(GESV) for result in results)
+    assert any(result.has(POSV) for result in results)
 
 def test_non_trivial():
     X = MatrixSymbol('X', 3, 3)
@@ -124,4 +122,13 @@ def test_multi_output_rule():
 def test_LASWP():
     X = MatrixSymbol('X', 3, 3)
     exprs = IPIV(X), PermutationMatrix(IPIV(X))*X
-    assert _reduces(exprs, (X,), True)
+    outputs = (X,)
+    rule = make_rule(patterns, True)
+    comp = Identity(*exprs)
+    return any(set(c.outputs).issubset(set(outputs)) for c in rule(comp))
+
+def test_XinvY():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    expr = X.I*Y
+    assert _reduces(expr, (X, Y), True)

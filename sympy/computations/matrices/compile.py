@@ -54,7 +54,8 @@ lapack_patterns = [
 ]
 
 multi_out_patterns = [
-    ((IPIV(A), PermutationMatrix(IPIV(A))*A), LASWP(IPIV(A), A), (A,), True)
+    ((IPIV(A), PermutationMatrix(IPIV(A))*A),
+      LASWP(PermutationMatrix(IPIV(A))*A, IPIV(A)), (A,), True)
 ]
 
 patterns = lapack_patterns + blas_patterns

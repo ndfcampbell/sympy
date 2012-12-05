@@ -31,13 +31,15 @@ class MatrixCall(Computation):
     typecode   = property(lambda self: self.args[-1])
 
     inputs = property(lambda self:
-                        tuple(unique(remove_numbers(self.raw_inputs))))
+                    tuple(map(exhaust(bottom_up(canonicalize)),
+                              unique(remove_numbers(self.raw_inputs)))))
 
     @property
     def outputs(self):
         cls = self.__class__
         mapping = dict(zip(cls._inputs, self.raw_inputs))
-        return tuple(map(exhaust(bottom_up(canonicalize)), subs(mapping)(Tuple(*cls._outputs))))
+        return tuple(map(exhaust(bottom_up(canonicalize)),
+                         subs(mapping)(Tuple(*cls._outputs))))
 
     basetype = property(lambda self:  basetypes[self.typecode])
     _in_types = property(lambda self: (None,)*len(self._inputs))
@@ -53,7 +55,7 @@ class MatrixCall(Computation):
         rv = {}
         for outind, inind in self.view_map.items():
             rawinput = self.raw_inputs[inind]
-            inputind = self.inputs.index(rawinput)
+            inputind = self.inputs.index(canonicalize(rawinput))
             rv[outind] = inputind
         return rv
 
