@@ -14,19 +14,19 @@ a,b,c,d,e,x,y,z,m,n,l,k = map(Symbol, 'abcdexyzmnlk')
 def _reduces(expr, inputs, assumptions=True, patterns=patterns):
     rule = make_rule(patterns, assumptions)
     comp = Identity(expr)
-    return any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+    assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
 
 def _reduces_set(exprs, inputs, assumptions=True, patterns=patterns):
     rule = make_rule(patterns, assumptions)
     comp = Identity(*exprs)
-    return any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+    assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
 
 def test_GEMM():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     expr = a*X*Y + b*Z
-    assert _reduces(expr, (X, Y, Z, a, b))
+    _reduces(expr, (X, Y, Z, a, b))
 
 def test_wildtypes():
     x = Symbol('x')
@@ -48,7 +48,7 @@ def test_alternative_patterns():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = a*X*Y
-    assert _reduces(expr, (a, X, Y))
+    _reduces(expr, (a, X, Y))
 
 def test_SV():
     rule = make_rule(patterns, True)
@@ -72,22 +72,22 @@ def test_non_trivial():
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y + b*Z).I*Z
     assumptions = Q.positive_definite(a*X*Y + b*Z) & Q.symmetric(a*X*Y + b*Z)
-    assert _reduces(expr, (a, b, X, Y, Z), assumptions)
+    _reduces(expr, (a, b, X, Y, Z), assumptions)
 
 def test_XYZ():
     W = MatrixSymbol('W', 3, 3)
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
-    assert _reduces(X*Y, (X, Y))
-    assert _reduces(X*Y*Z, (X, Y, Z))
-    assert _reduces(W*X*Y*Z, (W, X, Y, Z))
+    _reduces(X*Y, (X, Y))
+    _reduces(X*Y*Z, (X, Y, Z))
+    _reduces(W*X*Y*Z, (W, X, Y, Z))
 
 def test_XYinvZ():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
-    assert _reduces(X*Y.I*Z, (X, Y, Z))
+    _reduces(X*Y.I*Z, (X, Y, Z))
 
 def _test_large():
     W = MatrixSymbol('X', 3, 3)
@@ -95,13 +95,13 @@ def _test_large():
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y*Z*Y.I*Z + b*Z*Y + c*W*W).I*Z*W
-    assert _reduces(expr, (X, Y, Z, W), True)
+    _reduces(expr, (X, Y, Z, W), True)
 
 def test_transpose_inputs():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X*Y.T
-    assert _reduces(expr, (X, Y), True)
+    _reduces(expr, (X, Y), True)
 
 def test_GEMM_coefficients():
     X = MatrixSymbol('X', 3, 3)
@@ -131,4 +131,4 @@ def test_XinvY():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I*Y
-    assert _reduces(expr, (X, Y), True)
+    _reduces(expr, (X, Y), True)
