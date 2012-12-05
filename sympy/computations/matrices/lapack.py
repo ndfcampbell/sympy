@@ -1,9 +1,12 @@
 from sympy.computations.matrices.core import MatrixCall
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, C,
         x, a, b)
+from sympy.computations.matrices.shared import (detranspose, trans, LD,
+        left_or_right, diag)
 from sympy import Q, S, Symbol, Basic
 from sympy.matrices.expressions import (MatrixSymbol, PermutationMatrix,
         MatrixExpr)
+from sympy.utilities.iterables import dict_merge as merge
 
 A = MatrixSymbol('A', n, n)
 B = MatrixSymbol('B', n, m)
@@ -26,6 +29,21 @@ class GESV(LAPACK):
     _outputs  = (PermutationMatrix(IPIV(A.I*B))*A.I*B, IPIV(A.I*B), INFO)
     view_map = {0: 1}
     condition = True  # TODO: maybe require S to be invertible?
+
+    fortran_template = ("call %(fn)s(%(N)s, %(NRHS)s, %(A)s, "
+                        "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s)")
+
+    @classmethod
+    def codemap(cls, inputs, names, typecode, assumptions):
+        varnames = 'A B IPIV INFO'.split()
+        A, B = inputs
+        namemap  = dict(zip(varnames, names))
+        other = {'LDA': LD(A),
+                 'LDB': LD(B),
+                 'N': str(A.shape[0]),
+                 'NRHS': str(B.shape[1]),
+                 'fn': cls.fnname(typecode)}
+        return merge(namemap, other)
 
 class LASWP(LAPACK):
     """ Permute rows in a matrix """
