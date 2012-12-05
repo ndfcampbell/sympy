@@ -160,12 +160,13 @@ def rm_identity(comp):
     for c in comp.computations:
         if isinstance(c, Identity):
             others = [x for x in comp.computations if x != c]
-            other_outputs = set([o for other in others for o in other.outputs])
-            outputs = [o for o in c.outputs if o not in other_outputs]
-            if not outputs:
+            other_vars = set([v for other in others
+                                for v in itertools.chain(other.outputs, other.inputs)])
+            vars = [v for v in c.outputs if v not in other_vars]
+            if not vars:
                 return type(comp)(*others)
-            if tuple(outputs) != c.outputs:
-                newident = Identity(*outputs)
+            if tuple(vars) != c.outputs:
+                newident = Identity(*vars)
                 return type(comp)(newident, *others)
     return comp
 

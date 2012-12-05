@@ -90,9 +90,12 @@ def test_canonicalize():
     I = Identity(f)
     assert I + A is A
     assert CompositeComputation(A) is A
+
+def test_rm_identity():
+    A = TComp('foo', (d,), (f,))
+    B = TComp('foo', (f,), (d,))
     I2 = Identity(f, e)
     I3 = Identity(e)
-
     assert I2 + A == I3 + A
 
 def test_dot():
