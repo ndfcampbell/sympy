@@ -23,8 +23,19 @@ def test_valid():
     assert SYMM.valid((1, A, B, 2, C), Q.symmetric(B))
 
 def test_GEMM_codemap():
+    A = MatrixSymbol('A', n, m)
+    B = MatrixSymbol('B', m, k)
+    C = MatrixSymbol('C', n, k)
+    codemap = GEMM.codemap((a, A, B, c, C), 'aABcC', 'd', True)
+    call = GEMM.fortran_template % codemap
+    assert "('N', 'N', n, k, m, a, A, n, B, m, c, C, n)" in call
+    assert 'dgemm' in call.lower()
+
+def test_SYMM_codemap():
     A = MatrixSymbol('A', n, n)
-    B = MatrixSymbol('B', n, n)
-    C = MatrixSymbol('C', n, n)
-    print GEMM.codemap((a, A, B, c, C), 'aABcC'.split(), 'd', True)
-    assert False
+    B = MatrixSymbol('B', n, m)
+    C = MatrixSymbol('C', n, m)
+    codemap = SYMM.codemap((a, A, B, c, C), 'aABcC', 'd', Q.symmetric(A))
+    call = SYMM.fortran_template % codemap
+    assert "('L', 'U', n, m, a, A, n, B, n, c, C, n)" in call
+    assert 'dsymm' in call.lower()
