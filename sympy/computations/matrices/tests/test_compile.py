@@ -1,9 +1,11 @@
 from sympy.computations.matrices.compile import patterns, make_rule, wildtypes
-from sympy.computations.matrices.lapack import GESV, POSV
+from sympy.computations.compile import multi_output_rule
+from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.blas import GEMM
 from sympy.computations.core import Identity
 from sympy import Symbol, symbols, S, Q, Expr
-from sympy.matrices.expressions import MatrixSymbol, MatrixExpr
+from sympy.matrices.expressions import (MatrixSymbol, MatrixExpr,
+        PermutationMatrix)
 from sympy.utilities.pytest import XFAIL, slow, skip
 
 
@@ -12,6 +14,11 @@ a,b,c,d,e,x,y,z,m,n,l,k = map(Symbol, 'abcdexyzmnlk')
 def _reduces(expr, inputs, assumptions=True, patterns=patterns):
     rule = make_rule(patterns, assumptions)
     comp = Identity(expr)
+    return any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+
+def _reduces_set(exprs, inputs, assumptions=True, patterns=patterns):
+    rule = make_rule(patterns, assumptions)
+    comp = Identity(*exprs)
     return any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
 
 def test_GEMM():
@@ -66,7 +73,8 @@ def test_non_trivial():
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y + b*Z).I*Z
-    assert _reduces(expr, (a, b, X, Y, Z))
+    assumptions = Q.positive_definite(a*X*Y + b*Z) & Q.symmetric(a*X*Y + b*Z)
+    assert _reduces(expr, (a, b, X, Y, Z), assumptions)
 
 def test_XYZ():
     W = MatrixSymbol('W', 3, 3)
@@ -104,3 +112,16 @@ def test_GEMM_coefficients():
     exprs = (3*X*Y + 2*Z, X*Y + 2*Z, 3*X*Y + Z, X*Y + Z, X*Y)
     rule = make_rule(patterns, True)
     assert all(isinstance(next(rule(Identity(expr))), GEMM) for expr in exprs)
+
+def test_multi_output_rule():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    rule = multi_output_rule((IPIV(Y), PermutationMatrix(IPIV(Y))*Y),
+            LASWP(PermutationMatrix(IPIV(Y))*Y, IPIV(Y)), Y)
+    comp = Identity(IPIV(X), PermutationMatrix(IPIV(X))*X)
+    assert len(list(rule(comp))) != 0
+
+def test_LASWP():
+    X = MatrixSymbol('X', 3, 3)
+    exprs = IPIV(X), PermutationMatrix(IPIV(X))*X
+    assert _reduces(exprs, (X,), True)

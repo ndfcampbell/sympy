@@ -9,7 +9,7 @@ def test_GESV():
     X = MatrixSymbol('X', n, n)
     Y = MatrixSymbol('Y', n, m)
     assert GESV(X, Y).inputs  == (X, Y)
-    assert GESV(X, Y).outputs[0] == X.I*Y
+    assert GESV(X, Y).outputs[0].shape == (X.I*Y).shape
 
 def test_POSV():
     X = MatrixSymbol('X', n, n)

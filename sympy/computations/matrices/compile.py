@@ -1,10 +1,10 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
-from sympy.computations.matrices.lapack import GESV, POSV
+from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
-        x, a, b, X, Y)
+        x, a, b, X, Y, Z)
 from sympy import Q, S, ask, Expr
-from sympy.matrices.expressions import MatrixExpr
-from sympy.computations.compile import input_crunch
+from sympy.matrices.expressions import MatrixExpr, PermutationMatrix
+from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.unify import patternify, unify
 from sympy.rules.branch import multiplex, exhaust
 from sympy.rules.tools import subs
@@ -50,7 +50,11 @@ blas_patterns = [
 ]
 lapack_patterns = [
     (POSV._outputs[0], POSV(*POSV._inputs), POSV._inputs, POSV.condition),
-    (GESV._outputs[0], GESV(*GESV._inputs), GESV._inputs, GESV.condition),
+    (Z.I*X, GESV(Z, X), (Z, X), True),
+]
+
+multi_out_patterns = [
+    ((IPIV(A), PermutationMatrix(IPIV(A))*A), LASWP(IPIV(A), A), (A,), True)
 ]
 
 patterns = lapack_patterns + blas_patterns
@@ -58,4 +62,9 @@ patterns = lapack_patterns + blas_patterns
 def make_rule(patterns, assumptions):
     brls = [expr_to_comp_rule(src, target, wilds, cond, assumptions)
             for src, target, wilds, cond in patterns]
-    return exhaust(multiplex(*map(input_crunch, brls)))
+    input_brules = map(input_crunch, brls)
+    # TODO: Handle conditions,  move this logic to something like
+    # expr_to_comp_rule
+    output_brules = [multi_output_rule(sources, target, *wilds)
+            for sources, target, wilds, condition in multi_out_patterns]
+    return exhaust(multiplex(*(output_brules + input_brules )))
