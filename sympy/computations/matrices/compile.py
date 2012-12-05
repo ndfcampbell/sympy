@@ -2,11 +2,12 @@ from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
-from sympy import Q, S, ask, Expr
-from sympy.matrices.expressions import MatrixExpr, PermutationMatrix
+from sympy import Q, S, ask, Expr, Symbol
+from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
+        MatrixSymbol)
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.unify import patternify, unify
-from sympy.rules.branch import multiplex, exhaust
+from sympy.rules.branch import multiplex, exhaust, debug, sfilter
 from sympy.rules.tools import subs
 
 def wildtypes(wilds):
@@ -60,6 +61,17 @@ multi_out_patterns = [
 
 patterns = lapack_patterns + blas_patterns
 
+def good_computation(c):
+    """ Our definition of an acceptable computation
+
+    Must:
+        contain only symbols and matrix symbols as inputs
+    """
+    if all(isinstance(inp, (Symbol, MatrixSymbol)) for inp in c.inputs):
+        return True
+    else:
+        return False
+
 def make_rule(patterns, assumptions):
     brls = [expr_to_comp_rule(src, target, wilds, cond, assumptions)
             for src, target, wilds, cond in patterns]
@@ -68,4 +80,5 @@ def make_rule(patterns, assumptions):
     # expr_to_comp_rule
     output_brules = [multi_output_rule(sources, target, *wilds)
             for sources, target, wilds, condition in multi_out_patterns]
-    return exhaust(multiplex(*(output_brules + input_brules )))
+    return sfilter(good_computation,
+                   exhaust(multiplex(*(output_brules + input_brules))))
