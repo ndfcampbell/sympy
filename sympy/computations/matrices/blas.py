@@ -1,9 +1,11 @@
 from sympy.computations.matrices.core import MatrixCall, remove_numbers
 from sympy.computations.core import unique
-from sympy.computations.matrices.shared import detranspose
+from sympy.computations.matrices.shared import (detranspose, trans, LD,
+        left_or_right, diag)
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y)
 from sympy import Q, S
+from sympy.utilities.iterables import dict_merge as merge
 
 class BLAS(MatrixCall):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
@@ -29,13 +31,35 @@ class MM(BLAS):
         coll = (alpha, detranspose(A), detranspose(B), beta, C)
         return tuple(unique(remove_numbers(coll)))
 
+    @classmethod
+    def codemap(cls, inputs, names, typecode, assumptions):
+        varnames = 'alpha A B beta C'.split()
+        alpha, A, B, beta, C = inputs
+
+        namemap  = dict(zip(varnames, names))
+        other = {'TRANSA': trans(A), 'TRANSB': trans(B),
+                 'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
+                 'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
+                 'fn': cls.fnname(typecode),
+                 'SIDE': left_or_right(A, B, Q.symmetric, assumptions),
+                 'DIAG': diag(A, assumptions),
+                 'UPLO': 'U'} # TODO: symmetric matrices might be stored low
+        return merge(namemap, other)
+
+
 class GEMM(MM):
     """ General Matrix Multiply """
-    pass
+    fortran_template = ("call %(fn)s('%(TRANSA)s', '%(TRANSB)s', "
+                        "%(M)s, %(N)s, %(K)s, "
+                        "%(alpha)s, %(A)s, %(LDA)s, "
+                        "%(B)s, %(LDB)s, %(beta)s, %(C)s, %(LDC)s)")
 
 class SYMM(MM):
     """ Symmetric Matrix Multiply """
     condition = Q.symmetric(A) | Q.symmetric(B)
+    fortran_template = ("call %(fn)s('%(SIDE)s', '%(UPLO)s', %(M)s, %(N)s, "
+                        "%(alpha)s, %(A)s, %(LDA)s, %(B)s, %(LDB)s, "
+                        "%(beta)s, %(C)s, %(LDC)s)")
 
 class AXPY(BLAS):
     """ Matrix Matrix Addition `alpha X + Y` """

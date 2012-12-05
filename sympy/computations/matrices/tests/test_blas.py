@@ -21,3 +21,10 @@ def test_valid():
     assert not SYMM.valid((1, A, B, 2, C), True)
     assert SYMM.valid((1, A, B, 2, C), Q.symmetric(A))
     assert SYMM.valid((1, A, B, 2, C), Q.symmetric(B))
+
+def test_GEMM_codemap():
+    A = MatrixSymbol('A', n, n)
+    B = MatrixSymbol('B', n, n)
+    C = MatrixSymbol('C', n, n)
+    print GEMM.codemap((a, A, B, c, C), 'aABcC'.split(), 'd', True)
+    assert False

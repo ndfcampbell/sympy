@@ -66,6 +66,10 @@ class MatrixCall(Computation):
             return True
         return ask(cls.condition.subs(d), assumptions)
 
+    @classmethod
+    def fnname(cls, typecode):
+        return (typecode+cls.__name__).lower()
+
 def prepend_ones_to_matmuls(expr):
     factor, matrices = expr.as_coeff_matrices()
     return MatMul(factor, *matrices, **{'evaluate': False})
