@@ -1,5 +1,5 @@
-import itertools
 from sympy import Basic, Tuple
+from itertools import chain
 
 def unique(seq):
     seen = set()
@@ -24,11 +24,11 @@ class Computation(Basic):
         """ A sequence of edges """
         inedges  = ((i, self) for i in self.inputs)
         outedges = ((self, o) for o in self.outputs)
-        return itertools.chain(inedges, outedges)
+        return chain(inedges, outedges)
 
     @property
     def variables(self):
-        return itertools.chain(self.inputs, self.outputs)
+        return chain(self.inputs, self.outputs)
 
     def __add__(self, other):
         return CompositeComputation(self, other)
@@ -83,9 +83,9 @@ class CompositeComputation(Computation):
 
     def _input_outputs(self):
         """ Find the inputs and outputs of the complete computation """
-        allin = tuple(unique(itertools.chain(
+        allin = tuple(unique(chain(
                         *[c.inputs  for c in self.computations])))
-        allout = tuple(unique(itertools.chain(
+        allout = tuple(unique(chain(
                         *[c.outputs for c in self.computations])))
         inputs  = [i for i in allin  if i not in allout]
         outputs = [o for o in allout if o not in allin]
@@ -105,14 +105,14 @@ class CompositeComputation(Computation):
 
     @property
     def variables(self):
-        return unique(itertools.chain(
+        return unique(chain(
                         *[c.variables for c in self.computations]))
 
     def __str__(self):
         return "[[" + ", ".join(map(str, self.toposort())) + "]]"
 
     def edges(self):
-        return itertools.chain(*[c.edges() for c in self.computations])
+        return chain(*[c.edges() for c in self.computations])
 
     def dot_nodes(self):
         return (n for c in self.computations for n in c.dot_nodes())
@@ -161,7 +161,7 @@ def rm_identity(comp):
         if isinstance(c, Identity):
             others = [x for x in comp.computations if x != c]
             other_vars = set([v for other in others
-                                for v in itertools.chain(other.outputs, other.inputs)])
+                                for v in chain(other.outputs, other.inputs)])
             vars = [v for v in c.outputs if v not in other_vars]
             if not vars:
                 return type(comp)(*others)
