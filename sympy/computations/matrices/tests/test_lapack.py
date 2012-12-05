@@ -1,5 +1,5 @@
-from sympy.computations.matrices.lapack import GESV, POSV
-from sympy.matrices.expressions import MatrixSymbol
+from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
+from sympy.matrices.expressions import MatrixSymbol, PermutationMatrix
 from sympy.core import Symbol
 from sympy import Q
 
@@ -35,3 +35,12 @@ def test_POSV_codemap():
     call = POSV.fortran_template % codemap
     assert "('U', n, m, A, n, B, n, INFO)" in call
     assert 'dposv' in call.lower()
+
+def test_LASWP_codemap():
+    A = MatrixSymbol('A', n, n)
+    ipiv = IPIV(A)
+    expr = PermutationMatrix(ipiv)*A
+    codemap = LASWP.codemap((expr, ipiv), 'A IPIV'.split(), 'd', True)
+    call = LASWP.fortran_template % codemap
+    assert "(n, A, n, 1, n, IPIV, 1)" in call
+    assert 'dlaswp' in call.lower()

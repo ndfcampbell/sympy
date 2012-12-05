@@ -5,7 +5,7 @@ from sympy.computations.matrices.shared import (detranspose, trans, LD,
         left_or_right, diag)
 from sympy import Q, S, Symbol, Basic
 from sympy.matrices.expressions import (MatrixSymbol, PermutationMatrix,
-        MatrixExpr)
+        MatrixExpr, MatMul)
 from sympy.utilities.iterables import dict_merge as merge
 
 A = MatrixSymbol('A', n, n)
@@ -45,6 +45,7 @@ class GESV(LAPACK):
                  'fn': cls.fnname(typecode)}
         return merge(namemap, other)
 
+
 class LASWP(LAPACK):
     """ Permute rows in a matrix """
     _inputs   = (PermutationMatrix(IPIV(A))*A, IPIV(A))
@@ -52,6 +53,28 @@ class LASWP(LAPACK):
     view_map  = {0: 0}
     condition = True
     outputs = property(lambda self: (self.inputs[1].A,))
+
+    fortran_template = ("call %(fn)s(%(N)s, %(A)s, %(LDA)s, %(K1)s, %(K2)s, "
+                        "%(IPIV)s, %(INCX)s)")
+
+    @classmethod
+    def codemap(cls, inputs, names, typecode, assumptions):
+        varnames = 'A IPIV'.split()
+
+        Q, IPIV = inputs
+        assert (isinstance(Q, MatMul) and
+                isinstance(Q.args[0], PermutationMatrix))
+        A = MatMul(*Q.args[1:])  # A is everything other than the permutation
+
+        namemap  = dict(zip(varnames, names))
+        other = {'LDA': LD(A),
+                 'K1': str(1),
+                 'K2': str(A.rows),
+                 'N': str(A.cols),
+                 'INCX': str(1),
+                 'fn': cls.fnname(typecode)}
+        return merge(namemap, other)
+
 
 class POSV(LAPACK):
     """ Symmetric Positive Definite Matrix Solve """
