@@ -67,3 +67,18 @@ class AXPY(BLAS):
     _outputs  = (alpha*X + Y,)
     view_map  = {0: 2}
     condition = True
+
+    fortran_template = ("call %(fn)s(%(N)s, %(alpha)s, %(A)s, "
+                        "%(INCX)d, %(B)s, %(INCY)d)")
+
+    @classmethod
+    def codemap(cls, inputs, names, typecode, assumptions):
+        varnames = 'alpha A B'.split()
+        alpha, A, B = inputs
+
+        namemap  = dict(zip(varnames, names))
+        other = {'N': A.rows*A.cols,
+                 'fn': cls.fnname(typecode),
+                 'INCX': 1,
+                 'INCY': 1}
+        return merge(namemap, other)

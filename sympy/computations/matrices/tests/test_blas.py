@@ -1,4 +1,4 @@
-from sympy.computations.matrices.blas import GEMM, SYMM
+from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.core import Symbol
 from sympy import Q
@@ -39,3 +39,11 @@ def test_SYMM_codemap():
     call = SYMM.fortran_template % codemap
     assert "('L', 'U', n, m, a, A, n, B, n, c, C, n)" in call
     assert 'dsymm' in call.lower()
+
+def test_AXPY_codemap():
+    B = MatrixSymbol('B', n, m)
+    C = MatrixSymbol('C', n, m)
+    codemap = AXPY.codemap((a, B, C), 'aBC', 'd', True)
+    call = AXPY.fortran_template % codemap
+    assert "(m*n, a, B, 1, C, 1)" in call
+    assert 'daxpy' in call.lower()
