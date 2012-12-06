@@ -124,7 +124,7 @@ def tokenize_one(mathcomp, tokenizer):
         tokenize
     """
     return IOpComp(type(mathcomp),
-                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
+                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.raw_inputs),
                    tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs),
                    inplace(mathcomp))
 

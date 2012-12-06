@@ -19,6 +19,7 @@ class Computation(Basic):
 
     inputs  = None
     outputs = None
+    raw_inputs = property(lambda self: self.inputs)
 
     def edges(self):
         """ A sequence of edges """
