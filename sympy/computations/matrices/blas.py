@@ -82,3 +82,22 @@ class AXPY(BLAS):
                  'INCX': 1,
                  'INCY': 1}
         return merge(namemap, other)
+
+class COPY(BLAS):
+    """ Array to array copy """
+    _inputs   = (X,)
+    _outputs  = (X,)
+
+    fortran_template = "call %(fn)s(%(N)s, %(X)s, %(INCX)s, %(Y)s, %(INCY)s)"
+
+    @classmethod
+    def codemap(cls, inputs, names, typecode, assumptions):
+        varnames = 'X Y'.split()
+        X, = inputs
+
+        namemap  = dict(zip(varnames, names))
+        other = {'N': X.rows*X.cols,
+                 'fn': cls.fnname(typecode),
+                 'INCX': 1,
+                 'INCY': 1}
+        return merge(namemap, other)
