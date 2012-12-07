@@ -92,16 +92,16 @@ def unique_tokened_variables(vars):
 
 intent_ranks = ['inout', 'in', 'out', None]
 
-def sort_arguments(args, input_order=()):
+def sort_arguments(args, order=()):
     """ Sort arguments
 
-    Sorts by the order in which expressions occur in input_order
-    if variables' expressions aren't in input_order then they are last
+    Sorts by the order in which expressions occur in order
+    if variables' expressions aren't in order then they are last
     These variables are sorted lexicographically by token
     """
-    args = (sorted(filter(lambda x: x.expr     in input_order, args),
-                   key =  lambda x: input_order.index(x.expr)) +
-            sorted(filter(lambda x: x.expr not in input_order, args),
+    args = (sorted(filter(lambda x: x.expr     in order, args),
+                   key =  lambda x: order.index(x.expr)) +
+            sorted(filter(lambda x: x.expr not in order, args),
                    key =  lambda x: str(x.token)))
     return args
 
@@ -111,10 +111,11 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
         tcomp - a tokenized computation (see inplace.tokenize)
     """
 
-    vars = filter(lambda x: not is_number(x.expr), tcomp.variables)
-    dimens = filter(lambda x: not is_number(x), dimensions(tcomp))
-
     intent = lambda v: getintent(tcomp, v)
+    vars = sorted(filter(lambda x: not is_number(x.expr), tcomp.variables),
+                  key =  lambda x: intent_ranks.index(intent(x)))
+    dimens = sorted(filter(lambda x: not is_number(x), dimensions(tcomp)),
+                    key = str)
 
     intents = groupby(unique_tokened_variables(vars), intent)
 

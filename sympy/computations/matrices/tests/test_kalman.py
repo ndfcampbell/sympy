@@ -12,5 +12,3 @@ def test_fortran_code_generation():
     assert isinstance(s, str)
     f = build(ic, assumptions, 'kalman', input_order=(mu, Sigma, H, R, data))
     assert callable(f)
-
-
