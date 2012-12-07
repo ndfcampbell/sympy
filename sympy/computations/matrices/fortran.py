@@ -92,7 +92,20 @@ def unique_tokened_variables(vars):
 
 intent_ranks = ['inout', 'in', 'out', None]
 
-def gen_fortran(tcomp, assumptions, name = 'f'):
+def sort_arguments(args, input_order=()):
+    """ Sort arguments
+
+    Sorts by the order in which expressions occur in input_order
+    if variables' expressions aren't in input_order then they are last
+    These variables are sorted lexicographically by token
+    """
+    args = (sorted(filter(lambda x: x.expr     in input_order, args),
+                   key =  lambda x: input_order.index(x.expr)) +
+            sorted(filter(lambda x: x.expr not in input_order, args),
+                   key =  lambda x: str(x.token)))
+    return args
+
+def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
     """
     inputs:
         tcomp - a tokenized computation (see inplace.tokenize)
@@ -105,8 +118,9 @@ def gen_fortran(tcomp, assumptions, name = 'f'):
 
     intents = groupby(unique_tokened_variables(vars), intent)
 
-    head = header(name, [a.token for a in (intents['in'] + intents['inout'] +
-                                           intents['out'])]
+    arguments = intents['in'] + intents['inout'] + intents['out']
+    sorted_args = sort_arguments(arguments, input_order)
+    head = header(name, [x.token for x in sorted_args]
                         + map(str, dimens))
 
     declarations = '\n'.join(map(dimen_declaration, dimens) +
@@ -125,7 +139,7 @@ def build(tcomp, assumptions, name = 'f', **kwargs):
     _id = abs(hash((tcomp, name)))
     src = kwargs.pop('src', 'tmp.f90')
     mod = kwargs.pop('mod', 'mod'+str(_id))
-    code = gen_fortran(tcomp, assumptions, name)
+    code = gen_fortran(tcomp, assumptions, name, **kwargs)
     f = open(src, 'w')
     f.write(code)
     f.close()

@@ -1,6 +1,6 @@
 from sympy.computations.inplace import ExprToken, inplace_compile
 from sympy.computations.matrices.fortran import (nameof,
-        unique_tokened_variables, build, getintent)
+        unique_tokened_variables, build, getintent, sort_arguments)
 from sympy.core import Symbol
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.computations.matrices.blas import GEMM
@@ -15,6 +15,16 @@ def test_unique_tokened_variables():
     result = unique_tokened_variables(vars)
     assert len(result) == 2
 
+def test_sort_arguments():
+    n,m,k = map(Symbol, 'nmk')
+    X = MatrixSymbol('X', n, m)
+    Y = MatrixSymbol('Y', m, k)
+    Z = MatrixSymbol('Z', n, k)
+    aX, aY, aZ = args = ExprToken(X, 'X'), ExprToken(Y, 'Y'), ExprToken(Z, 'Z')
+    order = Z, X
+    print sort_arguments(args, order)
+    assert tuple(sort_arguments(args, order)) == (aZ, aX, aY)
+
 def test_gemm():
     alpha, beta = Symbol('alpha'), Symbol('Beta')
     n,m,k = map(Symbol, 'nmk')
@@ -28,4 +38,16 @@ def test_gemm():
     assert getintent(ct, ct.outputs[0]) == 'inout'
     assert getintent(ct, ct.inputs[0]) == 'in'
 
-    fn = build(ct, True, 'my_dgemm')
+    fn = build(ct, True, 'my_dgemm', input_order=(alpha, X, Y, beta, Z))
+
+    # Check order of inputs is preserved
+    assert "alpha,x,y,beta,z" in fn.__doc__.lower()
+
+    """
+    n, m, k = 50, 40, 30
+    import numpy as np
+    X = np.array(np.random.rand(n, m), order='F')
+    Y = np.array(np.random.rand(m, k), order='F')
+    Z = np.array(np.random.rand(n, k), order='F')
+    fn(Y, 2.5, 3.2, X, Z)
+    """
