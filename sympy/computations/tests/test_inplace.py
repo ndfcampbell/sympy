@@ -28,6 +28,9 @@ def test_getname():
     assert getname(Symbol('y'), '0') != '0'
     assert len(set(map(getname, (1, 2, 2, 2, 3, 3, 4)))) == 4
 
+    from sympy.matrices.expressions import ZeroMatrix
+    assert valid_name(getname(ZeroMatrix(3, 2)))
+
 def test_valid_name():
     assert valid_name('hello')
     assert not valid_name('123')

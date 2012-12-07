@@ -24,7 +24,7 @@ def make_getname():
 
         if requested and valid_name(requested):
             name = requested
-        elif hasattr(key, 'name'):
+        elif hasattr(key, 'name') and valid_name(key.name):
             name = key.name
         else:
             name = ''
