@@ -102,10 +102,8 @@ def gen_fortran(tcomp, assumptions, name = 'f'):
     dimens = filter(lambda x: not is_number(x), dimensions(tcomp))
 
     intent = lambda v: getintent(tcomp, v)
-    importance = lambda v: intent_ranks.index(intent(v))
-    important_vars = unique_tokened_variables(sorted(vars, key=importance))
 
-    intents = groupby(important_vars, intent)
+    intents = groupby(unique_tokened_variables(vars), intent)
 
     head = header(name, [a.token for a in (intents['in'] + intents['inout'] +
                                            intents['out'])]
