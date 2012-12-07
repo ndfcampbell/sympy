@@ -50,20 +50,6 @@ class MatrixCall(Computation):
     out_types = property(lambda self:
                           tuple(ot or self.basetype for ot in self._out_types))
 
-    view_map = {}
-    inplace = view_map
-
-    """
-    @property
-    def inplace(self):
-        rv = {}
-        for outind, inind in self.view_map.items():
-            rawinput = self.raw_inputs[inind]
-            inputind = self.inputs.index(canonicalize(rawinput))
-            rv[outind] = inputind
-        return rv
-    """
-
     @classmethod
     def valid(cls, inputs, assumptions):
         d = dict(zip(cls._inputs, inputs))

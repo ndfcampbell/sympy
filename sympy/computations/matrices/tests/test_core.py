@@ -13,6 +13,4 @@ def test_inplace():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     g = GEMM(a, X, Y, S.Zero, Y)
-    print g.inplace
-    print g.view_map
     assert g.inplace == {0: 4}

@@ -1,5 +1,5 @@
 from sympy.utilities.iterables import sift as groupby
-from sympy.matrices.expressions import MatrixExpr
+from sympy.matrices.expressions import MatrixExpr, ZeroMatrix
 from sympy.core import Expr
 
 def is_number(x):
@@ -22,6 +22,8 @@ def call(x, assumptions):
     return x.op.fortran_template % codemap
 
 def getintent(comp, var):
+    if isinstance(var.expr, ZeroMatrix):
+        return None
     if var in comp.inputs and var in comp.outputs:
         return 'inout'
     if var in comp.inputs:

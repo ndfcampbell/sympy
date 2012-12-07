@@ -6,6 +6,7 @@ from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y)
 from sympy import Q, S
 from sympy.utilities.iterables import dict_merge as merge
+from sympy.matrices.expressions import ZeroMatrix
 
 class BLAS(MatrixCall):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
@@ -15,12 +16,14 @@ class MM(BLAS):
     """ Matrix Multiply """
     _inputs   = (alpha, A, B, beta, C)
     _outputs  = (alpha*A*B + beta*C,)
-    view_map  = {0: 4}
+    inplace   = {0: 4}
     condition = True
 
     @property
     def raw_inputs(self):
         alpha, A, B, beta, C, typecode = self.args
+        if isinstance(C, ZeroMatrix):    # special case this
+            C = ZeroMatrix(A.rows, B.cols)
         # Sometimes we use C only as an output. It should be detransposed
         C = detranspose(C) if not beta else C
         return alpha, A, B, beta, C
@@ -31,6 +34,14 @@ class MM(BLAS):
         A = detranspose(A)
         B = detranspose(B)
         return alpha, A, B, beta, C
+
+    @property
+    def inputs(self):
+        alpha, A, B, beta, C = self.all_inputs
+        if beta:
+            return tuple(unique(remove_numbers(self.all_inputs)))
+        else:
+            return tuple(unique(remove_numbers((alpha, A, B))))
 
     @classmethod
     def codemap(cls, inputs, names, typecode, assumptions):
@@ -66,7 +77,7 @@ class AXPY(BLAS):
     """ Matrix Matrix Addition `alpha X + Y` """
     _inputs   = (alpha, X, Y)
     _outputs  = (alpha*X + Y,)
-    view_map  = {0: 2}
+    inplace   = {0: 2}
     condition = True
 
     fortran_template = ("call %(fn)s(%(N)s, %(alpha)s, %(A)s, "

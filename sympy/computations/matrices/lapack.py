@@ -27,7 +27,7 @@ class GESV(LAPACK):
     """ General Matrix Vector Solve """
     _inputs   = (A, B)
     _outputs  = (PermutationMatrix(IPIV(A.I*B))*A.I*B, IPIV(A.I*B), INFO)
-    view_map = {0: 1}
+    inplace   = {0: 1}
     condition = True  # TODO: maybe require S to be invertible?
 
     fortran_template = ("call %(fn)s(%(N)s, %(NRHS)s, %(A)s, "
@@ -50,7 +50,7 @@ class LASWP(LAPACK):
     """ Permute rows in a matrix """
     _inputs   = (PermutationMatrix(IPIV(A))*A, IPIV(A))
     _outputs  = (A,)
-    view_map  = {0: 0}
+    inplace   = {0: 0}
     condition = True
     outputs = property(lambda self: (self.inputs[1].A,))
 
@@ -80,7 +80,7 @@ class POSV(LAPACK):
     """ Symmetric Positive Definite Matrix Solve """
     _inputs   = (A, B)
     _outputs  = (A.I*B, INFO)
-    view_map = {0: 1}
+    inplace   = {0: 1}
     condition = Q.positive_definite(A) & Q.symmetric(A)
 
     fortran_template = ("call %(fn)s('%(UPLO)s', %(N)s, %(NRHS)s, %(A)s, "
