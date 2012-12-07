@@ -43,11 +43,16 @@ def test_gemm():
     # Check order of inputs is preserved
     assert "alpha,x,y,beta,z" in fn.__doc__.lower()
 
-    """
-    n, m, k = 50, 40, 30
-    import numpy as np
-    X = np.array(np.random.rand(n, m), order='F')
-    Y = np.array(np.random.rand(m, k), order='F')
-    Z = np.array(np.random.rand(n, k), order='F')
-    fn(Y, 2.5, 3.2, X, Z)
-    """
+    try:
+        n, m, k = 50, 40, 30
+        alpha, beta = 2.5, 3.2
+        import numpy as np
+        X = np.array(np.random.rand(n, m), order='F')
+        Y = np.array(np.random.rand(m, k), order='F')
+        Z = np.array(np.random.rand(n, k), order='F')
+        numpy_result = alpha*np.dot(X, Y) + beta*Z
+        fn(alpha, X, Y, beta, Z)
+        sympy_result = Z
+        assert np.linalg.norm(numpy_result - sympy_result) < .01
+    except ImportError:
+        pass
