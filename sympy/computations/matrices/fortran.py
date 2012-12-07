@@ -64,9 +64,10 @@ def dimen_declaration(dimen):
     return "integer, intent(in) :: %s" % dimen
 
 def header(name, args):
-    return "subroutine %(name)s(%(args)s)" % {
+    return ("subroutine %(name)s(%(args)s)" % {
                 'name': name,
-                'args': ', '.join(args)}
+                'args': ', '.join(args)} +
+            "\nimplicit none")
 
 def footer():
     return "RETURN\nEND\n"
