@@ -24,11 +24,13 @@ def call(x, assumptions):
 def getintent(comp, var):
     if isinstance(var.expr, ZeroMatrix):
         return None
-    if var in comp.inputs and var in comp.outputs:
+    in_tokens = [v.token for v in comp.inputs]
+    out_tokens = [v.token for v in comp.outputs]
+    if var.token in in_tokens and var.token in out_tokens:
         return 'inout'
-    if var in comp.inputs:
+    if var.token in in_tokens:
         return 'in'
-    if var in comp.outputs:
+    if var.token in out_tokens:
         return 'out'
 
 def gettype(comp, var):
@@ -87,6 +89,9 @@ def unique_tokened_variables(vars):
 
     return [vs[0] for tok, vs in groupby(vars, lambda et: et.token).items()]
 
+
+intent_ranks = ['inout', 'in', 'out', None]
+
 def gen_fortran(tcomp, assumptions, name = 'f'):
     """
     inputs:
@@ -96,10 +101,11 @@ def gen_fortran(tcomp, assumptions, name = 'f'):
     vars = filter(lambda x: not is_number(x.expr), tcomp.variables)
     dimens = filter(lambda x: not is_number(x), dimensions(tcomp))
 
-
-
     intent = lambda v: getintent(tcomp, v)
-    intents = groupby(vars, intent)
+    importance = lambda v: intent_ranks.index(intent(v))
+    important_vars = unique_tokened_variables(sorted(vars, key=importance))
+
+    intents = groupby(important_vars, intent)
 
     head = header(name, [a.token for a in (intents['in'] + intents['inout'] +
                                            intents['out'])]
