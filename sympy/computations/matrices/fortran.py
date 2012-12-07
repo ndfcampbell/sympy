@@ -114,7 +114,7 @@ def gen_fortran(tcomp, assumptions, name = 'f'):
     declarations = '\n'.join(map(dimen_declaration, dimens) +
         [declaration(tcomp, v)
              for x in ('in', 'inout', 'out', None)
-             for v in unique_tokened_variables(intents[x])])
+             for v in intents[x]])
 
     calls = '\n'.join([call(comp, assumptions) for comp in tcomp.toposort()])
 
