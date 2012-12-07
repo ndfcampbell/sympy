@@ -4,6 +4,9 @@ from sympy.rules.tools import subs
 
 default_varname= 'var_'
 
+def valid_name(n):
+    return n and n[0].isalpha()
+
 def make_getname():
     """ Make a new tokenizer
 
@@ -19,7 +22,7 @@ def make_getname():
         if key in cache:
             return cache[key]
 
-        if requested:
+        if requested and valid_name(requested):
             name = requested
         elif hasattr(key, 'name'):
             name = key.name

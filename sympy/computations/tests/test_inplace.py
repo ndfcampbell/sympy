@@ -1,7 +1,7 @@
 from sympy.computations.inplace import (make_getname, Copy, inplace,
         purify_one, tokenize_one, ExprToken, tokenize,
         copies_one, purify, inplace_tokenize, remove_single_copies,
-        inplace_compile, IOpComp)
+        inplace_compile, IOpComp, valid_name)
 from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
@@ -24,8 +24,13 @@ def test_getname():
     assert getname(Symbol('x')) == 'x'
     assert getname(Symbol('y')) == 'y'
     assert getname(Symbol('x', real=True)) != 'x'
-    assert getname((Symbol('x'), 'foo'), 'x') != 'x'
+    assert getname(Symbol('x'), 'foo') == 'x'
+    assert getname(Symbol('y'), '0') != '0'
     assert len(set(map(getname, (1, 2, 2, 2, 3, 3, 4)))) == 4
+
+def test_valid_name():
+    assert valid_name('hello')
+    assert not valid_name('123')
 
 def test_inplace():
     assert inplace(inc(3)) == {}
@@ -104,7 +109,6 @@ def test_copy_keyword():
     tokenizer = make_getname()
     comp = tokenize(inci(3), tokenizer)
     purecomp = purify_one(comp, tokenizer, Copy=Copy2)
-    print purecomp
     assert any(c.op == Copy2 for c in purecomp.computations)
 
 def test_inplace_tokenize():
