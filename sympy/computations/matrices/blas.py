@@ -26,10 +26,11 @@ class MM(BLAS):
         return alpha, A, B, beta, C
 
     @property
-    def inputs(self):
+    def all_inputs(self):
         alpha, A, B, beta, C = self.raw_inputs
-        coll = (alpha, detranspose(A), detranspose(B), beta, C)
-        return tuple(unique(remove_numbers(coll)))
+        A = detranspose(A)
+        B = detranspose(B)
+        return alpha, A, B, beta, C
 
     @classmethod
     def codemap(cls, inputs, names, typecode, assumptions):
@@ -101,3 +102,7 @@ class COPY(BLAS):
                  'INCX': 1,
                  'INCY': 1}
         return merge(namemap, other)
+
+    @staticmethod
+    def arguments(inputs, outputs):
+        return inputs + outputs

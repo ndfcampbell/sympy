@@ -23,7 +23,7 @@ def test_getname():
     getname = make_getname()
     assert getname(Symbol('x')) == 'x'
     assert getname(Symbol('y')) == 'y'
-    assert getname(Symbol('x', real=True)) == 'x_2'
+    assert getname(Symbol('x', real=True)) != 'x'
     assert getname((Symbol('x'), 'foo'), 'x') != 'x'
     assert len(set(map(getname, (1, 2, 2, 2, 3, 3, 4)))) == 4
 
@@ -98,6 +98,15 @@ def test_purify():
     assert purecomp.inputs == comp.inputs
     assert purecomp.outputs == comp.outputs
 
+def test_copy_keyword():
+    class Copy2(Copy): pass
+
+    tokenizer = make_getname()
+    comp = tokenize(inci(3), tokenizer)
+    purecomp = purify_one(comp, tokenizer, Copy=Copy2)
+    print purecomp
+    assert any(c.op == Copy2 for c in purecomp.computations)
+
 def test_inplace_tokenize():
     comp     = IOpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 2),))
     expected = IOpComp(inci, (ExprToken(1, 1),), (ExprToken(2, 1),))
@@ -140,3 +149,4 @@ def test_integrative():
                 '_1', '_2')
 
     assert len(list(unify(inplace_compile(comp), expected))) > 0
+

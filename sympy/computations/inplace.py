@@ -2,6 +2,8 @@ from sympy import Basic, Tuple
 from sympy.computations.core import (Computation, CompositeComputation, OpComp)
 from sympy.rules.tools import subs
 
+default_varname= 'var_'
+
 def make_getname():
     """ Make a new tokenizer
 
@@ -25,9 +27,9 @@ def make_getname():
             name = ''
         if name in seen:
             id = 2
-            while(name + '_%d'%id in seen):
+            while(name + default_varname+str(id) in seen):
                 id += 1
-            name = name + '_%d'%id
+            name = name + default_varname+str(id)
 
         assert name not in cache.values()
         assert name not in seen
@@ -57,18 +59,19 @@ class Copy(Computation):
     """ A Copy computation """
     pass
 
-def copies_one(comp, getname):
+def copies_one(comp, getname, **kwargs):
     """ The necessary copies to make an impure computation pure """
+    copy = kwargs.get('Copy', Copy)
     def new_comp(inp, out):
-        requested = inp.token if inp.token[0]!='_' else None
+        requested = inp.token if default_varname not in inp.token else None
         newtoken = getname((inp.expr, out.expr), requested)
         out = ExprToken(inp.expr, newtoken)
-        return IOpComp(Copy, (inp,), (out,))
+        return IOpComp(copy, (inp,), (out,), {})
 
     return [new_comp(comp.inputs[v], comp.outputs[k])
                  for k, v in inplace(comp).items()]
 
-def purify_one(comp, getname):
+def purify_one(comp, getname, **kwargs):
     """ A pure version of a single impure computation.
 
     Adds copies and returns a Composite
@@ -76,7 +79,7 @@ def purify_one(comp, getname):
     See Also
         purify
     """
-    copies = copies_one(comp, getname)
+    copies = copies_one(comp, getname, **kwargs)
     d = dict((cp.inputs[0], cp.outputs[0]) for cp in copies)
     if not d:
         return comp
@@ -87,7 +90,7 @@ def purify_one(comp, getname):
 
     return CompositeComputation(newcomp, *copies)
 
-def purify(comp, getname):
+def purify(comp, getname, **kwargs):
     """ Pure version of an impure computation
 
     Adds copies and returns a Composite
@@ -96,8 +99,8 @@ def purify(comp, getname):
         purify_one
     """
     if not isinstance(comp, CompositeComputation):
-        return purify_one(comp, getname)
-    return CompositeComputation(*[purify_one(c, getname)
+        return purify_one(comp, getname, **kwargs)
+    return CompositeComputation(*[purify_one(c, getname, **kwargs)
                                     for c in comp.computations])
 
 class ExprToken(Basic):
@@ -124,7 +127,7 @@ def tokenize_one(mathcomp, tokenizer):
         tokenize
     """
     return IOpComp(type(mathcomp),
-                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.raw_inputs),
+                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.all_inputs),
                    tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs),
                    inplace(mathcomp))
 
@@ -174,7 +177,7 @@ def remove_single_copies(comp):
             users[inp] = s
 
     single_copies = [cp for s in users.values() for cp in s
-                        if len(s) == 1 and cp.op == Copy]
+                        if len(s) == 1 and issubclass(cp.op, Copy)]
 
     subsrl = subs(dict((cp.outputs[0].token, cp.inputs[0].token)
                         for cp in single_copies))
@@ -182,7 +185,7 @@ def remove_single_copies(comp):
     return CompositeComputation(*[subsrl(c) for c in computations
                                             if c not in single_copies])
 
-def inplace_compile(comp):
+def inplace_compile(comp, **kwargs):
     """ Compile a mathematical computation into a nice inplace one
 
     This is a master function that calls the following in order
@@ -196,7 +199,7 @@ def inplace_compile(comp):
     tokenizer = make_getname()
     stage0 = comp
     stage1 = tokenize(stage0, tokenizer)
-    stage2 = purify(stage1, tokenizer)
+    stage2 = purify(stage1, tokenizer, **kwargs)
     stage3 = remove_single_copies(stage2)
     stage4 = inplace_tokenize(stage3)
     return stage4
@@ -205,7 +208,8 @@ class IOpComp(OpComp):
     """ Inplace version of OpComp """
 
     def __new__(cls, op, inputs, outputs, inpl=None):
-        inpl = inpl or inplace(op) or {}
+        if inpl is None:
+            inpl = inplace(op) or {}
         return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs),
                 Tuple(*sorted(inpl.items())))
 

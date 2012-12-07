@@ -98,3 +98,7 @@ class POSV(LAPACK):
                  'UPLO': 'U',
                  'fn': cls.fnname(typecode)}
         return merge(namemap, other)
+
+    @staticmethod
+    def arguments(inputs, outputs):
+        return inputs + (outputs[1],)

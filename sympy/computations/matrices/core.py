@@ -32,7 +32,7 @@ class MatrixCall(Computation):
 
     inputs = property(lambda self:
                     tuple(map(exhaust(bottom_up(canonicalize)),
-                              unique(remove_numbers(self.raw_inputs)))))
+                              unique(remove_numbers(self.all_inputs)))))
 
     @property
     def outputs(self):
@@ -50,6 +50,10 @@ class MatrixCall(Computation):
     out_types = property(lambda self:
                           tuple(ot or self.basetype for ot in self._out_types))
 
+    view_map = {}
+    inplace = view_map
+
+    """
     @property
     def inplace(self):
         rv = {}
@@ -58,6 +62,7 @@ class MatrixCall(Computation):
             inputind = self.inputs.index(canonicalize(rawinput))
             rv[outind] = inputind
         return rv
+    """
 
     @classmethod
     def valid(cls, inputs, assumptions):
@@ -69,6 +74,10 @@ class MatrixCall(Computation):
     @classmethod
     def fnname(cls, typecode):
         return (typecode+cls.__name__).lower()
+
+    @staticmethod
+    def arguments(inputs, outputs):
+        return inputs
 
 def prepend_ones_to_matmuls(expr):
     factor, matrices = expr.as_coeff_matrices()
