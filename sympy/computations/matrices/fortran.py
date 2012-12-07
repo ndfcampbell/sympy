@@ -78,6 +78,15 @@ def dimensions(tcomp):
     shapes = map(shapeof, tcomp.variables)
     return set((d for shape in shapes if shape for d in shape))
 
+
+def unique_tokened_variables(vars):
+    """ Given a collection of many ExprTokens select a representative sample
+
+    This sample should include exacty one ExprToken for each token
+    """
+
+    return [vs[0] for tok, vs in groupby(vars, lambda et: et.token).items()]
+
 def gen_fortran(tcomp, assumptions, name = 'f'):
     """
     inputs:
@@ -97,9 +106,9 @@ def gen_fortran(tcomp, assumptions, name = 'f'):
                         + map(str, dimens))
 
     declarations = '\n'.join(map(dimen_declaration, dimens) +
-                            [declaration(tcomp, a)
-                                    for x in ('in', 'inout', 'out', None)
-                                    for a in intents[x]])
+        [declaration(tcomp, v)
+             for x in ('in', 'inout', 'out', None)
+             for v in unique_tokened_variables(intents[x])])
 
     calls = '\n'.join([call(comp, assumptions) for comp in tcomp.toposort()])
 
