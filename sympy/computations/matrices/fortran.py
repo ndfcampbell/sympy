@@ -22,7 +22,7 @@ def call(x, assumptions):
     return x.op.fortran_template % codemap
 
 def getintent(comp, var):
-    if isinstance(var.expr, ZeroMatrix):
+    if constant_arg(var.expr):
         return None
     in_tokens = [v.token for v in comp.inputs]
     out_tokens = [v.token for v in comp.outputs]
@@ -105,6 +105,12 @@ def sort_arguments(args, order=()):
                    key =  lambda x: str(x.token)))
     return args
 
+def constant_arg(arg):
+    return is_number(arg) or isinstance(arg, ZeroMatrix)
+
+def remove(pred, coll):
+    return filter(lambda x: not pred(x), coll)
+
 def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
     """
     inputs:
@@ -121,7 +127,8 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
 
     arguments = intents['in'] + intents['inout'] + intents['out']
     sorted_args = sort_arguments(arguments, input_order)
-    head = header(name, [x.token for x in sorted_args]
+    head = header(name, [x.token for x in sorted_args if not
+        constant_arg(x.expr)]
                         + map(str, dimens))
 
     declarations = '\n'.join(map(dimen_declaration, dimens) +
