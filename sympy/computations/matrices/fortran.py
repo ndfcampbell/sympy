@@ -1,6 +1,9 @@
-from sympy.utilities.iterables import sift as groupby
+from sympy.utilities.iterables import sift
 from sympy.matrices.expressions import MatrixExpr, ZeroMatrix
 from sympy.core import Expr
+
+def groupby(key, coll):
+    return sift(coll, key)
 
 def is_number(x):
     return (isinstance(x, (int, float)) or
@@ -24,21 +27,25 @@ def call(x, assumptions):
 def getintent(comp, var):
     if constant_arg(var.expr):
         return None
+    return getintent_token(comp, var.token)
+
+
+def getintent_token(comp, token):
     in_tokens = [v.token for v in comp.inputs]
     out_tokens = [v.token for v in comp.outputs]
-    if var.token in in_tokens and var.token in out_tokens:
+    if token in in_tokens and token in out_tokens:
         return 'inout'
-    if var.token in in_tokens:
+    if token in in_tokens:
         return 'in'
-    if var.token in out_tokens:
+    if token in out_tokens:
         return 'out'
 
-def gettype(comp, var):
+def gettype(comp, expr):
     return 'real*8'
 
-def shapeof(var):
-    if isinstance(var.expr, MatrixExpr):
-        return var.expr.shape
+def shapeof(expr):
+    if isinstance(expr, MatrixExpr):
+        return expr.shape
 
 def shape_str(shape):
     if shape[0] == 1:
@@ -51,6 +58,9 @@ def shape_str(shape):
 def comment(var):
     return '  !  ' + str(var.expr)
 
+def comment(vars):
+    return '  !  ' + ', '.join([str(v.expr) for v in vars])
+
 def declaration(comp, var):
     s = gettype(comp, var)
     intent = getintent(comp, var)
@@ -58,11 +68,29 @@ def declaration(comp, var):
         s += ", intent(%s)" % intent
     s += " :: "
     s += nameof(var)
-    shape = shapeof(var)
+    shape = shapeof(var.expr)
     if shape:
         s += shape_str(shape)
-    s += comment(var)
+    s += comment([var])
     return s
+
+def declarations(comp):
+    tokens = groupby(lambda v: v.token, comp.variables)
+    def declaration_string(tok):
+        vars   = tokens[tok]
+        var    = vars[0]
+        expr   = var.expr
+        type   = gettype(comp, expr)
+        intent = getintent_token(comp, tok)
+        intentstr = ", intent(%s)" % intent if intent else ""
+        name   = nameof(var)
+        shape  = shapeof(expr)
+        shapestr = shape_str(shape) if shape else ""
+        cmnt = comment(vars)
+        return ("%(type)s%(intentstr)s :: %(name)s%(shapestr)s%(cmnt)s" %
+                locals())
+
+    return dict(zip(tokens, map(declaration_string, tokens)))
 
 def dimen_declaration(dimen):
     return "integer, intent(in) :: %s" % dimen
@@ -77,7 +105,7 @@ def footer():
     return "RETURN\nEND\n"
 
 def dimensions(tcomp):
-    shapes = map(shapeof, tcomp.variables)
+    shapes = [shapeof(v.expr) for v in tcomp.variables]
     return set((d for shape in shapes if shape for d in shape))
 
 
@@ -87,7 +115,7 @@ def unique_tokened_variables(vars):
     This sample should include exacty one ExprToken for each token
     """
 
-    return [vs[0] for tok, vs in groupby(vars, lambda et: et.token).items()]
+    return [vs[0] for tok, vs in groupby(lambda et: et.token, vars).items()]
 
 
 intent_ranks = ['inout', 'in', 'out', None]
@@ -123,7 +151,7 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
     dimens = sorted(filter(lambda x: not is_number(x), dimensions(tcomp)),
                     key = str)
 
-    intents = groupby(unique_tokened_variables(vars), intent)
+    intents = groupby(intent, unique_tokened_variables(vars))
 
     arguments = intents['in'] + intents['inout'] + intents['out']
     sorted_args = sort_arguments(arguments, input_order)

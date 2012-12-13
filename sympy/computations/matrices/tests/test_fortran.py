@@ -1,6 +1,7 @@
 from sympy.computations.inplace import ExprToken, inplace_compile
-from sympy.computations.matrices.fortran import (nameof,
+from sympy.computations.matrices.fortran import (nameof, declarations,
         unique_tokened_variables, build, getintent, sort_arguments)
+from sympy.computations.core import OpComp
 from sympy.core import Symbol, S
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.computations.matrices.blas import GEMM, AXPY
@@ -111,3 +112,23 @@ def test_gemm_axpy():
         assert np.linalg.norm(numpy_result - sympy_result) < .01
     except ImportError:
         pass
+
+def test_intents():
+    a,b,c,d,e,f = 'abcdef'
+    ins  = (ExprToken(a, a), ExprToken(b, b))
+    outs = (ExprToken(c, a), ExprToken(d, d))
+    comp = OpComp('T', ins, outs)
+    assert getintent(comp, ins[0])  == 'inout'
+    assert getintent(comp, ins[1])  == 'in'
+    assert getintent(comp, outs[0]) == 'inout'
+    assert getintent(comp, outs[1]) == 'out'
+
+def test_declarations():
+    a,b,c,d,e,f = 'abcdef'
+    ins  = (ExprToken(a, a), ExprToken(b, b))
+    outs = (ExprToken(c, a), ExprToken(d, d))
+    comp = OpComp('T', ins, outs)
+    decs = declarations(comp)
+    assert 'real*8, intent(inout) :: a  !  a, c' in decs.values()
+    assert 'real*8, intent(in) :: b  !  b'       in decs.values()
+    assert 'real*8, intent(out) :: d  !  d'      in decs.values()
