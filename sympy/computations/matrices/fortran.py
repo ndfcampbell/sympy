@@ -55,27 +55,12 @@ def shape_str(shape):
     else:
         return "(%s, %s)"%(str(shape[0]), str(shape[1]))
 
-def comment(var):
-    return '  !  ' + str(var.expr)
-
 def comment(vars):
     return '  !  ' + ', '.join([str(v.expr) for v in vars])
 
-def declaration(comp, var):
-    s = gettype(comp, var)
-    intent = getintent(comp, var)
-    if intent:
-        s += ", intent(%s)" % intent
-    s += " :: "
-    s += nameof(var)
-    shape = shapeof(var.expr)
-    if shape:
-        s += shape_str(shape)
-    s += comment([var])
-    return s
-
-def declarations(comp):
-    tokens = groupby(lambda v: v.token, comp.variables)
+def getdeclarations(comp):
+    tokens = groupby(lambda v: v.token,
+                remove(lambda x: constant_arg(x.expr), comp.variables))
     def declaration_string(tok):
         vars   = tokens[tok]
         var    = vars[0]
@@ -108,7 +93,6 @@ def dimensions(tcomp):
     shapes = [shapeof(v.expr) for v in tcomp.variables]
     return set((d for shape in shapes if shape for d in shape))
 
-
 def unique_tokened_variables(vars):
     """ Given a collection of many ExprTokens select a representative sample
 
@@ -117,8 +101,7 @@ def unique_tokened_variables(vars):
 
     return [vs[0] for tok, vs in groupby(lambda et: et.token, vars).items()]
 
-
-intent_ranks = ['inout', 'in', 'out', None]
+intent_ranks = ['in', 'inout', 'out', None]
 
 def sort_arguments(args, order=()):
     """ Sort arguments
@@ -159,10 +142,11 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
         constant_arg(x.expr)]
                         + map(str, dimens))
 
+    decs = getdeclarations(tcomp)
+    sorted_tokens = sorted(decs.keys(),
+            key = lambda tok: intent_ranks.index(getintent_token(tcomp, tok)))
     declarations = '\n'.join(map(dimen_declaration, dimens) +
-        [declaration(tcomp, v)
-             for x in ('in', 'inout', 'out', None)
-             for v in intents[x]])
+                             [decs[tok] for tok in sorted_tokens])
 
     calls = '\n'.join([call(comp, assumptions) for comp in tcomp.toposort()])
 

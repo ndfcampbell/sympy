@@ -1,6 +1,6 @@
 from sympy.computations.inplace import ExprToken, inplace_compile
-from sympy.computations.matrices.fortran import (nameof, declarations,
-        unique_tokened_variables, build, getintent, sort_arguments)
+from sympy.computations.matrices.fortran import (nameof, getdeclarations,
+        unique_tokened_variables, build, getintent, sort_arguments, gen_fortran)
 from sympy.computations.core import OpComp
 from sympy.core import Symbol, S
 from sympy.matrices.expressions import MatrixSymbol
@@ -90,6 +90,7 @@ def test_gemm_axpy():
     c = AXPY(S.One, W, X) + GEMM(alpha, W+X, Y, beta, Z)
     ct = inplace_compile(c)
 
+    print gen_fortran(ct, True, 'gemmaxpy', input_order=(alpha, W, X, Y, beta, Z))
     fn = build(ct, True, 'gemmaxpy', input_order=(alpha, W, X, Y, beta, Z))
     return fn
 
@@ -123,12 +124,13 @@ def test_intents():
     assert getintent(comp, outs[0]) == 'inout'
     assert getintent(comp, outs[1]) == 'out'
 
-def test_declarations():
+def test_getdeclarations():
     a,b,c,d,e,f = 'abcdef'
-    ins  = (ExprToken(a, a), ExprToken(b, b))
+    ins  = (ExprToken(a, a), ExprToken(b, b), ExprToken(2, 2))
     outs = (ExprToken(c, a), ExprToken(d, d))
     comp = OpComp('T', ins, outs)
-    decs = declarations(comp)
+    decs = getdeclarations(comp)
     assert 'real*8, intent(inout) :: a  !  a, c' in decs.values()
     assert 'real*8, intent(in) :: b  !  b'       in decs.values()
     assert 'real*8, intent(out) :: d  !  d'      in decs.values()
+    assert not any('2' in dec for dec in decs.values())
