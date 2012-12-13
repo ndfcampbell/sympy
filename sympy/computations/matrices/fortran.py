@@ -25,8 +25,6 @@ def call(x, assumptions):
     return x.op.fortran_template % codemap
 
 def getintent(comp, var):
-    if constant_arg(var.expr):
-        return None
     return getintent_token(comp, var.token)
 
 

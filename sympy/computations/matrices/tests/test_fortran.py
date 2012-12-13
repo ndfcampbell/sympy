@@ -124,6 +124,13 @@ def test_intents():
     assert getintent(comp, outs[0]) == 'inout'
     assert getintent(comp, outs[1]) == 'out'
 
+def test_intents_constants():
+    a,b,c,d,e,f = 'abcdef'
+    ins  = (ExprToken(1, a),)
+    outs = (ExprToken(a, a),)
+    comp = OpComp('T', ins, outs)
+    assert all(getintent(comp, v) == 'inout' for v in comp.variables)
+
 def test_getdeclarations():
     a,b,c,d,e,f = 'abcdef'
     ins  = (ExprToken(a, a), ExprToken(b, b), ExprToken(2, 2))
