@@ -1,6 +1,6 @@
 from sympy.computations.inplace import ExprToken, inplace_compile
 from sympy.computations.matrices.fortran import (nameof, getdeclarations,
-        unique_tokened_variables, build, getintent, sort_arguments, gen_fortran)
+        unique_tokened_variables, build, intentsof, sort_arguments, gen_fortran)
 from sympy.computations.core import OpComp
 from sympy.core import Symbol, S
 from sympy.matrices.expressions import MatrixSymbol
@@ -35,9 +35,10 @@ def test_gemm():
 
     c = GEMM(alpha, X, Y, beta, Z)
     ct = inplace_compile(c)
+    intents = intentsof(ct)
 
-    assert getintent(ct, ct.outputs[0]) == 'inout'  # Z is inout
-    assert getintent(ct, ct.inputs[0]) == 'in'      # alpha is just in
+    assert intents[ct.outputs[0].token] == 'inout'  # Z is inout
+    assert intents[ct.inputs[0].token] == 'in'      # alpha is just in
 
     fn = build(ct, True, 'my_dgemm', input_order=(alpha, X, Y, beta, Z))
 
@@ -119,17 +120,14 @@ def test_intents():
     ins  = (ExprToken(a, a), ExprToken(b, b))
     outs = (ExprToken(c, a), ExprToken(d, d))
     comp = OpComp('T', ins, outs)
-    assert getintent(comp, ins[0])  == 'inout'
-    assert getintent(comp, ins[1])  == 'in'
-    assert getintent(comp, outs[0]) == 'inout'
-    assert getintent(comp, outs[1]) == 'out'
+    assert intentsof(comp) == {a: 'inout', b: 'in', d: 'out'}
 
 def test_intents_constants():
     a,b,c,d,e,f = 'abcdef'
     ins  = (ExprToken(1, a),)
     outs = (ExprToken(a, a),)
     comp = OpComp('T', ins, outs)
-    assert all(getintent(comp, v) == 'inout' for v in comp.variables)
+    assert intentsof(comp) == {a: 'out'}
 
 def test_getdeclarations():
     a,b,c,d,e,f = 'abcdef'

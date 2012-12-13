@@ -9,9 +9,6 @@ def is_number(x):
     return (isinstance(x, (int, float)) or
             isinstance(x, Expr) and x.is_Number)
 
-def remove_numbers(coll):
-    return filter(lambda x: not is_number(x.expr), coll)
-
 def nameof(var):
     if is_number(var.expr):
         return var.expr
@@ -24,19 +21,26 @@ def call(x, assumptions):
                            [nameof(a) for a in args], 'd', assumptions)
     return x.op.fortran_template % codemap
 
-def getintent(comp, var):
-    return getintent_token(comp, var.token)
-
-
-def getintent_token(comp, token):
-    in_tokens = [v.token for v in comp.inputs]
+def intentsof(comp):
+    in_tokens = [v.token for v in comp.inputs if not constant_arg(v.expr)]
     out_tokens = [v.token for v in comp.outputs]
-    if token in in_tokens and token in out_tokens:
-        return 'inout'
-    if token in in_tokens:
-        return 'in'
-    if token in out_tokens:
-        return 'out'
+
+    def intentof_tok(token):
+        if token in in_tokens and token in out_tokens:
+            return 'inout'
+        if token in in_tokens:
+            return 'in'
+        if token in out_tokens:
+            return 'out'
+
+    vars_by_token = groupby(lambda v: v.token, comp.variables)
+    tokens = set([v.token for v in comp.variables])
+    intents = dict(zip(tokens, map(intentof_tok, tokens)))
+    intents2 = dict((tok, intent)
+                    if not all(constant_arg(v) for v in vars_by_token[tok]) else
+                    (tok, None)
+                    for tok, intent in intents.items())
+    return intents2
 
 def gettype(comp, expr):
     return 'real*8'
@@ -57,14 +61,16 @@ def comment(vars):
     return '  !  ' + ', '.join([str(v.expr) for v in vars])
 
 def getdeclarations(comp):
-    tokens = groupby(lambda v: v.token,
-                remove(lambda x: constant_arg(x.expr), comp.variables))
+    tokens = groupby(lambda v: v.token, comp.variables)
+    tokens = {k: vs for k,vs in tokens.items()
+                    if any(not is_number(v.expr) for v in vs)}
+    intents = intentsof(comp)
     def declaration_string(tok):
         vars   = tokens[tok]
         var    = vars[0]
         expr   = var.expr
         type   = gettype(comp, expr)
-        intent = getintent_token(comp, tok)
+        intent = intents[var.token]
         intentstr = ", intent(%s)" % intent if intent else ""
         name   = nameof(var)
         shape  = shapeof(expr)
@@ -126,7 +132,8 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
         tcomp - a tokenized computation (see inplace.tokenize)
     """
 
-    intent = lambda v: getintent(tcomp, v)
+    tok_intents = intentsof(tcomp)
+    intent = lambda x: tok_intents[x.token]
     vars = sorted(filter(lambda x: not is_number(x.expr), tcomp.variables),
                   key =  lambda x: intent_ranks.index(intent(x)))
     dimens = sorted(filter(lambda x: not is_number(x), dimensions(tcomp)),
@@ -134,15 +141,20 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
 
     intents = groupby(intent, unique_tokened_variables(vars))
 
-    arguments = intents['in'] + intents['inout'] + intents['out']
-    sorted_args = sort_arguments(arguments, input_order)
-    head = header(name, [x.token for x in sorted_args if not
-        constant_arg(x.expr)]
+    vars_by_token = groupby(lambda x: x.token, tcomp.variables)
+    arguments = [tok for tok, intent in tok_intents.items() if intent]
+    def key_func(tok):
+        try:
+            return (1,max(input_order.index(v.expr) for v in vars_by_token[tok]))
+        except ValueError:
+            return (2, str(tok))
+
+    head = header(name, sorted(arguments, key=key_func)
                         + map(str, dimens))
 
     decs = getdeclarations(tcomp)
     sorted_tokens = sorted(decs.keys(),
-            key = lambda tok: intent_ranks.index(getintent_token(tcomp, tok)))
+            key = lambda tok: intent_ranks.index(tok_intents[tok]))
     declarations = '\n'.join(map(dimen_declaration, dimens) +
                              [decs[tok] for tok in sorted_tokens])
 

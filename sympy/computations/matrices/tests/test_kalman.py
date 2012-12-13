@@ -10,5 +10,8 @@ def test_fortran_code_generation():
     s = gen_fortran(ic, assumptions, input_order=(mu, Sigma, H, R, data))
     print s
     assert isinstance(s, str)
-    f = build(ic, assumptions, 'kalman', input_order=(mu, Sigma, H, R, data))
+    try:
+        f = build(ic, assumptions, 'kalman', input_order=(mu, Sigma, H, R, data))
+    except:
+        ic.show()
     assert callable(f)
