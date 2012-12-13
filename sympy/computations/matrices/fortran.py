@@ -43,6 +43,8 @@ def intentsof(comp):
     return intents2
 
 def gettype(comp, expr):
+    if expr == Symbol('INFO'):
+        return 'integer'
     return 'real*8'
 
 def shapeof(expr):
@@ -145,9 +147,10 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
     arguments = [tok for tok, intent in tok_intents.items() if intent]
     def key_func(tok):
         try:
-            return (1,max(input_order.index(v.expr) for v in vars_by_token[tok]))
-        except ValueError:
-            return (2, str(tok))
+            idx = max(input_order.index(v.expr) for v in vars_by_token[tok])
+            return (1, idx)
+        except ValueError:  # Token not in input_order
+            return (2, str(tok))  # sort by string otherwise
 
     head = header(name, sorted(arguments, key=key_func)
                         + map(str, dimens))

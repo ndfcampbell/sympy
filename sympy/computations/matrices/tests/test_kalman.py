@@ -7,14 +7,13 @@ from sympy.computations.matrices.fortran import gen_fortran, build, dimensions
 
 def test_fortran_code_generation():
     ic = inplace_compile(mathcomp, Copy=COPY)
+    mathcomp.writepdf('kalman.math.pdf')
+    ic.writepdf('kalman.pdf')
     s = gen_fortran(ic, assumptions, input_order=(mu, Sigma, H, R, data))
-    print s
+    with open('kalman.f90', 'w') as f:
+        f.write(s)
     assert isinstance(s, str)
-    try:
-        f = build(ic, assumptions, 'kalman', input_order=(mu, Sigma, H, R, data))
-    except:
-        ic.show()
-    assert callable(f)
+    f = build(ic, assumptions, 'kalman', input_order=(mu, Sigma, H, R, data))
 
 def test_kalman_run():
     ic = inplace_compile(mathcomp, Copy=COPY)
