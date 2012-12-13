@@ -1,5 +1,6 @@
 from sympy.computations.matrices.core import MatrixCall, remove_numbers
 from sympy.computations.core import unique
+from sympy.computations.inplace import Copy
 from sympy.computations.matrices.shared import (detranspose, trans, LD,
         left_or_right, diag)
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
@@ -95,7 +96,7 @@ class AXPY(BLAS):
                  'INCY': 1}
         return merge(namemap, other)
 
-class COPY(BLAS):
+class COPY(BLAS, Copy):
     """ Array to array copy """
     _inputs   = (X,)
     _outputs  = (X,)
