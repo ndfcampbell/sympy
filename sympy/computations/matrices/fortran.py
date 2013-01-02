@@ -1,6 +1,6 @@
 from sympy.utilities.iterables import sift
 from sympy.matrices.expressions import MatrixExpr, ZeroMatrix
-from sympy.core import Expr
+from sympy.core import Expr, Symbol
 
 def groupby(key, coll):
     return sift(coll, key)

@@ -7,8 +7,8 @@ from sympy.computations.matrices.fortran import gen_fortran, build, dimensions
 
 def test_fortran_code_generation():
     ic = inplace_compile(mathcomp, Copy=COPY)
-    mathcomp.writepdf('kalman.math.pdf')
-    ic.writepdf('kalman.pdf')
+    mathcomp.writepdf('kalman.math')
+    ic.writepdf('kalman')
     s = gen_fortran(ic, assumptions, input_order=(mu, Sigma, H, R, data))
     with open('kalman.f90', 'w') as f:
         f.write(s)
