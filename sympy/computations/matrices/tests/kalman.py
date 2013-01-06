@@ -10,7 +10,7 @@ data    = MatrixSymbol('data', k, 1)
 I       = Identity(n)
 
 newmu   = mu + Sigma*H.T * (R + H*Sigma*H.T).I * (H*mu - data)
-newSigma= (I - Sigma*H.T * (R + H*Sigma*H.T).I * H) * Sigma
+newSigma= Sigma - Sigma*H.T * (R + H*Sigma*H.T).I * H * Sigma
 
 assumptions = (Q.positive_definite(Sigma) & Q.symmetric(Sigma) &
                Q.positive_definite(R) & Q.symmetric(R))
