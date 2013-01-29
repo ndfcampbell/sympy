@@ -1,33 +1,33 @@
 from sympy.computations.example import patterns, inc, add, double, incdec
-from sympy.computations.compile import (input_crunch, output_crunch, brulify,
+from sympy.computations.compile import (input_crunch, output_crunch,
         multi_input_rule, multi_output_rule)
 from sympy.rules.branch import multiplex, exhaust, debug
 from sympy.computations.core import Identity
 from sympy import Symbol, symbols, S
-from sympy.unify import patternify, unify, rewriterule, rebuild
+from sympy.unify import unify, rewriterule, rebuild
 
-rules = [brulify(*pattern) for pattern in patterns]
+rules = map(rewriterule, *zip(*patterns))
 rule = exhaust(multiplex(*map(input_crunch, rules)))
 
 x, y, z = symbols('x,y,z')
 
 def test_compile():
     expr = y + 1
-    rule = brulify(x + 1, inc(x), x)
+    rule = rewriterule(x + 1, inc(x), [x])
     assert list(rule(expr)) == [inc(y)]
 
 def test_input_crunch():
     comp = Identity(y + 1)
-    rule = input_crunch(brulify(x + 1, inc(x), x))
+    rule = input_crunch(rewriterule(x + 1, inc(x), [x]))
     assert len(list(rule(comp))) == 1
 
     comp = Identity(y + 3,)
-    rule = input_crunch(brulify(x + y, add(x, y), x, y))
+    rule = input_crunch(rewriterule(x + y, add(x, y), [x, y]))
     assert len(list(rule(comp))) == 2
 
 def test_add():
     expr = y + 3
-    rule = brulify(x + y, add(x, y), x, y)
+    rule = rewriterule(x + y, add(x, y), [x, y])
     assert set(rule(expr)) == set([add(S(3), y), add(y, S(3))])
     rule = multiplex(*map(input_crunch, rules))
     comp = Identity(expr)

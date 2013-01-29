@@ -1,10 +1,4 @@
-from sympy.unify.usympy import patternify
 from sympy.unify.rewrite import rewriterule
-
-def brulify(source, target, *wilds):
-    """ Turn a source/target/wild set into a branching rule """
-    pattern = patternify(source, *wilds)
-    return rewriterule(pattern, target)
 
 def input_crunch(etc):
     """ Turn an Expr->Comp rule into a Comp->Comp rule by looking at inputs
@@ -25,8 +19,8 @@ def multi_input_rule(sources, target, *wilds):
     other = Symbol('_foo')
     source = FiniteSet(*sources)
     source2 = FiniteSet(other, *sources)
-    rule = rewriterule(patternify(source, *wilds), target)
-    rule2 = rewriterule(patternify(source2, other, *wilds), target)
+    rule = rewriterule(source, target, wilds)
+    rule2 = rewriterule(source2, target, tuple(wilds)+(other,))
 
     def inputs_brl(comp):
         inputs = FiniteSet(*comp.inputs)
@@ -53,8 +47,8 @@ def multi_output_rule(sources, target, *wilds):
     other = Symbol('_foo')
     source = FiniteSet(*sources)
     source2 = FiniteSet(other, *sources)
-    rule = rewriterule(patternify(source, *wilds), target)
-    rule2 = rewriterule(patternify(source2, other, *wilds), target)
+    rule = rewriterule(source, target, wilds)
+    rule2 = rewriterule(source2, target, tuple(wilds) + (other,))
 
     def outputs_brl(comp):
         outputs = FiniteSet(*comp.outputs)

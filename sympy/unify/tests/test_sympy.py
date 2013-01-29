@@ -146,7 +146,6 @@ def test_Union():
 def test_is_commutative():
     assert is_commutative(deconstruct(x+y))
     assert is_commutative(deconstruct(x*y))
-    assert not is_commutative(deconstruct(x**y))
 
 def test_commutative_in_commutative():
     from sympy.abc import a,b,c,d

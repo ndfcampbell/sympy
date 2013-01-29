@@ -6,7 +6,7 @@ from sympy import Q, S, ask, Expr, Symbol
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix)
 from sympy.computations.compile import input_crunch, multi_output_rule
-from sympy.unify import patternify, unify
+from sympy.unify import unify
 from sympy.rules.branch import multiplex, exhaust, debug, sfilter
 from sympy.rules.tools import subs
 
@@ -21,9 +21,9 @@ def expr_to_comp_rule(source, target, wilds, condition, assumptions):
     condition - A boolean on the wilds that must hold true
     assumptions - assumptions under which the condition must hold true
     """
-    pattern = patternify(source, *wilds, types=wildtypes(wilds))
+    # pattern = patternify(source, *wilds, types=wildtypes(wilds))
     def matrix_expr_to_comp_brule(expr):
-        for match in unify(expr, pattern):
+        for match in unify(expr, source, variables=wilds):
             if (condition is True):
                 yield subs(match)(target)
             elif ask(condition.subs(match), assumptions):

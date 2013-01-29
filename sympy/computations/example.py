@@ -36,6 +36,6 @@ class minmax(Computation):
                                     Max(self.args[0], self.args[1])))
 
     # multipattern = (set((Min(x, y), Max(x, y))), minmax(x, y), x, y)
-patterns = ((x + 1, inc(x), x),
-            (2*x, double(x), x),
-            (x + y, add(x, y), x, y))
+patterns = ((x + 1, inc(x), [x]),
+            (2*x, double(x), [x]),
+            (x + y, add(x, y), [x, y]))
