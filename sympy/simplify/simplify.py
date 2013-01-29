@@ -1704,19 +1704,7 @@ def __trigsimp(expr, deep=False):
             expr = Add(*args)
             expr = min(expr, expand(expr), key=count_ops)
         if expr.is_Add:
-            for pattern, result in matchers_add:
-                if not _dotrig(expr, pattern):
-                    continue
-                res = expr.match(pattern)
-                # if "d" contains any trig or hyperbolic funcs with
-                # argument "a" or "b" then skip the simplification;
-                # this isn't perfect -- see tests
-                if res is None or not (a in res and b in res) or any(
-                    w.args[0] in (res[a], res[b]) for w in res[d].atoms(
-                        C.TrigonometricFunction, C.HyperbolicFunction)):
-                    continue
-                expr = result.subs(res)
-                break
+            expr = tr10(expr)
 
         # Reduce any lingering artifacts, such as sin(x)**2 changing
         # to 1 - cos(x)**2 when sin(x)**2 was "simpler"
@@ -4140,3 +4128,57 @@ def besselsimp(expr):
     expr = expr.replace(besseli, expander(besseli))
 
     return expr
+
+def tr10(add):
+    """
+    >>> tr10(cos(4)*cos(3) + sin(4)*cos(1)*sin(2) + sin(4)*sin(1)*cos(2))
+    cos(1)
+    >>> tr10(cos(1)*cos(3) + sin(1)*cos(1)*sin(2) + sin(1)**2*cos(2))
+    cos(2)
+    """
+    from sympy.utilities.iterables import combinations, cartes
+    from sympy.rules.strat_pure import exhaust
+    from sympy.unify.usympy import unify
+    if not add.is_Add:
+        return add.xreplace(Transform(
+            lambda x: tr10(x),
+            lambda x: x.is_Add))
+    a, b, c, d = [Dummy() for i in range(4)]
+    def rule(e, pat, r):
+        if not e.is_Add:
+            return e
+        if len(e.args) == 2:
+            pat -= d
+            r -= d
+        free = pat.free_symbols
+        try:
+            u = unify(e, pat, variables=free)
+            return r.subs(u.next())
+        except StopIteration:
+            return e
+    rv = add
+    cc = exhaust(lambda x: rule(x,
+        a*cos(b)*cos(c)-a*sin(b)*sin(c)+d,
+        a*cos(a+b)+d))
+    rv = cc(rv)
+    cc = exhaust(lambda x: rule(x,
+        a*sin(b)*cos(c)-a*cos(b)*sin(c)+d,
+        a*sin(a-b)+d))
+    rv = cc(rv)
+    cc = exhaust(lambda x: rule(x,
+        a*cos(b)*cos(c)+a*sin(b)*sin(c)+d,
+        a*cos(a-b)+d))
+    rv = cc(rv)
+    cc = exhaust(lambda x: rule(x,
+        a*sin(b)*cos(c)+a*cos(b)*sin(c)+d,
+        a*sin(a+b)+d))
+    rv = cc(rv)
+    cc = exhaust(lambda x: rule(x,
+        a*cosh(b)*cosh(c)+a*sinh(b)*sinh(c)+d,
+        a*cosh(a+b)+d))
+    rv = cc(rv)
+    cc = exhaust(lambda x: rule(x,
+        a*sinh(b)*cosh(c)+a*cosh(b)*sinh(c)+d,
+        a*sinh(a+b)+d))
+    rv = cc(rv)
+    return rv
