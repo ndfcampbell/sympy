@@ -4170,6 +4170,13 @@ def tr10(add):
     data = data + [mult_eq(src, tgt) for src, tgt in data]
     data = data + [additive_eq(src, tgt) for src, tgt in data]
 
+    # Turn tuples into actual functions
     rules = [rewriterule(src, tgt, variables=[a,b,c,d,z]) for src, tgt in data]
+
+    # Apply one of the rules (multiplex)
+    # then rebuild the expression so that, e.g. 1+3 -> 4  (yieldify(rebuild))
+    # Repeat this pattern until no change (exhaust)
     rule = exhaust(chain(multiplex(*rules), yieldify(rebuild)))
+
+    # Just return the first result
     return next(rule(add))
