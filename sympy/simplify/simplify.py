@@ -4151,12 +4151,12 @@ def tr10(add):
     a, b, c, d = [Dummy() for i in range(4)]
 
     data = [
-        (a*cos(b)*cos(c) - a*sin(b)*sin(c), a*cos(b+c)),
-        (a*sin(b)*cos(c) - a*cos(b)*sin(c), a*sin(b-c)),
-        (a*cos(b)*cos(c) + a*sin(b)*sin(c), a*cos(b-c)),
-        (a*sin(b)*cos(c) + a*cos(b)*sin(c), a*sin(b+c)),
-        (a*cosh(b)*cosh(c) + a*sinh(b)*sinh(c), a*cosh(b+c)),
-        (a*sinh(b)*cosh(c) + a*cosh(b)*sinh(c), a*sinh(b+c)),
+        (cos(b)*cos(c) - sin(b)*sin(c), cos(b+c)),
+        (sin(b)*cos(c) - cos(b)*sin(c), sin(b-c)),
+        (cos(b)*cos(c) + sin(b)*sin(c), cos(b-c)),
+        (sin(b)*cos(c) + cos(b)*sin(c), sin(b+c)),
+        (cosh(b)*cosh(c) + sinh(b)*sinh(c), cosh(b+c)),
+        (sinh(b)*cosh(c) + cosh(b)*sinh(c), sinh(b+c)),
     ]
 
     z = Dummy('z')
@@ -4164,7 +4164,12 @@ def tr10(add):
         """ (X -> Y) -> (X + z -> Y + z) """
         return (src + z, tgt + z)
 
+    def mult_eq(src, trt):
+        return (a*src).expand(), (a*tgt).expand()
+
+    data = data + [mult_eq(src, tgt) for src, tgt in data]
     data = data + [additive_eq(src, tgt) for src, tgt in data]
+
     rules = [rewriterule(src, tgt, variables=[a,b,c,d,z]) for src, tgt in data]
     rule = exhaust(chain(multiplex(*rules), yieldify(rebuild)))
     return next(rule(add))
