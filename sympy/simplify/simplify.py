@@ -4142,7 +4142,8 @@ def tr10(add):
     from sympy.utilities.iterables import combinations, cartes
     from sympy.rules.strat_pure import exhaust
     from sympy.unify import unify, rewriterule
-    from sympy.rules.branch import multiplex, exhaust
+    from sympy.rules.branch import multiplex, exhaust, yieldify, chain
+    from sympy.rules import rebuild
     if not add.is_Add:
         return add.xreplace(Transform(
             lambda x: tr10(x),
@@ -4165,5 +4166,5 @@ def tr10(add):
 
     data = data + [additive_eq(src, tgt) for src, tgt in data]
     rules = [rewriterule(src, tgt, variables=[a,b,c,d,z]) for src, tgt in data]
-    rule = exhaust(multiplex(*rules))
-    return tuple(rule(add))
+    rule = exhaust(chain(multiplex(*rules), yieldify(rebuild)))
+    return next(rule(add))
