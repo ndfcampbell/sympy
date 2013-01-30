@@ -4150,12 +4150,12 @@ def tr10(add):
     a, b, c, d = [Dummy() for i in range(4)]
 
     data = [
-        (a*cos(b)*cos(c) - a*sin(b)*sin(c), a*cos(a+b)),
-        (a*sin(b)*cos(c) - a*cos(b)*sin(c), a*sin(a-b)),
-        (a*cos(b)*cos(c) + a*sin(b)*sin(c), a*cos(a-b)),
-        (a*sin(b)*cos(c) + a*cos(b)*sin(c), a*sin(a+b)),
-        (a*cosh(b)*cosh(c) + a*sinh(b)*sinh(c), a*cosh(a+b)),
-        (a*sinh(b)*cosh(c) + a*cosh(b)*sinh(c), a*sinh(a+b)),
+        (a*cos(b)*cos(c) - a*sin(b)*sin(c), a*cos(b+c)),
+        (a*sin(b)*cos(c) - a*cos(b)*sin(c), a*sin(b-c)),
+        (a*cos(b)*cos(c) + a*sin(b)*sin(c), a*cos(b-c)),
+        (a*sin(b)*cos(c) + a*cos(b)*sin(c), a*sin(b+c)),
+        (a*cosh(b)*cosh(c) + a*sinh(b)*sinh(c), a*cosh(b+c)),
+        (a*sinh(b)*cosh(c) + a*cosh(b)*sinh(c), a*sinh(b+c)),
     ]
 
     z = Dummy('z')
@@ -4166,4 +4166,4 @@ def tr10(add):
     data = data + [additive_eq(src, tgt) for src, tgt in data]
     rules = [rewriterule(src, tgt, variables=[a,b,c,d,z]) for src, tgt in data]
     rule = exhaust(multiplex(*rules))
-    return next(rule(add))
+    return tuple(rule(add))
