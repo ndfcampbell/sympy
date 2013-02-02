@@ -1,4 +1,5 @@
-from sympy.computations.matrices.compile import patterns, make_rule, wildtypes
+from sympy.computations.matrices.compile import (patterns, make_rule, basetype,
+        typecheck)
 from sympy.computations.compile import multi_output_rule
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.blas import GEMM
@@ -21,6 +22,14 @@ def _reduces_set(exprs, inputs, assumptions=True, patterns=patterns):
     comp = Identity(*exprs)
     assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
 
+def test_typecheck():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    check = typecheck([a, X, Y])
+    assert check(b, Y, Z)
+    assert not check(X, a, Z)
+
 def test_GEMM():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
@@ -28,10 +37,11 @@ def test_GEMM():
     expr = a*X*Y + b*Z
     _reduces(expr, (X, Y, Z, a, b))
 
-def test_wildtypes():
+def test_basetype():
     x = Symbol('x')
     X = MatrixSymbol('X', 3, 3)
-    assert wildtypes((x, X)) == {x: Expr, X: MatrixExpr}
+    assert basetype(2*X) == MatrixExpr
+    assert basetype(x + 3) == Expr
 
 def test_types():
     X = MatrixSymbol('X', 3, 3)

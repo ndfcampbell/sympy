@@ -6,12 +6,22 @@ from sympy import Q, S, ask, Expr, Symbol
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix)
 from sympy.computations.compile import input_crunch, multi_output_rule
-from sympy.unify import unify
+from sympy.unify import unify, rewriterule
 from sympy.rules.branch import multiplex, exhaust, debug, sfilter
 from sympy.rules.tools import subs
+import functools
 
-def wildtypes(wilds):
-    return {w: (Expr if isinstance(w, Expr) else MatrixExpr) for w in wilds}
+basetypes = (Expr, MatrixExpr)
+def basetype(var):
+    for bt in basetypes:
+        if isinstance(var, bt):
+            return bt
+
+def typecheck(wilds):
+    def check(*variables):
+        return all(basetype(v) == basetype(w)
+                   for v, w in zip(variables, wilds))
+    return check
 
 def expr_to_comp_rule(source, target, wilds, condition, assumptions):
     """
@@ -72,13 +82,17 @@ def good_computation(c):
     else:
         return False
 
+def make_inrule(pattern, assumptions):
+    src, target, wilds, conds = pattern
+    brl = rewriterule(src, target, wilds, condition=typecheck(wilds),
+                                          assume=conds)
+    brl = functools.partial(brl, assumptions=assumptions)
+    return input_crunch(brl)
+
 def make_rule(patterns, assumptions):
-    brls = [expr_to_comp_rule(src, target, wilds, cond, assumptions)
-            for src, target, wilds, cond in patterns]
-    input_brules = map(input_crunch, brls)
-    # TODO: Handle conditions,  move this logic to something like
-    # expr_to_comp_rule
+    input_brules = [make_inrule(pattern, assumptions) for pattern in patterns]
+
     output_brules = [multi_output_rule(sources, target, *wilds)
             for sources, target, wilds, condition in multi_out_patterns]
     return sfilter(good_computation,
-                   exhaust(multiplex(*(output_brules + input_brules))))
+                   (exhaust(multiplex(*(output_brules + input_brules)))))
