@@ -1,6 +1,6 @@
-from sympy.computations.matrices.core import remove_numbers
+from sympy.computations.matrices.core import remove_numbers, canonicalize
 from sympy.computations.matrices.blas import GEMM
-from sympy.matrices import MatrixSymbol
+from sympy.matrices.expressions import MatrixSymbol, MatAdd
 from sympy.core import Symbol, S
 
 def test_remove_numbers():
@@ -14,3 +14,8 @@ def test_inplace():
     Y = MatrixSymbol('Y', 3, 3)
     g = GEMM(a, X, Y, S.Zero, Y)
     assert g.inplace == {0: 4}
+
+def test_canonicalize():
+    X = MatrixSymbol('X', 3, 3)
+    assert canonicalize(MatAdd(X, X)) == 2*X
+

@@ -71,7 +71,7 @@ def prepend_ones_to_matmuls(expr):
 
 def canonicalize(x):
     if isinstance(x, MatrixExpr):
-        return x.canonicalize()
+        return x.doit()
     if isinstance(x, Symbol):
         return x
     if isinstance(x, Expr):
