@@ -50,7 +50,6 @@ def _test_multi_with_extra_inputs(multi_rule):
     expr = a + 1, a - 1, b + 1
     comp = Identity(*expr)
     rule = multi_rule((c + 1, c - 1), incdec(c), c)
-    print list(rule(comp))
     assert list(rule(comp)) == [incdec(a) + Identity(b + 1) ]
 
 def test_multi_input():
