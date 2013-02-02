@@ -7,7 +7,6 @@ Sigma   = MatrixSymbol('Sigma', n, n)
 H       = MatrixSymbol('H', k, n)
 R       = MatrixSymbol('R', k, k)
 data    = MatrixSymbol('data', k, 1)
-I       = Identity(n)
 
 newmu   = mu + Sigma*H.T * (R + H*Sigma*H.T).I * (H*mu - data)
 newSigma= Sigma - Sigma*H.T * (R + H*Sigma*H.T).I * H * Sigma
