@@ -6,7 +6,7 @@ from sympy.strategies.tools import subs
 from sympy import Expr
 from sympy.assumptions import Q, ask
 
-def rewriterule(source, target, variables=(), condition=None, assume=None):
+def rewriterule(source, target, variables=(), condition=None, assume=True):
     """ Rewrite rule
 
     Transform expressions that match source into expressions that match target
@@ -43,7 +43,8 @@ def rewriterule(source, target, variables=(), condition=None, assume=None):
             if (condition and
                 not condition(*[match.get(var, var) for var in variables])):
                 continue
-            if (assume and not ask(assume.xreplace(match), assumptions)):
+            if (not assume == True and
+                not ask(assume.xreplace(match), assumptions)):
                 continue
             expr2 = subs(match)(target)
             if isinstance(expr2, Expr):
