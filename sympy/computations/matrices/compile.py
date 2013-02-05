@@ -7,6 +7,7 @@ from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix)
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.unify import rewriterule
+from sympy.unify.rewrites import rewriterules
 from sympy.rules.branch import multiplex, exhaust, debug, sfilter
 
 basetypes = (Expr, MatrixExpr)
@@ -66,9 +67,10 @@ patterns = lapack_patterns + blas_patterns
 rules = [rewriterule(src, target, wilds, condition=typecheck(wilds),
                                          assume=conds)
          for src, target, wilds, conds in patterns]
-inrules = map(input_crunch, rules)
+inrule = input_crunch(multiplex(*rules))
+
 multioutrules = [multi_output_rule(sources, target, *wilds)
             for sources, target, wilds, condition in multi_out_patterns]
 
 compile = sfilter(good_computation,
-                 (exhaust(multiplex(*(inrules + multioutrules)))))
+                 (exhaust(multiplex(inrule, *multioutrules))))
