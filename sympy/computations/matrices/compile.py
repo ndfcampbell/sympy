@@ -6,10 +6,8 @@ from sympy import Q, S, ask, Expr, Symbol
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix)
 from sympy.computations.compile import input_crunch, multi_output_rule
-from sympy.unify import unify, rewriterule
+from sympy.unify import rewriterule
 from sympy.rules.branch import multiplex, exhaust, debug, sfilter
-from sympy.rules.tools import subs
-import functools
 
 basetypes = (Expr, MatrixExpr)
 def basetype(var):
