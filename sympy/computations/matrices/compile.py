@@ -62,11 +62,17 @@ multi_out_patterns = [
       LASWP(PermutationMatrix(IPIV(A))*A, IPIV(A)), (A,), True)
 ]
 
+
 patterns = lapack_patterns + blas_patterns
 
-rules = [rewriterule(src, target, wilds, condition=typecheck(wilds),
-                                         assume=conds)
-         for src, target, wilds, conds in patterns]
+def makecond(wilds, assume):
+    return lambda *args: (typecheck(wilds)(*args) and
+            (assume==True or ask(assume.xreplace(dict(zip(wilds, args))))))
+
+patterns2 = [(s, t, wilds, makecond(wilds, assume))
+                for s, t, wilds, assume in patterns]
+
+rules = map(rewriterule, *zip(*patterns2))
 inrule = input_crunch(multiplex(*rules))
 
 multioutrules = [multi_output_rule(sources, target, *wilds)
