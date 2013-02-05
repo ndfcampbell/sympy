@@ -34,7 +34,7 @@ class GESV(LAPACK):
                         "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s)")
 
     @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions):
+    def codemap(cls, inputs, names, typecode, assumptions=()):
         varnames = 'A B IPIV INFO'.split()
         A, B = inputs
         namemap  = dict(zip(varnames, names))
@@ -58,7 +58,7 @@ class LASWP(LAPACK):
                         "%(IPIV)s, %(INCX)s)")
 
     @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions):
+    def codemap(cls, inputs, names, typecode, assumptions=()):
         varnames = 'A IPIV'.split()
 
         Q, IPIV = inputs
@@ -87,7 +87,7 @@ class POSV(LAPACK):
                         "%(LDA)s, %(B)s, %(LDB)s, %(INFO)s)")
 
     @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions):
+    def codemap(cls, inputs, names, typecode, assumptions=()):
         varnames = 'A B INFO'.split()
         A, B = inputs
         namemap  = dict(zip(varnames, names))

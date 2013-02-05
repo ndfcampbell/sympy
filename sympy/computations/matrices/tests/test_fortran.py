@@ -23,7 +23,6 @@ def test_sort_arguments():
     Z = MatrixSymbol('Z', n, k)
     aX, aY, aZ = args = ExprToken(X, 'X'), ExprToken(Y, 'Y'), ExprToken(Z, 'Z')
     order = Z, X
-    print sort_arguments(args, order)
     assert tuple(sort_arguments(args, order)) == (aZ, aX, aY)
 
 def test_gemm():
@@ -40,7 +39,7 @@ def test_gemm():
     assert intents[ct.outputs[0].token] == 'inout'  # Z is inout
     assert intents[ct.inputs[0].token] == 'in'      # alpha is just in
 
-    fn = build(ct, True, 'my_dgemm', input_order=(alpha, X, Y, beta, Z))
+    fn = build(ct, 'my_dgemm', input_order=(alpha, X, Y, beta, Z))
 
     # Check order of inputs is preserved
     assert "alpha,x,y,beta,z" in fn.__doc__.lower()
@@ -66,7 +65,7 @@ def test_axpy():
     X = MatrixSymbol('X', n, m)
     c = AXPY(alpha, W, X)
     ct = inplace_compile(c)
-    fn = build(ct, True, 'faxpy', input_order=(alpha, W, X))
+    fn = build(ct, 'faxpy', input_order=(alpha, W, X))
     try:
         n, m = 50, 40
         alpha = 2.5
@@ -91,8 +90,7 @@ def test_gemm_axpy():
     c = AXPY(S.One, W, X) + GEMM(alpha, W+X, Y, beta, Z)
     ct = inplace_compile(c)
 
-    print gen_fortran(ct, True, 'gemmaxpy', input_order=(alpha, W, X, Y, beta, Z))
-    fn = build(ct, True, 'gemmaxpy', input_order=(alpha, W, X, Y, beta, Z))
+    fn = build(ct, 'gemmaxpy', input_order=(alpha, W, X, Y, beta, Z))
     return fn
 
     # Check order of inputs is preserved
@@ -109,8 +107,6 @@ def test_gemm_axpy():
         numpy_result = alpha*np.dot(W+X, Y) + beta*Z
         fn(alpha, W, X, Y, beta, Z)
         sympy_result = Z
-        print numpy_result
-        print sympy_result
         assert np.linalg.norm(numpy_result - sympy_result) < .01
     except ImportError:
         pass

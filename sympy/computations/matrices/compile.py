@@ -82,15 +82,14 @@ def good_computation(c):
     else:
         return False
 
-def make_inrule(pattern, assumptions):
+def make_inrule(pattern):
     src, target, wilds, conds = pattern
     brl = rewriterule(src, target, wilds, condition=typecheck(wilds),
                                           assume=conds)
-    brl = functools.partial(brl, assumptions=assumptions)
     return input_crunch(brl)
 
-def make_rule(patterns, assumptions):
-    input_brules = [make_inrule(pattern, assumptions) for pattern in patterns]
+def make_rule(patterns):
+    input_brules = map(make_inrule, patterns)
 
     output_brules = [multi_output_rule(sources, target, *wilds)
             for sources, target, wilds, condition in multi_out_patterns]

@@ -45,7 +45,7 @@ class MM(BLAS):
             return tuple(unique(remove_numbers((alpha, A, B))))
 
     @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions):
+    def codemap(cls, inputs, names, typecode, assumptions=True):
         varnames = 'alpha A B beta C'.split()
         alpha, A, B, beta, C = inputs
 
@@ -85,7 +85,7 @@ class AXPY(BLAS):
                         "%(INCX)d, %(B)s, %(INCY)d)")
 
     @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions):
+    def codemap(cls, inputs, names, typecode, assumptions=True):
         varnames = 'alpha A B'.split()
         alpha, A, B = inputs
 
@@ -104,7 +104,7 @@ class COPY(BLAS, Copy):
     fortran_template = "call %(fn)s(%(N)s, %(X)s, %(INCX)s, %(Y)s, %(INCY)s)"
 
     @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions):
+    def codemap(cls, inputs, names, typecode, assumptions=True):
         varnames = 'X Y'.split()
         X, = inputs
 

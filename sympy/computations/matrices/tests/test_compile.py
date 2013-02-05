@@ -8,19 +8,22 @@ from sympy import Symbol, symbols, S, Q, Expr
 from sympy.matrices.expressions import (MatrixSymbol, MatrixExpr,
         PermutationMatrix)
 from sympy.utilities.pytest import XFAIL, slow, skip
+from sympy.assumptions import assuming
 
 
 a,b,c,d,e,x,y,z,m,n,l,k = map(Symbol, 'abcdexyzmnlk')
 
-def _reduces(expr, inputs, assumptions=True, patterns=patterns):
-    rule = make_rule(patterns, assumptions)
+def _reduces(expr, inputs, assumptions=(), patterns=patterns):
+    rule = make_rule(patterns)
     comp = Identity(expr)
-    assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+    with assuming(*assumptions):
+        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
 
-def _reduces_set(exprs, inputs, assumptions=True, patterns=patterns):
-    rule = make_rule(patterns, assumptions)
+def _reduces_set(exprs, inputs, assumptions=(), patterns=patterns):
+    rule = make_rule(patterns)
     comp = Identity(*exprs)
-    assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+    with assuming(assumptions):
+        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
 
 def test_typecheck():
     X = MatrixSymbol('X', 3, 3)
@@ -47,7 +50,7 @@ def test_types():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
-    rule = make_rule(patterns, True)
+    rule = make_rule(patterns)
     expr = X*Y*Z
     comp = Identity(expr)
     results = list(rule(comp))
@@ -61,7 +64,7 @@ def test_alternative_patterns():
     _reduces(expr, (a, X, Y))
 
 def test_SV():
-    rule = make_rule(patterns, True)
+    rule = make_rule(patterns)
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I * Y
@@ -71,8 +74,9 @@ def test_SV():
     assert any(result.has(GESV) for result in results)
     assert not any(result.has(POSV) for result in results)
 
-    rule2 = make_rule(patterns, Q.symmetric(X) & Q.positive_definite(X))
-    results = list(rule2(comp))
+    rule2 = make_rule(patterns)
+    with assuming(Q.symmetric(X), Q.positive_definite(X)):
+        results = list(rule2(comp))
     assert any(result.has(GESV) for result in results)
     assert any(result.has(POSV) for result in results)
 
@@ -81,7 +85,7 @@ def test_non_trivial():
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y + b*Z).I*Z
-    assumptions = Q.positive_definite(a*X*Y + b*Z) & Q.symmetric(a*X*Y + b*Z)
+    assumptions = (Q.positive_definite(a*X*Y + b*Z), Q.symmetric(a*X*Y + b*Z))
     _reduces(expr, (a, b, X, Y, Z), assumptions)
 
 def test_XYZ():
@@ -105,20 +109,20 @@ def _test_large():
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     expr = (a*X*Y*Z*Y.I*Z + b*Z*Y + c*W*W).I*Z*W
-    _reduces(expr, (X, Y, Z, W), True)
+    _reduces(expr, (X, Y, Z, W))
 
 def test_transpose_inputs():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X*Y.T
-    _reduces(expr, (X, Y), True)
+    _reduces(expr, (X, Y))
 
 def test_GEMM_coefficients():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     exprs = (3*X*Y + 2*Z, X*Y + 2*Z, 3*X*Y + Z, X*Y + Z, X*Y)
-    rule = make_rule(patterns, True)
+    rule = make_rule(patterns)
     assert all(isinstance(next(rule(Identity(expr))), GEMM) for expr in exprs)
 
 def test_multi_output_rule():
@@ -133,7 +137,7 @@ def test_LASWP():
     X = MatrixSymbol('X', 3, 3)
     exprs = IPIV(X), PermutationMatrix(IPIV(X))*X
     outputs = (X,)
-    rule = make_rule(patterns, True)
+    rule = make_rule(patterns)
     comp = Identity(*exprs)
     return any(set(c.outputs).issubset(set(outputs)) for c in rule(comp))
 
@@ -141,4 +145,4 @@ def test_XinvY():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I*Y
-    _reduces(expr, (X, Y), True)
+    _reduces(expr, (X, Y))

@@ -51,7 +51,7 @@ class MatrixCall(Computation):
                           tuple(ot or self.basetype for ot in self._out_types))
 
     @classmethod
-    def valid(cls, inputs, assumptions):
+    def valid(cls, inputs, assumptions=True):
         d = dict(zip(cls._inputs, inputs))
         if cls.condition is True:
             return True

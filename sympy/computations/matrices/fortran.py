@@ -15,10 +15,10 @@ def nameof(var):
     else:
         return var.token
 
-def call(x, assumptions):
+def call(x):
     args = x.op.arguments(x.inputs, x.outputs)
     codemap = x.op.codemap([i.expr for i in x.inputs],
-                           [nameof(a) for a in args], 'd', assumptions)
+                           [nameof(a) for a in args], 'd')
     return x.op.fortran_template % codemap
 
 def intentsof(comp):
@@ -128,7 +128,7 @@ def constant_arg(arg):
 def remove(pred, coll):
     return filter(lambda x: not pred(x), coll)
 
-def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
+def gen_fortran(tcomp, name = 'f', input_order=()):
     """
     inputs:
         tcomp - a tokenized computation (see inplace.tokenize)
@@ -161,18 +161,18 @@ def gen_fortran(tcomp, assumptions, name = 'f', input_order=()):
     declarations = '\n'.join(map(dimen_declaration, dimens) +
                              [decs[tok] for tok in sorted_tokens])
 
-    calls = '\n'.join([call(comp, assumptions) for comp in tcomp.toposort()])
+    calls = '\n'.join(map(call, tcomp.toposort()))
 
     foot = footer()
 
     return '\n\n'.join((head, declarations, calls, foot))
 
-def build(tcomp, assumptions, name = 'f', **kwargs):
+def build(tcomp, name = 'f', **kwargs):
     flags = '-lblas', '-llapack'
     _id = abs(hash((tcomp, name)))
     src = kwargs.pop('src', 'tmp.f90')
     mod = kwargs.pop('mod', 'mod'+str(_id))
-    code = gen_fortran(tcomp, assumptions, name, **kwargs)
+    code = gen_fortran(tcomp, name, **kwargs)
     f = open(src, 'w')
     f.write(code)
     f.close()
