@@ -55,3 +55,45 @@ def test_strategy():
     f = rewriterules(*zip(pat1, pat2), strategy=strategy)
 
     assert list(f(Basic(1, Basic(4)))) == [Basic(2, Basic(4))]
+
+def test_lopgy():
+    try:
+        import logpy
+    except ImportError:
+        return
+    def construct(x):
+        if logpy.core.isvar(x):
+            return x.token
+        if isinstance(x, tuple):
+            return x[0](*map(construct, x[1:]))
+        else:
+            return x
+
+    def deconstruct(expr, variables):
+        if expr in variables:
+            return logpy.var(expr)
+        if not isinstance(expr, Basic) or expr.is_Atom:
+            return expr
+        return (type(expr),) + tuple(deconstruct(arg, variables)
+                                     for arg in expr.args)
+    def unify(a, b, s):
+        return logpy.core.eq(a, b)(s)
+
+    def is_leaf(x):
+        return not isinstance(x, tuple)
+    def children(x):
+        return x[1:]
+    def new(op, *args):
+        return (op,) + tuple(args)
+    def op(x):
+        return x[0]
+
+    pat1 = Basic(1, Basic(x)), Basic(2, Basic(x)), [x], None
+    pat2 = Basic(2, Basic(x)), Basic(3, Basic(x)), [x], None
+    f = rewriterules(*zip(pat1, pat2), construct=construct,
+                                       deconstruct=deconstruct,
+                                       unify=unify,
+                                       reify=logpy.core.reify)
+
+    assert list(f('a')) == ['a']
+    assert list(f(Basic(1, Basic(4)))) == [Basic(3, Basic(4))]

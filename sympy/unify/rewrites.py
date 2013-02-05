@@ -26,11 +26,11 @@ def rewriterules(sources, targets, variabless, conditions,
     conditions2 = map(functools.partial(fn_deconstruct, construct=construct),
                       conditions)
 
-    crl2 = functools.partial(crl, reify=reify)
+    crl2 = functools.partial(crl, unify=unify, reify=reify)
 
     rules = map(crl2, sources2, targets2, variabless2, conditions2)
 
-    return lambda expr: it.imap(construct, strategy(rules)(deconstruct(expr)))
+    return lambda x: it.imap(construct, strategy(rules)(deconstruct(x, ())))
 
 def types(expr):
     return set([type(expr)]).union(
