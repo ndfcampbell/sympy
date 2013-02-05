@@ -1,5 +1,6 @@
-from sympy.computations.matrices.compile import (patterns, make_rule, basetype,
+from sympy.computations.matrices.compile import (patterns, basetype,
         typecheck)
+from sympy.computations.matrices.compile import compile
 from sympy.computations.compile import multi_output_rule
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.blas import GEMM
@@ -13,17 +14,16 @@ from sympy.assumptions import assuming
 
 a,b,c,d,e,x,y,z,m,n,l,k = map(Symbol, 'abcdexyzmnlk')
 
-def _reduces(expr, inputs, assumptions=(), patterns=patterns):
-    rule = make_rule(patterns)
-    comp = Identity(expr)
-    with assuming(*assumptions):
-        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+def rule(*exprs):
+    return compile(Identity(*exprs))
 
-def _reduces_set(exprs, inputs, assumptions=(), patterns=patterns):
-    rule = make_rule(patterns)
-    comp = Identity(*exprs)
+def _reduces(expr, inputs, assumptions=()):
+    with assuming(*assumptions):
+        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(expr))
+
+def _reduces_set(exprs, inputs, assumptions=()):
     with assuming(assumptions):
-        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(comp))
+        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(*exprs))
 
 def test_typecheck():
     X = MatrixSymbol('X', 3, 3)
@@ -50,12 +50,10 @@ def test_types():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
-    rule = make_rule(patterns)
     expr = X*Y*Z
-    comp = Identity(expr)
-    results = list(rule(comp))
+
     # We can't do this with a single GEMM
-    assert not any(isinstance(r, GEMM) for r in results)
+    assert not any(isinstance(r, GEMM) for r in rule(expr))
 
 def test_alternative_patterns():
     X = MatrixSymbol('X', 3, 3)
@@ -64,19 +62,16 @@ def test_alternative_patterns():
     _reduces(expr, (a, X, Y))
 
 def test_SV():
-    rule = make_rule(patterns)
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I * Y
-    comp = Identity(expr)
-    results = list(rule(comp))
+    results = list(rule(expr))
     assert len(results) != 0
     assert any(result.has(GESV) for result in results)
     assert not any(result.has(POSV) for result in results)
 
-    rule2 = make_rule(patterns)
     with assuming(Q.symmetric(X), Q.positive_definite(X)):
-        results = list(rule2(comp))
+        results = list(rule(expr))
     assert any(result.has(GESV) for result in results)
     assert any(result.has(POSV) for result in results)
 
@@ -122,8 +117,7 @@ def test_GEMM_coefficients():
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     exprs = (3*X*Y + 2*Z, X*Y + 2*Z, 3*X*Y + Z, X*Y + Z, X*Y)
-    rule = make_rule(patterns)
-    assert all(isinstance(next(rule(Identity(expr))), GEMM) for expr in exprs)
+    assert all(isinstance(next(rule(expr)), GEMM) for expr in exprs)
 
 def test_multi_output_rule():
     X = MatrixSymbol('X', 3, 3)
@@ -137,9 +131,7 @@ def test_LASWP():
     X = MatrixSymbol('X', 3, 3)
     exprs = IPIV(X), PermutationMatrix(IPIV(X))*X
     outputs = (X,)
-    rule = make_rule(patterns)
-    comp = Identity(*exprs)
-    return any(set(c.outputs).issubset(set(outputs)) for c in rule(comp))
+    return any(set(c.outputs).issubset(set(outputs)) for c in rule(*exprs))
 
 def test_XinvY():
     X = MatrixSymbol('X', 3, 3)

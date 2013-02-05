@@ -1,13 +1,12 @@
 from kalman import newmu, newSigma, assumptions, mu, Sigma, R, H, data
 
-from sympy.computations.matrices.compile import make_rule, patterns
+from sympy.computations.matrices.compile import compile
 from sympy.computations.core import Identity
 from sympy.assumptions import assuming
 
 ident = Identity(newmu, newSigma)
-rule = make_rule(patterns)
 with assuming(*assumptions):
-    mathcomp = next(rule(ident))
+    mathcomp = next(compile(ident))
 
 if __name__ == '__main__':
     mathcomp.show()

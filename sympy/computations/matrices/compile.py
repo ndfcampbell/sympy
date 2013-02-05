@@ -23,22 +23,16 @@ def typecheck(wilds):
                    for v, w in zip(variables, wilds))
     return check
 
-def expr_to_comp_rule(source, target, wilds, condition, assumptions):
+def good_computation(c):
+    """ Our definition of an acceptable computation
+
+    Must:
+        contain only symbols and matrix symbols as inputs
     """
-    source - a mathematical expression to trigger this transformation
-    target - the resulting pattern of the transformation
-    wilds  - the wilds of the source pattern
-    condition - A boolean on the wilds that must hold true
-    assumptions - assumptions under which the condition must hold true
-    """
-    # pattern = patternify(source, *wilds, types=wildtypes(wilds))
-    def matrix_expr_to_comp_brule(expr):
-        for match in unify(expr, source, variables=wilds):
-            if (condition is True):
-                yield subs(match)(target)
-            elif ask(condition.subs(match), assumptions):
-                yield subs(match)(target)
-    return matrix_expr_to_comp_brule
+    if all(isinstance(inp, (Symbol, MatrixSymbol)) for inp in c.inputs):
+        return True
+    else:
+        return False
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
@@ -71,27 +65,12 @@ multi_out_patterns = [
 
 patterns = lapack_patterns + blas_patterns
 
-def good_computation(c):
-    """ Our definition of an acceptable computation
-
-    Must:
-        contain only symbols and matrix symbols as inputs
-    """
-    if all(isinstance(inp, (Symbol, MatrixSymbol)) for inp in c.inputs):
-        return True
-    else:
-        return False
-
-def make_inrule(pattern):
-    src, target, wilds, conds = pattern
-    brl = rewriterule(src, target, wilds, condition=typecheck(wilds),
-                                          assume=conds)
-    return input_crunch(brl)
-
-def make_rule(patterns):
-    input_brules = map(make_inrule, patterns)
-
-    output_brules = [multi_output_rule(sources, target, *wilds)
+rules = [rewriterule(src, target, wilds, condition=typecheck(wilds),
+                                         assume=conds)
+         for src, target, wilds, conds in patterns]
+inrules = map(input_crunch, rules)
+multioutrules = [multi_output_rule(sources, target, *wilds)
             for sources, target, wilds, condition in multi_out_patterns]
-    return sfilter(good_computation,
-                   (exhaust(multiplex(*(output_brules + input_brules)))))
+
+compile = sfilter(good_computation,
+                 (exhaust(multiplex(*(inrules + multioutrules)))))
