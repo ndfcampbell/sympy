@@ -28,10 +28,7 @@ def good_computation(c):
     Must:
         contain only symbols and matrix symbols as inputs
     """
-    if all(isinstance(inp, (Symbol, MatrixSymbol)) for inp in c.inputs):
-        return True
-    else:
-        return False
+    return all(isinstance(inp, (Symbol, MatrixSymbol)) for inp in c.inputs)
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
