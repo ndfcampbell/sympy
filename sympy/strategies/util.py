@@ -1,4 +1,13 @@
 from sympy import Basic
+from sympy.utilities.iterables import sift
+
+def groupby(fn, coll):
+    return sift(coll, fn)
+
+identity = lambda x: x
+
+def count(tup):
+    return dict((k, len(v)) for k,v in groupby(identity, tup).items())
 
 new = Basic.__new__
 
