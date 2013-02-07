@@ -22,3 +22,16 @@ basic_fns = {'op': type,
              'children': lambda x: x.args}
 
 expr_fns = assoc(basic_fns, 'new', lambda op, *args: op(*args))
+
+class RuleDB(object):
+    def __init__(self):
+        self.coll = list()
+
+    def insert(self, tup, val):
+        self.coll.append((count(tup), val))
+
+    def query(self, indata):
+        inkey = count(indata)
+        for collkey, collval in self.coll:
+            if all(inkey.get(k, 0) >= v for k, v in collkey.items()):
+                yield collval
