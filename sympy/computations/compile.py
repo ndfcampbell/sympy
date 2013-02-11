@@ -1,4 +1,5 @@
 from sympy.unify.rewrite import rewriterule
+import itertools as it
 
 def input_crunch(etc):
     """ Turn an Expr->Comp rule into a Comp->Comp rule by looking at inputs
@@ -6,11 +7,7 @@ def input_crunch(etc):
     etc is an Expr to Comp a function :: Expr -> Comp
     Returns a transformation :: Comp -> Comp
     """
-    def input_brl(comp):
-        for i in comp.inputs:
-            for c in etc(i):
-                yield comp + c
-    return input_brl
+    return lambda c: (c + x for x in it.chain(*map(etc, c.inputs)))
 
 def multi_input_rule(sources, target, *wilds):
     from itertools import chain
@@ -34,11 +31,7 @@ def output_crunch(etc):
     etc is an Expr to Comp a function :: Expr -> Comp
     Returns a transformation :: Comp -> Comp
     """
-    def output_brl(comp):
-        for o in comp.outputs:
-            for c in etc(o):
-                yield comp + c
-    return output_brl
+    return lambda c: (c + x for x in it.chain(*map(etc, c.outputs)))
 
 def multi_output_rule(sources, target, *wilds):
     from itertools import chain
