@@ -1,6 +1,4 @@
 
-prod = lambda *args: reduce(lambda x, y: x*y, args, 1)
-
 axpy = lambda alpha, X, Y: X.shape[0]*X.shape[1]
 
 gemm = lambda alpha, A, B, beta, C: A.shape[0] * A.shape[1] * B.shape[1]
@@ -29,3 +27,5 @@ def potrs(A, B):
     return 2*n**2
 
 posv = lambda A, B: potrf(A) + potrs(A, B)
+
+flopfuncs = locals()
