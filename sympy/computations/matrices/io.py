@@ -13,6 +13,10 @@ class Send(MatrixCall):
     target = property(lambda self: self.args[1])
     tag    = property(lambda self: self.args[2])
 
+    def dot_nodes(self):
+        return ['"%s" [shape=diamond, label="%s-->%s"]' % (
+                str(self), str(self.__class__.__name__), str(self.target))]
+
 class Recv(MatrixCall):
     _inputs = ()
     _outputs = (A,)
@@ -22,8 +26,13 @@ class Recv(MatrixCall):
     source = property(lambda self: self.args[1])
     tag    = property(lambda self: self.args[2])
 
+    def dot_nodes(self):
+        return ['"%s" [shape=diamond, label="%s<--%s"]' % (
+                str(self), str(self.__class__.__name__), str(self.source))]
+
 tagdb = dict()
 def gettag(a, b, expr):
+    """ MPI Tag associated to transfer of expr from machine a to machine b """
     if (a, b, expr) not in tagdb:
         tagdb[(a, b, expr)] = gettag._tag
         gettag._tag += 1
