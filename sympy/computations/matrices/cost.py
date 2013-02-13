@@ -40,7 +40,7 @@ def nbytesofinputs(comp):
 def commcost(comp, A, B, getdata):
     """ Time to communicate results of ``comp`` from ``A`` to ``B`` """
     latency, bandwidth = getdata(A, B)
-    return latency + bandwidth * nbytesofoutputs(comp)
+    return latency + nbytesofoutputs(comp) / bandwidth
 
 
 def memtime(nbytes, memhierarchy):
@@ -63,6 +63,6 @@ def memtime(nbytes, memhierarchy):
 def compcost(comp, A, getdata):
     """ Time to compute ``comp`` on ``A`` """
     timeperflop, memhierarchy = getdata(A)
-    computetime = timeperflop * flops(comp)
+    computetime = flops(comp) / timeperflop
     memorytime = memtime(nbytesofinputs(comp), memhierarchy)
     return max(memorytime, computetime)
