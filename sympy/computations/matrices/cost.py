@@ -42,6 +42,12 @@ def commcost(comp, A, B, getdata):
     latency, bandwidth = getdata(A, B)
     return latency + nbytesofoutputs(comp) / bandwidth
 
+def commcost2(comp, comp2, A, B, getdata):
+    """ Time to communicate results of ``comp`` from ``A`` to ``B`` """
+    latency, bandwidth = getdata(A, B)
+    vars = set(comp.outputs) & set(comp2.raw_inputs)
+    nbytes = sum(map(numelements, vars)) * typebytes[comp.typecode]
+    return latency + nbytes / bandwidth
 
 def memtime(nbytes, memhierarchy):
     """ Time to load ``nbytes`` from memory
