@@ -4,7 +4,7 @@ from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
 from sympy import Q, S, ask, Expr, Symbol
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
-        MatrixSymbol, ZeroMatrix)
+        MatrixSymbol, ZeroMatrix, MatrixSlice)
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.unify import rewriterule
 from sympy.unify.rewrites import rewriterules
@@ -28,7 +28,10 @@ def good_computation(c):
     Must:
         contain only symbols and matrix symbols as inputs
     """
-    return all(isinstance(inp, (Symbol, MatrixSymbol)) for inp in c.inputs)
+    return all(isinstance(inp, (Symbol, MatrixSymbol)) or
+               isinstance(inp, MatrixSlice) and
+                    isinstance(inp.parent, MatrixSymbol)
+               for inp in c.inputs)
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
