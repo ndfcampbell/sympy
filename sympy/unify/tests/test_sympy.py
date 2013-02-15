@@ -5,6 +5,9 @@ from sympy.unify.usympy import (deconstruct, construct, unify, is_associative,
 from sympy.abc import w, x, y, z, n, m, k
 from sympy.utilities.pytest import XFAIL
 from sympy.core.compatibility import next
+from functools import partial
+
+add = partial(Add, evaluate=False)
 
 def test_deconstruct():
     expr     = Basic(1, 2, 3)
@@ -14,8 +17,8 @@ def test_deconstruct():
     assert deconstruct(1) == 1
     assert deconstruct(x) == x
     assert deconstruct(x, variables=(x,)) == Variable(x)
-    assert deconstruct(Add(1, x, evaluate=False)) == Compound(Add, (1, x))
-    assert deconstruct(Add(1, x, evaluate=False), variables=(x,)) == \
+    assert deconstruct(add(1, x)) == Compound(Add, (1, x))
+    assert deconstruct(add(1, x), variables=(x,)) == \
               Compound(Add, (1, Variable(x)))
 
 def test_construct():
@@ -53,9 +56,9 @@ def iterdicteq(a, b):
     return len(a) == len(b) and all(x in b for x in a)
 
 def test_unify_commutative():
-    expr = Add(1, 2, 3, evaluate=False)
+    expr = add(1, 2, 3)
     a, b, c = map(Symbol, 'abc')
-    pattern = Add(a, b, c, evaluate=False)
+    pattern = add(a, b, c)
 
     result  = tuple(unify(expr, pattern, {}, (a, b, c)))
     expected = ({a: 1, b: 2, c: 3},
@@ -68,25 +71,25 @@ def test_unify_commutative():
     assert iterdicteq(result, expected)
 
 def test_unify_iter():
-    expr = Add(1, 2, 3, evaluate=False)
+    expr = add(1, 2, 3)
     a, b, c = map(Symbol, 'abc')
-    pattern = Add(a, c, evaluate=False)
+    pattern = add(a, c)
     assert is_associative(deconstruct(pattern))
     assert is_commutative(deconstruct(pattern))
 
     result   = list(unify(expr, pattern, {}, (a, c)))
-    expected = [{a: 1, c: Add(2, 3, evaluate=False)},
-                {a: 1, c: Add(3, 2, evaluate=False)},
-                {a: 2, c: Add(1, 3, evaluate=False)},
-                {a: 2, c: Add(3, 1, evaluate=False)},
-                {a: 3, c: Add(1, 2, evaluate=False)},
-                {a: 3, c: Add(2, 1, evaluate=False)},
-                {a: Add(1, 2, evaluate=False), c: 3},
-                {a: Add(2, 1, evaluate=False), c: 3},
-                {a: Add(1, 3, evaluate=False), c: 2},
-                {a: Add(3, 1, evaluate=False), c: 2},
-                {a: Add(2, 3, evaluate=False), c: 1},
-                {a: Add(3, 2, evaluate=False), c: 1}]
+    expected = [{a: 1, c: add(2, 3)},
+                {a: 1, c: add(3, 2)},
+                {a: 2, c: add(1, 3)},
+                {a: 2, c: add(3, 1)},
+                {a: 3, c: add(1, 2)},
+                {a: 3, c: add(2, 1)},
+                {a: add(1, 2), c: 3},
+                {a: add(2, 1), c: 3},
+                {a: add(1, 3), c: 2},
+                {a: add(3, 1), c: 2},
+                {a: add(2, 3), c: 1},
+                {a: add(3, 2), c: 1}]
 
     assert iterdicteq(result, expected)
 
