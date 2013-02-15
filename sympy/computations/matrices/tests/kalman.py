@@ -1,4 +1,4 @@
-from sympy.matrices.expressions import MatrixSymbol, Identity
+from sympy.matrices.expressions import MatrixSymbol
 from sympy import Symbol, Q
 
 n, k    = Symbol('n'), Symbol('k')
