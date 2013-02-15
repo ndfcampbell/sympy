@@ -10,10 +10,13 @@ from sympy.core.sets import Union, Intersection, FiniteSet
 from sympy.core.operations import AssocOp, LatticeOp
 from sympy.unify.core import Compound, Variable, CondVariable
 from sympy.unify import core
+from sympy.core import Symbol, Integer, Rational, Float
+from functools import partial
 
 basic_new_legal = [MatrixExpr]
 eval_false_legal = [AssocOp, Pow, FiniteSet]
 illegal = [LatticeOp]
+no_arg_classes = (Integer, Rational, Float)
 
 def sympy_associative(op):
     assoc_ops = (AssocOp, MatAdd, MatMul, Union, Intersection, FiniteSet)
@@ -42,12 +45,18 @@ def mk_matchtype(typ):
 
 def deconstruct(s, variables=()):
     """ Turn a SymPy object into a Compound """
+    variables= set(variables)
+    decons = partial(deconstruct, variables=variables)
     if s in variables:
         return Variable(s)
-    if not isinstance(s, Basic) or s.is_Atom:
+    if not isinstance(s, Basic):
         return s
-    return Compound(s.__class__,
-                    tuple(deconstruct(arg, variables) for arg in s.args))
+    if type(s) in no_arg_classes:
+        return Compound(type(s),
+                tuple(map(decons, [getattr(s, sl) for sl in s.__slots__])))
+    if s.is_Atom:
+        return s
+    return Compound(s.__class__, tuple(map(decons, s.args)))
 
 def construct(t):
     """ Turn a Compound into a SymPy object """

@@ -1,4 +1,4 @@
-from sympy import Add, Basic, symbols, Mul, And, Symbol
+from sympy import Add, Basic, symbols, Mul, And, Symbol, Integer
 from sympy.unify.core import Compound, Variable
 from sympy.unify.usympy import (deconstruct, construct, unify, is_associative,
         is_commutative)
@@ -157,3 +157,12 @@ def test_commutative_in_commutative():
     eq = sin(3)*sin(4)*sin(5) + 4*cos(3)*cos(4)
     pat = a*cos(b)*cos(c) + d*sin(b)*sin(c)
     assert next(unify(eq, pat, variables=(a,b,c,d)))
+
+def test_integer_matching():
+    assert deconstruct(add(2, x)) == \
+            Compound(Add, (Compound(Integer, (2,)), x))
+    assert deconstruct(add(2, x), (2,)) == \
+            Compound(Add, (Compound(Integer, (Variable(2),)), x))
+    results = list(unify(add(2, x), add(3, y), variables=(x, 2)))
+    assert len(results) == 1
+    assert results[0][2] == 3
