@@ -2,13 +2,16 @@ from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
-from sympy import Q, S, ask, Expr, Symbol
+from sympy import Q, S, ask, Expr, Symbol, Dummy
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix, MatrixSlice)
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.unify import rewriterule
+from sympy.unify.usympy import types
 from sympy.unify.rewrites import rewriterules
-from sympy.rules.branch import multiplex, exhaust, debug, sfilter
+from sympy.rules.branch import multiplex, exhaust, debug, sfilter, condition
+from sympy.rules.util import count
+from functools import partial
 
 basetypes = (Expr, MatrixExpr)
 def basetype(var):
@@ -69,10 +72,19 @@ def makecond(wilds, assume):
     return lambda *args: (typecheck(wilds)(*args) and
             (assume==True or ask(assume.xreplace(dict(zip(wilds, args))))))
 
-patterns2 = [(s, t, wilds, makecond(wilds, assume))
-                for s, t, wilds, assume in patterns]
 
-rules = map(rewriterule, *zip(*patterns2))
+replace = {MatrixSymbol: MatrixExpr, Symbol: Expr, Dummy: Expr}
+types = partial(types, replace=replace)
+def makerule(pattern):
+    s, t, wilds, assume = pattern
+    cond = makecond(wilds, assume)
+    typecounts = count(types(s))
+    typecond = lambda e: all(count(types(e)).get(k, 0) >= v
+                                for k, v in typecounts.items())
+    return condition(typecond, rewriterule(s, t, wilds, cond))
+
+rules = map(makerule, patterns)
+
 inrule = input_crunch(multiplex(*rules))
 
 multioutrules = [multi_output_rule(sources, target, *wilds)
