@@ -1,4 +1,4 @@
-from sympy import Add, Basic, symbols, Mul, And, Symbol, Integer
+from sympy import Add, Basic, symbols, Mul, And, Symbol, Integer, Expr
 from sympy.unify.core import Compound, Variable
 from sympy.unify.usympy import (deconstruct, construct, unify, is_associative,
         is_commutative, types)
@@ -158,3 +158,5 @@ def test_commutative_in_commutative():
 def test_types():
     expr = Symbol('x') + Symbol('y') * 2
     assert types(expr) == set([Symbol, Add, Mul, Integer])
+    assert types(expr, replace={Symbol: Expr}) == set([Expr, Integer, Add,
+        Mul])

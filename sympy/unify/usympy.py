@@ -10,6 +10,7 @@ from sympy.core.sets import Union, Intersection, FiniteSet
 from sympy.core.operations import AssocOp, LatticeOp
 from sympy.unify.core import Compound, Variable, CondVariable
 from sympy.unify import core
+from functools import partial
 
 basic_new_legal = [MatrixExpr]
 eval_false_legal = [AssocOp, Pow, FiniteSet]
@@ -125,6 +126,11 @@ def unify(x, y, s=None, variables=(), **kwargs):
     for d in ds:
         yield dict((construct(k), construct(v)) for k, v in d.items())
 
-def types(expr, badtypes=(Dummy,)):
+def types(expr, badtypes=(Dummy,), replace={}):
+    typs = partial(types, badtypes=badtypes, replace=replace)
+    if type(expr) in replace:
+        return set([replace[type(expr)]])
+    if not isinstance(expr, Basic) or isinstance(expr, badtypes):
+        return set()
     return set([type(expr)]).union(
-            reduce(set.union, map(types, expr.args), set())) - set(badtypes)
+            reduce(set.union, map(typs, expr.args), set()))
