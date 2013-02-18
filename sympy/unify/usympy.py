@@ -129,8 +129,7 @@ def unify(x, y, s=None, variables=(), **kwargs):
 def types(expr, badtypes=(Dummy,), replace={}):
     typs = partial(types, badtypes=badtypes, replace=replace)
     if type(expr) in replace:
-        return set([replace[type(expr)]])
+        return [replace[type(expr)]]
     if not isinstance(expr, Basic) or isinstance(expr, badtypes):
-        return set()
-    return set([type(expr)]).union(
-            reduce(set.union, map(typs, expr.args), set()))
+        return []
+    return sum(map(typs, expr.args), [type(expr)])

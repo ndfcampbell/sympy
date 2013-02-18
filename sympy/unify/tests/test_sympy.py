@@ -157,6 +157,6 @@ def test_commutative_in_commutative():
 
 def test_types():
     expr = Symbol('x') + Symbol('y') * 2
-    assert types(expr) == set([Symbol, Add, Mul, Integer])
-    assert types(expr, replace={Symbol: Expr}) == set([Expr, Integer, Add,
+    assert sorted(types(expr)) == [Integer, Symbol, Symbol, Mul, Add]
+    assert set(types(expr, replace={Symbol: Expr})) == set([Expr, Integer, Add,
         Mul])
