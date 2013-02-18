@@ -1,5 +1,6 @@
 from sympy.unify.usympy import construct, deconstruct
 from sympy.unify.core import unify, reify, Variable
+from sympy import Dummy
 from sympy.rules.tools import subs
 from sympy.rules.branch import exhaust, multiplex
 import functools
@@ -31,10 +32,6 @@ def rewriterules(sources, targets, variabless, conditions,
     rules = map(crl2, sources2, targets2, variabless2, conditions2)
 
     return lambda x: it.imap(construct, strategy(rules)(deconstruct(x, ())))
-
-def types(expr):
-    return set([type(expr)]).union(
-            reduce(set.union, map(types, expr.args), set()))
 
 def fn_deconstruct(fn, construct=construct):
     if not fn:

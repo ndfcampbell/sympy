@@ -4,7 +4,7 @@ See sympy.unify for module level docstring
 See sympy.unify.core for algorithmic docstring """
 
 
-from sympy.core import Basic, Expr, Tuple, Add, Mul, Pow, FiniteSet
+from sympy.core import Basic, Expr, Tuple, Add, Mul, Pow, FiniteSet, Dummy
 from sympy.matrices import MatAdd, MatMul, MatrixExpr
 from sympy.core.sets import Union, Intersection, FiniteSet
 from sympy.core.operations import AssocOp, LatticeOp
@@ -124,3 +124,7 @@ def unify(x, y, s=None, variables=(), **kwargs):
                                      **kwargs)
     for d in ds:
         yield dict((construct(k), construct(v)) for k, v in d.items())
+
+def types(expr, badtypes=(Dummy,)):
+    return set([type(expr)]).union(
+            reduce(set.union, map(types, expr.args), set())) - set(badtypes)

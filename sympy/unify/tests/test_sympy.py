@@ -1,7 +1,7 @@
-from sympy import Add, Basic, symbols, Mul, And, Symbol
+from sympy import Add, Basic, symbols, Mul, And, Symbol, Integer
 from sympy.unify.core import Compound, Variable
 from sympy.unify.usympy import (deconstruct, construct, unify, is_associative,
-        is_commutative)
+        is_commutative, types)
 from sympy.abc import w, x, y, z, n, m, k
 from sympy.utilities.pytest import XFAIL
 from sympy.core.compatibility import next
@@ -154,3 +154,7 @@ def test_commutative_in_commutative():
     eq = sin(3)*sin(4)*sin(5) + 4*cos(3)*cos(4)
     pat = a*cos(b)*cos(c) + d*sin(b)*sin(c)
     assert next(unify(eq, pat, variables=(a,b,c,d)))
+
+def test_types():
+    expr = Symbol('x') + Symbol('y') * 2
+    assert types(expr) == set([Symbol, Add, Mul, Integer])
