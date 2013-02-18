@@ -4,8 +4,9 @@ See sympy.unify for module level docstring
 See sympy.unify.core for algorithmic docstring """
 
 
-from sympy.core import Basic, Expr, Tuple, Add, Mul, Pow, FiniteSet, Dummy
-from sympy.matrices import MatAdd, MatMul, MatrixExpr
+from sympy.core import (Basic, Expr, Tuple, Add, Mul, Pow, FiniteSet, Dummy,
+        Symbol)
+from sympy.matrices import MatAdd, MatMul, MatrixExpr, MatrixSymbol
 from sympy.core.sets import Union, Intersection, FiniteSet
 from sympy.core.operations import AssocOp, LatticeOp
 from sympy.unify.core import Compound, Variable, CondVariable
@@ -126,10 +127,10 @@ def unify(x, y, s=None, variables=(), **kwargs):
     for d in ds:
         yield dict((construct(k), construct(v)) for k, v in d.items())
 
-def types(expr, badtypes=(Dummy,), replace={}):
-    typs = partial(types, badtypes=badtypes, replace=replace)
+def types(expr, replace={Symbol: Expr, Dummy: Expr, MatrixSymbol: MatrixExpr}):
+    typs = partial(types, replace=replace)
     if type(expr) in replace:
         return [replace[type(expr)]]
-    if not isinstance(expr, Basic) or isinstance(expr, badtypes):
-        return []
+    if not isinstance(expr, Basic):
+        return [type(expr)]
     return sum(map(typs, expr.args), [type(expr)])
