@@ -25,7 +25,7 @@ The main references for this are:
     Integrals and Series: More Special Functions, Vol. 3,.
     Gordon and Breach Science Publisher
 """
-from sympy.core import oo, S, pi, Expr
+from sympy.core import oo, S, pi, Expr, nan
 from sympy.core.compatibility import next
 from sympy.core.function import expand, expand_mul, expand_power_base
 from sympy.core.add import Add
@@ -377,7 +377,7 @@ def _find_splitting_points(expr, x):
             compute_innermost(arg, res)
     innermost = set()
     compute_innermost(expr, innermost)
-    return innermost
+    return innermost - {nan}
 
 
 def _split_mul(f, x):
