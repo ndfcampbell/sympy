@@ -73,7 +73,8 @@ def makecond(wilds, assume):
             (assume==True or ask(assume.xreplace(dict(zip(wilds, args))))))
 
 
-replace = {MatrixSymbol: MatrixExpr, Symbol: Expr, Dummy: Expr}
+replace = {MatrixSymbol: MatrixExpr, Symbol: Expr, Dummy: Expr,
+           MatrixSlice: MatrixExpr}
 types = partial(types, replace=replace)
 def makerule(pattern):
     s, t, wilds, assume = pattern
