@@ -1047,7 +1047,8 @@ class Basic(object):
         if self in rule:
             return rule[self]
         elif rule:
-            args = tuple([arg.xreplace(rule) for arg in self.args])
+            args = tuple([arg.xreplace(rule) for arg in self.args
+                                             if isinstance(arg, Basic)])
             if not _aresame(args, self.args):
                 return self.func(*args)
         return self
