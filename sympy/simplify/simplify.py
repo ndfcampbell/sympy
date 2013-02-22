@@ -1441,6 +1441,13 @@ def trigsimp(expr, **opts):
     else:
         result = trigsimpfunc(expr, deep)
 
+    if opts.get('compare', False):
+        f = futrig(old)
+        if f != result:
+            print
+            print old
+            print '\tfu:',f
+            print '\ttrigsimp:', result
     return result
 
 
@@ -4146,3 +4153,30 @@ def besselsimp(expr):
     expr = expr.replace(besseli, expander(besseli))
 
     return expr
+
+def futrig(e, h=True):
+    from sympy.simplify.fu import (
+        TR1, TR2, TR3, TR2i, TR14, TR5, TR10, L, TR10i,
+        TR6, TR15, TR16, as_trig)
+
+    e = TR3(e)  # angles canonical
+    e = TR1(e)  # sec-csc -> sin-cos
+    e = TR2(e)  # tan-cot -> sin-cos
+    # matchersdivision
+    e = TR2i(e) # sin-cos ratios to tan
+    e = TR14(e) # factored identities
+    # identity
+    e = TR5(e)  # sin-powers -> cos-powers
+    e = TR10(e) # sin-cos of sums -> sin-cos prod
+    e = min(e, expand(e), key=L)
+    # matchers add
+    e = TR10i(e)
+    # e = TR8(e)
+    # artifacts
+    e = min(e, TR6(e), key=L)
+    e = min(e, TR15(e), key=L)
+    e = min(e, TR16(e), key=L)
+    if h:
+        e, f = as_trig(e)
+        e = f(futrig(e, False))
+    return e
