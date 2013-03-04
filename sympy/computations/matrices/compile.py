@@ -92,5 +92,10 @@ multioutrules = [multi_output_rule(sources, target, *wilds)
 multioutrule = multiplex(*multioutrules)
 
 
+from sympy.rules.branch import onaction
+def makepdf(brl, expr, result):
+    result.show()
+pdfdebug = partial(onaction, fn=makepdf)
+
 
 compile = sfilter(good_computation, exhaust(multiplex(multioutrule, inrule)))
