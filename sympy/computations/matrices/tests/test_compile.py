@@ -75,6 +75,15 @@ def test_SV():
     assert any(result.has(GESV) for result in results)
     assert any(result.has(POSV) for result in results)
 
+def test_GESV():
+    X = MatrixSymbol('X', 3, 2)
+    y = MatrixSymbol('Y', 3, 1)
+
+    expr = (X*X.T).I * y
+
+    assert next(rule(expr))
+
+
 def test_non_trivial():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
