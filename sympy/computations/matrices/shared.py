@@ -2,19 +2,19 @@ from sympy.matrices.expressions import MatrixSymbol, Transpose
 from sympy import Symbol, ask, Q
 
 # Pattern variables
-alpha = Symbol('alpha')
-beta  = Symbol('beta')
-n,m,k = map(Symbol, 'nmk')
-A = MatrixSymbol('A', n, m)
-B = MatrixSymbol('B', m, k)
-C = MatrixSymbol('C', n, k)
-X = MatrixSymbol('X', n, m)
-Y = MatrixSymbol('Y', n, m)
-Z = MatrixSymbol('Z', n, n)
-S = MatrixSymbol('S', n, n)
-x = MatrixSymbol('x', n, 1)
-a = MatrixSymbol('a', m, 1)
-b = MatrixSymbol('b', k, 1)
+alpha = Symbol('_alpha')
+beta  = Symbol('_beta')
+n,m,k = map(Symbol, ['_n', '_m', '_k'])
+A = MatrixSymbol('_A', n, m)
+B = MatrixSymbol('_B', m, k)
+C = MatrixSymbol('_C', n, k)
+X = MatrixSymbol('_X', n, m)
+Y = MatrixSymbol('_Y', n, m)
+Z = MatrixSymbol('_Z', n, n)
+S = MatrixSymbol('_S', n, n)
+x = MatrixSymbol('_x', n, 1)
+a = MatrixSymbol('_a', m, 1)
+b = MatrixSymbol('_b', k, 1)
 
 def detranspose(A):
     """ Unpack a transposed matrix """
