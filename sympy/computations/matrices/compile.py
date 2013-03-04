@@ -57,12 +57,11 @@ blas_patterns = [
 ]
 lapack_patterns = [
     (POSV._outputs[0], POSV(*POSV._inputs), POSV._inputs, POSV.condition),
-    (Z.I*X, GESV(Z, X), (Z, X), True),
+    (Z.I*X, GESV(Z, X) + LASWP(PermutationMatrix(IPIV(Z.I*X))*Z.I*X, IPIV(Z.I*X)), (Z, X), True),
+
 ]
 
 multi_out_patterns = [
-    ((IPIV(A), PermutationMatrix(IPIV(A))*A),
-      LASWP(PermutationMatrix(IPIV(A))*A, IPIV(A)), (A,), True)
 ]
 
 
@@ -90,6 +89,8 @@ inrule = input_crunch(multiplex(*rules))
 
 multioutrules = [multi_output_rule(sources, target, *wilds)
             for sources, target, wilds, condition in multi_out_patterns]
+multioutrule = multiplex(*multioutrules)
 
-compile = sfilter(good_computation,
-                 (exhaust(multiplex(inrule, *multioutrules))))
+
+
+compile = sfilter(good_computation, exhaust(multiplex(multioutrule, inrule)))
