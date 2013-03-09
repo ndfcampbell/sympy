@@ -1,4 +1,5 @@
 from sympy.core import sympify, Lambda, Dummy, Integer, Rational, oo, Float, pi
+from sympy.core.numbers import nan
 from sympy.functions import sqrt, exp, erf
 from sympy.printing import sstr
 import random
@@ -510,3 +511,64 @@ class PDF(ContinuousProbability):
             newPdf += (self.pdf(var)/abs(funcdiff)).subs(var, x)
 
         return PDF(newPdf, (w, func.subs(var, self.domain[0]), func.subs(var, self.domain[1])))
+
+    def moment(self,n):
+        """
+        Return the nth moment of RV x about zero
+
+        Examples
+        ========
+
+            >>> from sympy import Symbol, exp, oo
+            >>> from sympy.statistics.distributions import PDF
+            >>> from sympy.abc import x
+            >>> a = Symbol('a', positive=True)
+
+            >>> exponential = PDF(exp(-x/a), (x,0,oo))
+            >>> exponential = exponential.normalize()
+            >>> exponential.moment(3)
+            6*a**3
+            >>> exponential.moment(1) == exponential.mean
+            True
+
+        """
+        if n >= 0:
+            from sympy import integrate
+            w = Dummy('w', real=True)
+            nthMoment = integrate(
+                self.pdf(w)*w**n, (w, self.domain[0], self.domain[1]))
+            return nthMoment
+        else:
+            print "Moment of a PDF is defined only for a non-negative n."
+
+    def cmoment(self,n):
+        """
+        Return the nth moment of RV x about its mean, also known as central moment
+
+        Examples
+        ========
+
+            >>> from sympy import Symbol, exp, oo
+            >>> from sympy.statistics.distributions import PDF
+            >>> from sympy.abc import x
+            >>> a = Symbol('a', positive=True)
+
+            >>> exponential = PDF(exp(-x/a), (x,0,oo))
+            >>> exponential = exponential.normalize()
+            >>> exponential.cmoment(3)
+            2*a**3
+            >>> exponential.cmoment(2) == exponential.variance
+            True
+
+        """
+        if n >= 0:
+            if (self.mean == oo or self.mean == -oo or self.mean == nan) and n > 0:
+               return nan
+            else:
+                from sympy import integrate
+                w = Dummy('w', real=True)
+                nthCentralMoment = integrate(
+                    self.pdf(w)*(w - self.mean)**n, (w, self.domain[0], self.domain[1]))
+                return nthCentralMoment
+        else:
+            print "Central Moment of a PDF is defined only for a non-negative n."
