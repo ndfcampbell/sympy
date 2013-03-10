@@ -1,6 +1,6 @@
 from sympy import sqrt, Rational, oo, Symbol, exp, pi
 from sympy.functions import erf
-
+from sympy.core.numbers import nan
 from operator import abs
 
 from sympy.mpmath import mp
@@ -115,9 +115,9 @@ def test_PDF():
     assert exponential.normalize() == exponential
     assert exponential._get_stddev() == sqrt(3)/6
     assert exponential._get_stddev() == sqrt(3)/6
-    assert exponential.moment(5) == 21/2
+    assert exponential.moment(5) == Rational(21,2)
     assert exponential.moment(1) == exponential.mean
-    assert exponential.cmoment(8) == 0
+    assert exponential.cmoment(8) == Rational(1,2304)
     assert exponential.cmoment(2) == exponential.variance
     #This test is intentionally repeated to test PDF._get_stddev() properly.
     exponential = exponential.transform(x, x)
