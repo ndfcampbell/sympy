@@ -131,7 +131,7 @@ def test_getdeclarations():
     outs = (ExprToken(c, a), ExprToken(d, d))
     comp = OpComp('T', ins, outs)
     decs = getdeclarations(comp)
-    assert 'real*8, intent(inout) :: a  !  a, c' in decs.values()
+    assert 'real*8, intent(inout) :: a  !  a -> c' in decs.values()
     assert 'real*8, intent(in) :: b  !  b'       in decs.values()
     assert 'real*8, intent(out) :: d  !  d'      in decs.values()
     assert not any('2' in dec for dec in decs.values())

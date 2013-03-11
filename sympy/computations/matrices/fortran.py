@@ -60,7 +60,7 @@ def shape_str(shape):
         return "(%s, %s)"%(str(shape[0]), str(shape[1]))
 
 def comment(vars):
-    return '  !  ' + ', '.join([str(v.expr) for v in vars])
+    return '  !  ' + ' -> '.join([str(v.expr) for v in vars])
 
 def getdeclarations(comp):
     tokens = groupby(lambda v: v.token, comp.variables)
