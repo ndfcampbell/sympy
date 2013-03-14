@@ -57,7 +57,7 @@ blas_patterns = [
     (X + Y, AXPY(S.One, X, Y), (X, Y), True)
 ]
 lapack_patterns = [
-    (POSV._outputs[0], POSV(*POSV._inputs), POSV._inputs, POSV.condition),
+    (Z.I*X, POSV(Z, X), (Z, X), Q.symmetric(Z) & Q.positive_definite(Z)),
     (Z.I*X, GESV(Z, X) + LASWP(PermutationMatrix(IPIV(Z.I*X))*Z.I*X, IPIV(Z.I*X)), (Z, X), True),
 
 ]
