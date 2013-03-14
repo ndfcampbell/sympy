@@ -8,8 +8,8 @@ from sympy.matrices.expressions import (MatrixSymbol, PermutationMatrix,
         MatrixExpr, MatMul)
 from sympy.utilities.iterables import dict_merge as merge
 
-A = MatrixSymbol('A', n, n)
-B = MatrixSymbol('B', n, m)
+A = MatrixSymbol('_A', n, n)
+B = MatrixSymbol('_B', n, m)
 INFO = Symbol('INFO')
 
 class IPIV(MatrixExpr):
