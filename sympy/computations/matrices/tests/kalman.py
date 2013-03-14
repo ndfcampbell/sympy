@@ -12,4 +12,4 @@ newmu   = mu + Sigma*H.T * (R + H*Sigma*H.T).I * (H*mu - data)
 newSigma= Sigma - Sigma*H.T * (R + H*Sigma*H.T).I * H * Sigma
 
 assumptions = (Q.positive_definite(Sigma), Q.symmetric(Sigma),
-               Q.positive_definite(R), Q.symmetric(R))
+               Q.positive_definite(R), Q.symmetric(R), Q.fullrank(H))
