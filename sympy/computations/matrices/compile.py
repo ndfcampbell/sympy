@@ -6,6 +6,7 @@ from sympy import Q, S, ask, Expr, Symbol, Dummy
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix, MatrixSlice)
 from sympy.computations.compile import input_crunch, multi_output_rule
+from sympy.computations.core import Identity
 from sympy.unify import rewriterule
 from sympy.unify.usympy import types
 from sympy.unify.rewrites import rewriterules
@@ -99,3 +100,8 @@ pdfdebug = partial(onaction, fn=makepdf)
 
 
 compile = sfilter(good_computation, exhaust(multiplex(multioutrule, inrule)))
+
+def compile(inputs, outputs):
+    incomp = Identity(*outputs)
+    outcomps = exhaust(multiplex(multioutrule, inrule))(incomp)
+    return (c for c in outcomps if set(c.inputs) == set(inputs))

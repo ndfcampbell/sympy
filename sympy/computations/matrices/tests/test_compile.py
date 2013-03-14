@@ -4,7 +4,6 @@ from sympy.computations.matrices.compile import compile
 from sympy.computations.compile import multi_output_rule
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.blas import GEMM
-from sympy.computations.core import Identity
 from sympy import Symbol, symbols, S, Q, Expr
 from sympy.matrices.expressions import (MatrixSymbol, MatrixExpr,
         PermutationMatrix)
@@ -19,7 +18,8 @@ def rule(*exprs):
 
 def _reduces(expr, inputs, assumptions=()):
     with assuming(*assumptions):
-        assert any(set(c.inputs).issubset(set(inputs)) for c in rule(expr))
+        assert any(set(c.inputs).issubset(set(inputs))
+                for c in compile(inputs, [expr]))
 
 def _reduces_set(exprs, inputs, assumptions=()):
     with assuming(assumptions):
@@ -53,7 +53,7 @@ def test_types():
     expr = X*Y*Z
 
     # We can't do this with a single GEMM
-    assert not any(isinstance(r, GEMM) for r in rule(expr))
+    assert not any(isinstance(r, GEMM) for r in compile([X, Y, Z], [expr]))
 
 def test_alternative_patterns():
     X = MatrixSymbol('X', 3, 3)
@@ -65,13 +65,13 @@ def test_SV():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I * Y
-    results = list(rule(expr))
+    results = list(compile((X, Y), (expr,)))
     assert len(results) != 0
     assert any(result.has(GESV) for result in results)
     assert not any(result.has(POSV) for result in results)
 
     with assuming(Q.symmetric(X), Q.positive_definite(X)):
-        results = list(rule(expr))
+        results = list(compile((X, Y), (expr,)))
     assert any(result.has(GESV) for result in results)
     assert any(result.has(POSV) for result in results)
 
@@ -81,7 +81,7 @@ def test_GESV():
 
     expr = (X*X.T).I * y
 
-    assert next(rule(expr))
+    assert next(compile((X, y), (expr,)))
 
 
 def test_non_trivial():
@@ -126,21 +126,19 @@ def test_GEMM_coefficients():
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
     exprs = (3*X*Y + 2*Z, X*Y + 2*Z, 3*X*Y + Z, X*Y + Z, X*Y)
-    assert all(isinstance(next(rule(expr)), GEMM) for expr in exprs)
+    assert all(isinstance(next(compile((X,Y,Z), [expr])), GEMM) for expr in exprs)
 
-def test_multi_output_rule():
+def dont_test_multi_output_rule():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
-    rule = multi_output_rule((IPIV(Y), PermutationMatrix(IPIV(Y))*Y),
-            LASWP(PermutationMatrix(IPIV(Y))*Y, IPIV(Y)), Y)
-    comp = Identity(IPIV(X), PermutationMatrix(IPIV(X))*X)
-    assert len(list(rule(comp))) != 0
+    assert len(list(compile([X, Y], [IPIV(X), PermutationMatrix(IPIV(X))*X]))) != 0
 
 def test_LASWP():
     X = MatrixSymbol('X', 3, 3)
     exprs = IPIV(X), PermutationMatrix(IPIV(X))*X
     outputs = (X,)
-    return any(set(c.outputs).issubset(set(outputs)) for c in rule(*exprs))
+    return any(set(c.outputs).issubset(set(outputs))
+                for c in compile([X], exprs))
 
 def test_XinvY():
     X = MatrixSymbol('X', 3, 3)
