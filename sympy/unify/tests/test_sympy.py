@@ -1,7 +1,7 @@
 from sympy import Add, Basic, symbols, Mul, And, Symbol, Integer, Expr
 from sympy.unify.core import Compound, Variable
 from sympy.unify.usympy import (deconstruct, construct, unify, is_associative,
-        is_commutative, types)
+        is_commutative, types, subtypes)
 from sympy.abc import w, x, y, z, n, m, k
 from sympy.utilities.pytest import XFAIL
 from sympy.core.compatibility import next
@@ -162,3 +162,9 @@ def test_types():
     assert set(types(expr, replace={Symbol: Expr})) == \
             set([Expr, Integer, Add, Mul])
     assert set(types(Basic(1, 'hello'))) == set([Basic, int, str])
+
+def test_subtypes():
+    assert subtypes(3) == [int, object]
+    assert Expr in subtypes(Symbol('x'), {})
+    assert Expr in subtypes(Symbol('x') + 3)
+    assert Integer in subtypes(Symbol('x') + 3)

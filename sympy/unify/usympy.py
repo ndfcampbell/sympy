@@ -134,3 +134,13 @@ def types(expr, replace={Symbol: Expr, Dummy: Expr, MatrixSymbol: MatrixExpr}):
     if not isinstance(expr, Basic):
         return [type(expr)]
     return sum(map(typs, expr.args), [type(expr)])
+
+def subtypes(expr, replace={Symbol: Expr, Dummy: Expr, MatrixSymbol: MatrixExpr}):
+    """ Return list of all subtypes contained in an expression """
+    subtyps = partial(subtypes, replace=replace)
+    if type(expr) in replace:
+        return replace[type(expr)].mro()
+    if not isinstance(expr, Basic):
+        return type(expr).mro()
+    return sum(map(subtyps, expr.args), type(expr).mro())
+
