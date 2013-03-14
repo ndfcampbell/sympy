@@ -6,7 +6,7 @@ from sympy.assumptions import assuming
 
 ident = Identity(newmu, newSigma)
 with assuming(*assumptions):
-    mathcomp = next(compile(ident))
+    mathcomp = next(compile([mu, Sigma, R, H, data], [newmu, newSigma]))
 
 if __name__ == '__main__':
     mathcomp.show()

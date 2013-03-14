@@ -8,7 +8,7 @@ from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.computations.core import Identity
 from sympy.unify import rewriterule
-from sympy.unify.usympy import types
+from sympy.unify.usympy import subtypes as types
 from sympy.unify.rewrites import rewriterules
 from sympy.rules.branch import multiplex, exhaust, debug, sfilter, condition
 from sympy.rules.util import count
@@ -46,7 +46,7 @@ blas_patterns = [
     (alpha*A*B, SYMM(alpha, A, B, S.Zero, ZeroMatrix(A.rows, B.cols)), (alpha, A, B), SYMM.condition),
     (A*B, SYMM(S.One, A, B, S.Zero, ZeroMatrix(A.rows, B.cols)), (A, B), SYMM.condition),
 
-    (alpha*A*B + beta*C, GEMM(*GEMM._inputs), GEMM._inputs, GEMM.condition),
+    (alpha*A*B + beta*C, GEMM(*GEMM._inputs), GEMM._inputs, True),
     (alpha*A*B + C, GEMM(alpha, A, B, S.One, C), (alpha, A, B, C), True),
     (A*B + beta*C, GEMM(S.One, A, B, beta, C), (A, B, beta, C), True),
     (A*B + C, GEMM(S.One, A, B, S.One, C), (A, B, C), True),

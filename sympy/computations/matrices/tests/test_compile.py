@@ -145,3 +145,15 @@ def test_XinvY():
     Y = MatrixSymbol('Y', 3, 3)
     expr = X.I*Y
     _reduces(expr, (X, Y))
+
+def test_alphaABC_GEMM():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    Z = MatrixSymbol('Z', 3, 3)
+    from sympy.computations.matrices.compile import (alpha, A, B, C, GEMM, S,
+                makerule)
+
+    pattern = (alpha*A*B + C, GEMM(alpha, A, B, S.One, C), (alpha, A, B, C), True)
+    rule = makerule(pattern)
+    expr = -X * Y + Z
+    assert list(rule(expr))
