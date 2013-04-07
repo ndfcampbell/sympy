@@ -18,12 +18,19 @@ Sq = MatrixSymbol('_Sq', n, n)
 vars = [A, B, n, m, Sq, SA, SB, SC, SD]
 
 known_relations = [
+
+   #(X,   Y,   condition on X),
+   #(X => Y if condition on X)
     (A.T, A, Q.symmetric(A)),
 
     (Sq.I, Sq.T, Q.orthogonal(Sq)),
 
     # Determinants
     (det(Sq), S.Zero, Q.singular(Sq)),
+
+    (det(SA), S.One, Q.orthogonal(SA)),
+
+    (Abs(det(SA)), S.One, Q.unitary(SA)),
 
     (det(BlockMatrix([[SA,SB],[SC,SD]])),
         det(SA)*det(SD - SC*SA.I*SB),
@@ -32,10 +39,6 @@ known_relations = [
     (det(BlockMatrix([[SA,SB],[SC,SD]])),
         det(SD)*det(SA - SB*SD.I*SA),
         Q.invertible(SD)),
-
-    (det(SA), S.One, Q.orthogonal(SA)),
-
-    (Abs(det(SA)), S.One, Q.unitary(SA)),
 
     # BlockMatrices
     (BlockMatrix([[A]]), A, True),
