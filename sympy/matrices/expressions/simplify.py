@@ -7,7 +7,7 @@ from logpy.unifymore import register_object_attrs
 from sympy import S, Q, Dummy, assuming, ask, Tuple
 from sympy.assumptions import AppliedPredicate
 
-from sympy import Mul, Add, Pow
+from sympy import Mul, Add, Pow, Abs
 from sympy.matrices import (MatrixSymbol, Transpose, Inverse,
         Trace, Determinant, MatMul, MatAdd, BlockMatrix, BlockDiagMatrix,
         Identity, ZeroMatrix, Adjoint, HadamardProduct, ImmutableMatrix, det)
@@ -15,7 +15,7 @@ from sympy.matrices import (MatrixSymbol, Transpose, Inverse,
 classes = (MatrixSymbol, Transpose, Inverse,
         Trace, Determinant, MatMul, MatAdd, BlockMatrix, BlockDiagMatrix,
         Identity, ZeroMatrix, Adjoint, HadamardProduct, AppliedPredicate,
-        ImmutableMatrix, Tuple, Mul, Add, Pow)
+        ImmutableMatrix, Tuple, Mul, Add, Pow, Abs)
 
 def unify_Basic(u, v, s):
     return unify_seq((type(u),) + u.args,
@@ -57,6 +57,8 @@ facts(reduces, (Transpose(A), A, Q.symmetric(A)),
                    Q.invertible(SA)),
                (det(BlockMatrix([[SA,SB],[SC,SD]])), det(SD)*det(SA - SB*SD.I*SA),
                    Q.invertible(SD)),
+               (det(SA), S.One, Q.orthogonal(SA)),
+               (Abs(det(SA)), S.One, Q.unitary(SA)),
 
 
 
