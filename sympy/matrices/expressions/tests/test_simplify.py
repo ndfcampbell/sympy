@@ -1,6 +1,7 @@
 from sympy.matrices.expressions.simplify import simplify_one
 
-from sympy import MatrixSymbol, Q, det, BlockMatrix, Abs
+from sympy import Q, Abs
+from sympy.matrices.expressions import MatrixSymbol, BlockMatrix, det, Inverse
 from sympy.abc import n
 
 X = MatrixSymbol('X', n, n)
@@ -15,6 +16,10 @@ def test_simplify_block():
     X = BlockMatrix([[A, B],
                      [C, D]])
     assert simplify_one(det(X), Q.invertible(A)) == det(A)*det(D - C*A.I*B)
+
+    assert not isinstance(simplify_one(X.I, Q.invertible(A), Q.invertible(D)),
+                          Inverse)
+    assert simplify_one(X.I) == X.I
 
 def test_simplify_determinants():
     assert simplify_one(det(X), Q.singular(X)) == 0
