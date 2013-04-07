@@ -3,6 +3,7 @@ from sympy.matrices.expressions.simplify import simplify_one
 from sympy import Q, Abs
 from sympy.matrices.expressions import MatrixSymbol, BlockMatrix, det, Inverse
 from sympy.abc import n
+from sympy.utilities.pytest import XFAIL
 
 X = MatrixSymbol('X', n, n)
 A, B, C, D, E, F, G, H, I = [MatrixSymbol(a, n, n) for a in 'ABCDEFGKI']
@@ -25,3 +26,7 @@ def test_simplify_determinants():
     assert simplify_one(det(X), Q.singular(X)) == 0
     assert simplify_one(det(X), Q.orthogonal(X)) == 1
     assert simplify_one(Abs(det(X)), Q.unitary(X)) == 1
+
+@XFAIL
+def test_MatrixElement():
+    assert simplify_one(A[2, 1], Q.upper_triangular(A)) == 0

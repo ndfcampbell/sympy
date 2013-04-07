@@ -3,7 +3,7 @@ from sympy import Dummy, Symbol, Tuple, Q, S, Abs
 
 
 # Dummy variables
-n, m, l, k = map(Dummy, 'nmlk')
+i, j, n, m, l, k = map(Dummy, 'ijnmlk')
 A = MatrixSymbol('_A', n, m)
 B = MatrixSymbol('_B', n, k)
 C = MatrixSymbol('_A', l, m)
@@ -45,4 +45,8 @@ known_relations = [
      BlockMatrix([[ (SA - SB*SD.I*SC).I,  (-SA).I*SB*(SD - SC*SA.I*SB).I],
                   [-(SD - SC*SA.I*SB).I*SC*SA.I,     (SD - SC*SA.I*SB).I]]),
      Q.invertible(SA) & Q.invertible(SD)),
+
+    # Matrix Elements
+    (A[i, j], S.Zero, Q.upper_triangular(A) & (i < j)),
+    (A[i, j], S.Zero, Q.lower_triangular(A) & (i > j)),
 ]
