@@ -1,51 +1,52 @@
 
-
 # Teach LogPy how to manipulate SymPy
-import logpy
-from logpy import facts, Relation, var, eq
-from logpy.unify import unify_dispatch, reify_dispatch, reify, unify_seq
-from logpy.variables import variables
-from logpy.unifymore import register_object_attrs
-
-from sympy.assumptions import AppliedPredicate
-from sympy import Mul, Add, Pow, Abs, And, Or, Not, Tuple
-from sympy.matrices import (MatrixSymbol, Transpose, Inverse,
-        Trace, Determinant, MatMul, MatAdd, BlockMatrix, BlockDiagMatrix,
-        Identity, ZeroMatrix, Adjoint, HadamardProduct, ImmutableMatrix, det)
-
-classes = (MatrixSymbol, Transpose, Inverse,
-        Trace, Determinant, MatMul, MatAdd, BlockMatrix, BlockDiagMatrix,
-        Identity, ZeroMatrix, Adjoint, HadamardProduct, AppliedPredicate,
-        ImmutableMatrix, Tuple, Mul, Add, Pow, Abs, And, Or, Not)
+from logpy.unify import (reify, unify_seq, unify_isinstance_list,
+                         reify_isinstance_list, reify_dispatch)
+from sympy import Basic, Symbol, Integer, Rational, Dummy
 
 def unify_Basic(u, v, s):
-    return unify_seq((type(u),) + u.args,
-                     (type(v),) + v.args,
-                     s)
+    return unify_seq((type(u),) + u.args, (type(v),) + v.args, s)
 def reify_Basic(u, s):
-    args = [reify(arg, s) for arg in u.args]
-    return u.func(*args)
-def unify_Predicate(u, v, s):
-    return unify_seq((type(u), u.func, u.args[0]),
-                     (type(v), v.func, v.args[0]))
+    return u.func(*[reify(arg, s) for arg in u.args])
 
-for cls in classes:
-    unify_dispatch[(cls, cls)] = unify_Basic
-    reify_dispatch[cls]        = reify_Basic
-unify_dispatch[(AppliedPredicate, AppliedPredicate)] = unify_Predicate
+from sympy.assumptions import AppliedPredicate
+def unify_Predicate(u, v, s):
+    return unify_seq((type(u), u.func, u.args[0]), (type(v), v.func, v.args[0]), s)
+
+slot_classes = Symbol, Integer, Rational
+def unify_slot(u, v, s):
+    return unify_seq((type(u),) + tuple(getattr(u, a) for a in u.__slots__),
+                     (type(v),) + tuple(getattr(v, a) for a in v.__slots__),
+                     s)
+def reify_slot(u, s):
+    return u.func(*[reify(getattr(u, a), s) for a in u.__slots__])
+
+
+reify_dispatch[Dummy] = lambda u, s: u  # Dangerous
+unify_isinstance_list.append(((AppliedPredicate, AppliedPredicate), unify_Predicate))
+unify_isinstance_list.append(((slot_classes, slot_classes), unify_slot))
+unify_isinstance_list.append(((Basic, Basic), unify_Basic))
+reify_isinstance_list.append((slot_classes, reify_slot))
+reify_isinstance_list.append((Basic, reify_Basic))
 
 # Gather and assert known relations
 
+from logpy import Relation, facts
 from simplifydata import known_relations, vars
+
 reduces = Relation('reduces')
 facts(reduces, *known_relations)
 
 
 # Simplification code
+
+import logpy
+from logpy.variables import variables
+from logpy import var, eq
+from logpy.goals import goalify
 from sympy import assuming, ask
 
-def asko(predicate, truth):
-    return (eq, ask(predicate), truth)
+asko = goalify(ask)
 
 def simplify_one(expr, *assumptions, **kwargs):
     with assuming(*assumptions):
