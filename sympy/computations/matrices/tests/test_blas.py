@@ -11,15 +11,15 @@ def test_GEMM():
     Z = MatrixSymbol('Z', n, n)
     assert GEMM(a, X, Y, b, Z).inputs == (a, X, Y, b, Z)
     assert GEMM(a, X, Y, b, Z).outputs == (a*X*Y+b*Z, )
-    assert GEMM(1, X, Y, 0, Y).inputs == (X, Y)
+    assert GEMM(1, X, Y, 0, Y).variable_inputs == (X, Y)
 
 def test_transpose_GEMM():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     expr = X*Y.T
     c = GEMM(S.One, X, Y.T, S.Zero, Y.T)
-    assert c.inputs == (X, Y)
-    assert c.all_inputs == (1, X, Y, 0, Y)
+    assert c.variable_inputs == (X, Y)
+    assert c.inputs == (1, X, Y, 0, Y)
     assert c.outputs == (X*Y.T,)
 
 

@@ -18,7 +18,7 @@ def rule(*exprs):
 
 def _reduces(expr, inputs, assumptions=()):
     with assuming(*assumptions):
-        assert any(set(c.inputs).issubset(set(inputs))
+        assert any(set(c.variable_inputs).issubset(set(inputs))
                 for c in compile(inputs, [expr]))
 
 def _reduces_set(exprs, inputs, assumptions=()):

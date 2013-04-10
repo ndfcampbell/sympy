@@ -38,7 +38,7 @@ def good_computation(c):
     return all(isinstance(inp, (Symbol, MatrixSymbol)) or
                isinstance(inp, MatrixSlice) and
                     isinstance(inp.parent, MatrixSymbol)
-               for inp in c.inputs)
+               for inp in c.variable_inputs)
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
@@ -123,4 +123,4 @@ def compile(inputs, outputs):
     """
     incomp = Identity(*outputs)
     outcomps = exhaust(multiplex(multioutrule, inrule))(incomp)
-    return (c for c in outcomps if set(c.inputs) == set(inputs))
+    return (c for c in outcomps if set(c.variable_inputs) == set(inputs))

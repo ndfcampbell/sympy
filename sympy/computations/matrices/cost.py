@@ -9,7 +9,7 @@ def flops(comp):
 
     See also refflops.py"""
     name = type(comp).__name__.lower()
-    return flopfuncs[name](*comp.raw_inputs)
+    return flopfuncs[name](*comp.inputs)
 
 
 def numelements(expr):
@@ -36,7 +36,7 @@ def nbytesofoutputs(comp):
 
 def nbytesofinputs(comp):
     """ Number of bytes of the outputs of a computation """
-    return sum(map(numelements, comp.raw_inputs)) * typebytes[comp.typecode]
+    return sum(map(numelements, comp.inputs)) * typebytes[comp.typecode]
 
 
 def commcost(comp, A, B, getdata):
@@ -47,7 +47,7 @@ def commcost(comp, A, B, getdata):
 def commcost2(comp, comp2, A, B, getdata):
     """ Time to communicate results of ``comp`` from ``A`` to ``B`` """
     latency, bandwidth = getdata(A, B)
-    vars = set(comp.outputs) & set(comp2.raw_inputs)
+    vars = set(comp.outputs) & set(comp2.inputs)
     nbytes = sum(map(numelements, vars)) * typebytes[comp.typecode]
     return latency + nbytes / bandwidth
 

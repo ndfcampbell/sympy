@@ -9,7 +9,7 @@ class Send(MatrixCall):
     _inputs = (A,)
     _outputs = ()
     condition = True
-    raw_inputs = property(lambda self: tuple(self.args[:1]))
+    inputs = property(lambda self: (self.args[0],))
     target = property(lambda self: self.args[1])
     tag    = property(lambda self: self.args[2])
 
@@ -21,7 +21,7 @@ class Recv(MatrixCall):
     _inputs = ()
     _outputs = (A,)
     condition = True
-    raw_inputs = ()
+    inputs = ()
     outputs = property(lambda self: (self.args[0],))
     source = property(lambda self: self.args[1])
     tag    = property(lambda self: self.args[2])

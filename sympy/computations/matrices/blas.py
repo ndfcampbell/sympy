@@ -21,28 +21,22 @@ class MM(BLAS):
     condition = True
 
     @property
-    def raw_inputs(self):
+    def inputs(self):
         alpha, A, B, beta, C, typecode = self.args
         if isinstance(C, ZeroMatrix):    # special case this
             C = ZeroMatrix(A.rows, B.cols)
         # Sometimes we use C only as an output. It should be detransposed
-        C = detranspose(C) if not beta else C
-        return alpha, A, B, beta, C
-
-    @property
-    def all_inputs(self):
-        alpha, A, B, beta, C = self.raw_inputs
         A = detranspose(A)
         B = detranspose(B)
+        C = detranspose(C)
         return alpha, A, B, beta, C
 
     @property
-    def inputs(self):
-        alpha, A, B, beta, C = self.all_inputs
-        if beta:
-            return tuple(unique(remove_numbers(self.all_inputs)))
-        else:
-            return tuple(unique(remove_numbers((alpha, A, B))))
+    def outputs(self):
+        alpha, A, B, beta, C, typecode = self.args
+        if isinstance(C, ZeroMatrix):    # special case this
+            C = ZeroMatrix(A.rows, B.cols)
+        return (alpha*A*B + beta*C,)
 
     @classmethod
     def codemap(cls, inputs, names, typecode, assumptions=True):

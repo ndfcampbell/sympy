@@ -17,6 +17,9 @@ constant_definitions = [lambda x: isinstance(x, (int, float, str)),
 def is_constant(x):
     return any(f(x) for f in constant_definitions)
 
+def remove(pred, coll):
+    return [x for x in coll if not pred(x)]
+
 class Computation(Basic):
     """ An interface for a Computation
 
@@ -24,7 +27,8 @@ class Computation(Basic):
     """
 
     inputs  = property(lambda self: self.args)
-    variable_inputs = property(lambda self: filter(is_constant, self.inputs))
+    variable_inputs = property(lambda self: tuple(unique(remove(is_constant,
+        self.inputs))))
     outputs = None
 
     def edges(self):

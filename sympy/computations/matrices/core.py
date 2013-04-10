@@ -1,15 +1,18 @@
 from sympy.computations import Computation
-from sympy.computations.core import unique
+from sympy.computations.core import unique, constant_definitions
 from sympy import Symbol, Expr, Basic, ask, Tuple
-from sympy.matrices.expressions import MatrixExpr, MatMul
+from sympy.matrices.expressions import MatrixExpr, MatMul, ZeroMatrix
 from sympy.strategies.tools import subs
-from sympy.strategies import exhaust
+from sympy.strategies import exhaust, chain
 from sympy.strategies.traverse import bottom_up
 
 def is_number(x):
     """ Is either a Python number or a SymPy number """
     return (isinstance(x, (int, float)) or
             isinstance(x, Expr) and x.is_Number)
+
+
+constant_definitions.append(lambda x: isinstance(x, ZeroMatrix))
 
 def remove_numbers(coll):
     """ Remove numbers from a collection
@@ -34,19 +37,18 @@ class MatrixCall(Computation):
             args = args + (typecode,)
         return Basic.__new__(cls, *args)
 
-    raw_inputs = property(lambda self: tuple(self.args[:-1]))
+    inputs = property(lambda self: tuple(self.args[:-1]))
     typecode   = property(lambda self: self.args[-1])
 
-    inputs = property(lambda self:
-                    tuple(map(exhaust(bottom_up(canonicalize)),
-                              unique(remove_numbers(self.all_inputs)))))
+   # inputs = property(lambda self:
+   #                 tuple(map(exhaust(bottom_up(canonicalize)),
+   #                           unique(remove_numbers(self.all_inputs)))))
 
     @property
     def outputs(self):
         cls = self.__class__
-        mapping = dict(zip(cls._inputs, self.raw_inputs))
-        return tuple(map(exhaust(bottom_up(canonicalize)),
-                         subs(mapping)(Tuple(*cls._outputs))))
+        mapping = dict(zip(cls._inputs, self.inputs))
+        return tuple(map(chain(subs(mapping), canonicalize), cls._outputs))
 
     basetype = property(lambda self:  basetypes[self.typecode])
     _in_types = property(lambda self: (None,)*len(self._inputs))
