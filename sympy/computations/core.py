@@ -117,7 +117,7 @@ class CompositeComputation(Computation):
 
     def doit(self):
         from sympy.rules import exhaust, do_one, flatten, unpack, typed, sort
-        rl = do_one(rm_identity, flatten, unpack, canon_unique, sort(str))
+        rl = do_one(rm_identity, flatten, unpack, sort(str))
         return exhaust(typed({CompositeComputation: rl}))(self)
 
 def canon_unique(comp):
