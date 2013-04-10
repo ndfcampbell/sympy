@@ -1,15 +1,17 @@
 """ Branching Strategies to Traverse a Tree """
 
-from sympy.strategies.util import basic_fns
+from sympy.strategies.util import basic_fns, expr_fns
 from core import chain, identity, do_one
 from sympy.core.compatibility import product
 
-def top_down(brule, fns=basic_fns):
+default_fns = expr_fns
+
+def top_down(brule, fns=default_fns):
     """ Apply a rule down a tree running it on the top nodes first """
     return chain(do_one(brule, identity),
                  lambda expr: sall(top_down(brule, fns), fns)(expr))
 
-def sall(brule, fns=basic_fns):
+def sall(brule, fns=default_fns):
     """ Strategic all - apply rule to args """
     op, new, children, leaf = map(fns.get, ('op', 'new', 'children', 'leaf'))
     def all_rl(expr):
