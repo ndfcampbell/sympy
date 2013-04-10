@@ -97,16 +97,6 @@ def test_rm_identity():
     I3 = Identity(e)
     assert I2 + A == I3 + A
 
-def test_dot():
-    from sympy.computations.core import OpComp
-    MM = OpComp('minmax', (a, b), (d, e))
-    A =  OpComp('foo', (d,), (f,))
-    B =  OpComp('bar', (a, f), (g, h))
-    C =  CompositeComputation(MM, A, B)
-
-    assert isinstance(MM.dot(), str)
-    assert isinstance(C.dot(), str)
-
 def test_composite_with_identity_inputs():
     A =  TComp('foo', (d,), (f,))
     I = Identity(c)

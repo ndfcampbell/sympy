@@ -11,7 +11,7 @@ def unique(seq):
 def intersect(a, b):
     return not not set(a).intersection(set(b))
 
-constant_definitions = [lambda x: isinstance(x, (int, float, str)),
+constant_definitions = [lambda x: isinstance(x, (int, float)),
                         lambda x: isinstance(x, Basic) and x.is_Number]
 
 def is_constant(x):
@@ -27,8 +27,8 @@ class Computation(Basic):
     """
 
     inputs  = property(lambda self: self.args)
-    variable_inputs = property(lambda self: tuple(unique(remove(is_constant,
-        self.inputs))))
+    variable_inputs = property(lambda self:
+                               tuple(unique(remove(is_constant, self.inputs))))
     outputs = None
 
     def edges(self):
@@ -48,34 +48,6 @@ class Computation(Basic):
         ins  = "["+', '.join(map(str, self.variable_inputs)) +"]"
         outs = "["+', '.join(map(str, self.outputs))+"]"
         return "%s -> %s -> %s"%(ins, str(self.__class__.__name__), outs)
-
-    def dot_nodes(self):
-        return ['"%s" [shape=box, label=%s]' % (
-                str(self), str(self.__class__.__name__))]
-
-    def dot_edges(self):
-        return ['"%s" -> "%s"' % tuple(map(str, edge)) for edge in self.edges()]
-
-    def dot(self, orientation='TD'):
-        """ A DOT language representation of the graph """
-        nodes = "\n\t".join(self.dot_nodes())
-        edges = "\n\t".join(self.dot_edges())
-        return ("digraph{\n\trankdir=" + orientation +
-                "\n\t" + nodes + "\n\n\t" + edges + "\n}")
-
-    def writepdf(self, filename='comp', extension='pdf'):
-        import os
-        dotfile = open(filename+'.dot', 'w')
-        dotfile.write(self.dot())
-        dotfile.close()
-
-        os.system('dot -T%s %s.dot -o %s.%s' % (
-                        extension, filename, filename, extension))
-
-    def show(self, filename='comp'):
-        self.writepdf(filename)
-        import os
-        os.system('evince %s.pdf' % filename)
 
     def toposort(self):
         """ Order computations in an executable order """
@@ -124,9 +96,6 @@ class CompositeComputation(Computation):
 
     def edges(self):
         return chain(*[c.edges() for c in self.computations])
-
-    def dot_nodes(self):
-        return (n for c in self.computations for n in c.dot_nodes())
 
     def dag_io(self):
         """ Return a dag of computations from inputs to outputs
@@ -204,6 +173,6 @@ class OpComp(Computation):
         opstr = self.op.__name__ if isinstance(self.op, type) else str(self.op)
         return "%s -> %s -> %s"%(ins, opstr, outs)
 
-    def dot_nodes(self):
+    def _write_dot(self):
         oname = self.op.__name__ if isinstance(self.op, type) else str(self.op)
-        return ['"%s" [shape=box, label=%s]' % (str(self), oname)]
+        return '"%s" [shape=box, label=%s]' % (str(self), oname)

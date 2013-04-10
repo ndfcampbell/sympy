@@ -9,7 +9,8 @@ with assuming(*assumptions):
     mathcomp = next(compile([mu, Sigma, R, H, data], [newmu, newSigma]))
 
 if __name__ == '__main__':
-    mathcomp.show()
+    from sympy.computations.dot import show
+    show(mathcomp)
     assert set(mathcomp.inputs) == set((mu, Sigma, H, R, data))
     assert set(mathcomp.outputs).issuperset(set((newmu, newSigma)))
 
