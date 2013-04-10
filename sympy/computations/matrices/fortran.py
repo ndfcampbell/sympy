@@ -10,18 +10,25 @@ def is_number(x):
             isinstance(x, Expr) and x.is_Number)
 
 def nameof(var):
+    """ Fortran name of variable """
     if is_number(var.expr):
         return var.expr
     else:
         return var.token
 
 def call(x):
+    """ Fortran string to compute x, a computation """
     args = x.op.arguments(x.inputs, x.outputs)
     codemap = x.op.codemap([i.expr for i in x.inputs],
                            [nameof(a) for a in args], 'd')
     return x.op.fortran_template % codemap
 
 def intentsof(comp):
+    """ All Fortran intents of a computation
+
+    Returns:
+        dictionary mapping Fortran variable name to intent
+    """
     in_tokens = [v.token for v in comp.inputs if not constant_arg(v.expr)]
     out_tokens = [v.token for v in comp.outputs]
 
@@ -43,6 +50,10 @@ def intentsof(comp):
     return intents2
 
 def gettype(comp, expr):
+    """ The type of a mathematical expression in a computation
+
+    TODO: makethis not trivial.  Atomic BLAS/LAPACK computations hold the
+    dtype, we just need to collect it well """
     if expr == Symbol('INFO'):
         return 'integer'
     return 'real*8'
@@ -52,6 +63,7 @@ def shapeof(expr):
         return expr.shape
 
 def shape_str(shape):
+    """ Fortran string for a shape.  Remove 1's from Python shapes """
     if shape[0] == 1:
         return "(%s)"%str(shape[1])
     elif shape[1] == 1:
@@ -60,9 +72,13 @@ def shape_str(shape):
         return "(%s, %s)"%(str(shape[0]), str(shape[1]))
 
 def comment(vars):
+    """ Fortran comment string.  Prints X -> Y -> Z  for vars X,Y,Z """
     return '  !  ' + ' -> '.join([str(v.expr) for v in vars])
 
 def getdeclarations(comp):
+    """ Full declarations for each Fortran variable in computation
+
+    Returns dict mapping Fortran variable name to declaration string """
     tokens = groupby(lambda v: v.token, comp.variables)
     tokens = {k: vs for k,vs in tokens.items()
                     if any(not is_number(v.expr) for v in vs)}
@@ -96,6 +112,10 @@ def footer():
     return "RETURN\nEND\n"
 
 def dimensions(tcomp):
+    """ Collect all of the dimensions in a computation
+
+    For example if a computation contains MatrixSymbol('X', n, m) then n and m
+    are in the set returned by this function """
     shapes = [shapeof(v.expr) for v in tcomp.variables]
     return set((d for shape in shapes if shape for d in shape))
 
@@ -123,6 +143,9 @@ def sort_arguments(args, order=()):
     return args
 
 def constant_arg(arg):
+    """ Is this argument a constant?
+
+    If so we don't want to include it as a parameter """
     return is_number(arg) or isinstance(arg, ZeroMatrix)
 
 def remove(pred, coll):
@@ -132,6 +155,8 @@ def gen_fortran(tcomp, name = 'f', input_order=()):
     """
     inputs:
         tcomp - a tokenized computation (see inplace.tokenize)
+    outputs:
+        a string for a Fortran subroutine
     """
 
     tok_intents = intentsof(tcomp)

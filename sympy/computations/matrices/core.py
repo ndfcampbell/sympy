@@ -7,10 +7,17 @@ from sympy.strategies import exhaust
 from sympy.strategies.traverse import bottom_up
 
 def is_number(x):
+    """ Is either a Python number or a SymPy number """
     return (isinstance(x, (int, float)) or
             isinstance(x, Expr) and x.is_Number)
 
 def remove_numbers(coll):
+    """ Remove numbers from a collection
+
+    >>> from sympy.computations.matrices.core import remove_numbers
+    >>> remove_numbers([1, 'x', 5, 'y'])
+    ['x', 'y']
+    """
     return filter(lambda x: not is_number(x), coll)
 
 basetypes = {'S': 'real*4',
@@ -64,10 +71,6 @@ class MatrixCall(Computation):
     @staticmethod
     def arguments(inputs, outputs):
         return inputs
-
-def prepend_ones_to_matmuls(expr):
-    factor, matrices = expr.as_coeff_matrices()
-    return MatMul(factor, *matrices, **{'evaluate': False})
 
 def canonicalize(x):
     if isinstance(x, MatrixExpr):

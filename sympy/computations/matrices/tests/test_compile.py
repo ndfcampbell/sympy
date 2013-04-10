@@ -29,9 +29,8 @@ def test_typecheck():
     X = MatrixSymbol('X', 3, 3)
     Y = MatrixSymbol('Y', 3, 3)
     Z = MatrixSymbol('Z', 3, 3)
-    check = typecheck([a, X, Y])
-    assert check(b, Y, Z)
-    assert not check(X, a, Z)
+    assert typecheck([a, X, Y], [b, Y, Z])
+    assert not typecheck([a, X, Y], [X, a, Z])
 
 def test_GEMM():
     X = MatrixSymbol('X', 3, 3)

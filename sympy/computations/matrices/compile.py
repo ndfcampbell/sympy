@@ -16,15 +16,18 @@ from functools import partial
 
 basetypes = (Expr, MatrixExpr)
 def basetype(var):
+    """ Return main super-class for SymPy object
+
+    Returns either Expr       for scalar expressions
+                of MatrixExpr for matrix expressions
+    """
     for bt in basetypes:
         if isinstance(var, bt):
             return bt
 
-def typecheck(wilds):
-    def check(*variables):
-        return all(basetype(v) == basetype(w)
-                   for v, w in zip(variables, wilds))
-    return check
+def typecheck(wilds, variables):
+    return all(basetype(v) == basetype(w)
+               for v, w in zip(variables, wilds))
 
 def good_computation(c):
     """ Our definition of an acceptable computation
@@ -69,20 +72,33 @@ multi_out_patterns = [
 patterns = lapack_patterns + blas_patterns
 
 def makecond(wilds, assume):
-    return lambda *args: (typecheck(wilds)(*args) and
+    """ Trasform a Sympy Predicate object into a function
+
+    inputs:
+        wilds - variables in the predicate   like [x]
+        assume - a SymPy predicate like Q.positive(x)
+
+    outputs:
+        a python function
+        in the example above it's equivalent to lambda x: x > 0
+    """
+    return lambda *args: (typecheck(wilds, args) and
             (assume==True or ask(assume.xreplace(dict(zip(wilds, args))))))
 
 
 replace = {MatrixSymbol: MatrixExpr, Symbol: Expr, Dummy: Expr,
            MatrixSlice: MatrixExpr}
 types = partial(types, replace=replace)
-def makerule(pattern):
-    s, t, wilds, assume = pattern
+def makerule((source, target, wilds, assume)):
+    """ Transform a pattern to a transformation rule
+
+    Counts frequency of types before applying rule for efficiency
+    """
     cond = makecond(wilds, assume)
-    typecounts = count(types(s))
+    typecounts = count(types(source))
     typecond = lambda e: all(count(types(e)).get(k, 0) >= v
                                 for k, v in typecounts.items())
-    return condition(typecond, rewriterule(s, t, wilds, cond))
+    return condition(typecond, rewriterule(source, target, wilds, cond))
 
 rules = map(makerule, patterns)
 
@@ -102,6 +118,9 @@ pdfdebug = partial(onaction, fn=makepdf)
 compile = sfilter(good_computation, exhaust(multiplex(multioutrule, inrule)))
 
 def compile(inputs, outputs):
+    """
+    Transform SymPy input/output expressions into sequence of Computations
+    """
     incomp = Identity(*outputs)
     outcomps = exhaust(multiplex(multioutrule, inrule))(incomp)
     return (c for c in outcomps if set(c.inputs) == set(inputs))

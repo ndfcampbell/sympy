@@ -15,6 +15,8 @@ def flops(comp):
 def numelements(expr):
     """ Number of elements (ints, doubles, etc...) or an expression
 
+    >>> from sympy import Symbol, MatrixSymbol
+    >>> from sympy.computations.matrices.cost import numelements
     >>> numelements(MatrixSymbol('A', 2, 3))
     6
     >>> numelements(Symbol('x'))
@@ -54,9 +56,10 @@ def memtime(nbytes, memhierarchy):
 
     memhierarchy - list of bandwidth (bytes/s), size (bytes) pairs
 
+    >>> from sympy.computations.matrices.cost import memtime
     >>> memhierarchy = [(1e9, 1e3), (1e8, 1e6), (1e6, 4e9)] # regs, L1, mainmem
     >>> memtime(10000, memhierarchy)  # registers then some cache
-    9e-05
+    9.1e-05
     """
     time = 0
     for bandwidth, size in memhierarchy:
