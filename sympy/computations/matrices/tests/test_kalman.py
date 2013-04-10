@@ -4,12 +4,14 @@ from sympy.computations.inplace import inplace_compile
 from sympy.computations.matrices.blas import COPY
 from sympy.computations.matrices.fortran import gen_fortran, build, dimensions
 from sympy.assumptions import assuming
+from sympy.computations.dot import writepdf
 
 
 def test_fortran_code_generation():
     ic = inplace_compile(mathcomp, Copy=COPY)
-    mathcomp.writepdf('kalman.math')
-    ic.writepdf('kalman')
+
+    writepdf(mathcomp, 'kalman.math')
+    writepdf(ic, 'kalman')
     with assuming(*assumptions):
         s = gen_fortran(ic, input_order=(mu, Sigma, H, R, data))
         with open('kalman.f90', 'w') as f:

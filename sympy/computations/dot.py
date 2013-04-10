@@ -38,8 +38,7 @@ def gen_dot(computation, **kwargs):
     calls = '\n'.join(map(call, computation.toposort()))
     return template%locals()
 
-
-def show(computation, filename='comp', extension='pdf', **kwargs):
+def writepdf(computation, filename, extension='pdf', **kwargs):
     import os
     with open(filename+'.dot', 'w') as f:
         f.write(gen_dot(computation, **kwargs))
@@ -47,4 +46,8 @@ def show(computation, filename='comp', extension='pdf', **kwargs):
     os.system('dot -T%s %s.dot -o %s.%s' % (
                     extension, filename, filename, extension))
 
+
+def show(computation, filename='comp', extension='pdf', **kwargs):
+    import os
+    writepdf(computation, filename)
     os.system('evince %s.pdf' % filename)
