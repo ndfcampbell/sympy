@@ -167,15 +167,26 @@ def gen_fortran(tcomp, name = 'f', input_order=()):
 
     return '\n\n'.join((head, declarations, calls, foot))
 
-def build(tcomp, name = 'f', **kwargs):
-    flags = '-lblas', '-llapack'
-    _id = abs(hash((tcomp, name)))
-    src = kwargs.pop('src', 'tmp.f90')
-    mod = kwargs.pop('mod', 'mod'+str(_id))
+def build(tcomp, name='f', src='tmp.f90', mod=None,
+            flags=['-lblas', '-llapack'], **kwargs):
+    """ Build a Python function from SymPy Computation
+
+    This function
+    1.  generates fortran
+    2.  writes it to the file ``src``
+    3.  compiles it with ``flags`` (see ``compile``)
+    4.  runs ``f2py`` on it (happens in ``compile``)
+    5.  imports that function from the compiled module
+
+    Returns:
+        Python function
+    """
+    mod = mod or 'module_'+str(abs(hash((tcomp, name))))
+
     code = gen_fortran(tcomp, name, **kwargs)
-    f = open(src, 'w')
-    f.write(code)
-    f.close()
+    with open(src, 'w') as f:
+        f.write(code)
+
     compile(src, mod, flags)
     module = __import__(mod)
     return module.__dict__[name]
