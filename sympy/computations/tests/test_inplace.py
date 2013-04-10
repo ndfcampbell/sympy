@@ -141,6 +141,7 @@ def test_integrative():
                                   (ExprToken(Basic(x+1, y), 'x'),
                                    ExprToken(Basic(y, x+1), 'y'))))
 
+
     assert inplace_compile(comp) == expected
 
     comp = inci(x) + flipflopi(x+1, y) + inc(y)

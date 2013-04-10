@@ -5,10 +5,9 @@ a,b,c,d,e,f,g,h = 'abcdefgh'
 
 class TComp(Computation):
     """ Test Computation class """
-    def __init__(self, op, inputs, outputs):
-        self.op = op
-        self.inputs = tuple(inputs)
-        self.outputs = tuple(outputs)
+    op      = property(lambda self: self.args[0])
+    inputs  = property(lambda self: tuple(self.args[1]))
+    outputs = property(lambda self: tuple(self.args[2]))
 
     def __str__(self):
         ins  = "["+', '.join(self.inputs) +"]"

@@ -130,7 +130,7 @@ def tokenize_one(mathcomp, tokenizer):
         tokenize
     """
     return IOpComp(type(mathcomp),
-                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.all_inputs),
+                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
                    tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs),
                    inplace(mathcomp))
 
@@ -213,7 +213,10 @@ class IOpComp(OpComp):
     def __new__(cls, op, inputs, outputs, inpl=None):
         if inpl is None:
             inpl = inplace(op) or {}
+        if isinstance(inpl, dict):
+            inpl = inpl.items()
+
         return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs),
-                Tuple(*sorted(inpl.items())))
+                Tuple(*sorted(inpl)))
 
     inplace = property(lambda self: dict(self.args[3]))

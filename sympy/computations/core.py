@@ -11,32 +11,37 @@ def unique(seq):
 def intersect(a, b):
     return not not set(a).intersection(set(b))
 
+constant_definitions = [lambda x: isinstance(x, (int, float, str)),
+                        lambda x: isinstance(x, Basic) and x.is_Number]
+
+def is_constant(x):
+    return any(f(x) for f in constant_definitions)
+
 class Computation(Basic):
     """ An interface for a Computation
 
     Computations have inputs and outputs
     """
 
-    inputs  = None
+    inputs  = property(lambda self: self.args)
+    variable_inputs = property(lambda self: filter(is_constant, self.inputs))
     outputs = None
-    raw_inputs = property(lambda self: self.inputs)
-    all_inputs = property(lambda self: self.raw_inputs)
 
     def edges(self):
         """ A sequence of edges """
-        inedges  = ((i, self) for i in self.inputs)
+        inedges  = ((i, self) for i in self.variable_inputs)
         outedges = ((self, o) for o in self.outputs)
         return chain(inedges, outedges)
 
     @property
     def variables(self):
-        return chain(self.inputs, self.outputs)
+        return chain(self.variable_inputs, self.outputs)
 
     def __add__(self, other):
         return CompositeComputation(self, other)
 
     def __str__(self):
-        ins  = "["+', '.join(map(str, self.inputs)) +"]"
+        ins  = "["+', '.join(map(str, self.variable_inputs)) +"]"
         outs = "["+', '.join(map(str, self.outputs))+"]"
         return "%s -> %s -> %s"%(ins, str(self.__class__.__name__), outs)
 
@@ -134,7 +139,7 @@ class CompositeComputation(Computation):
         returns {A: {Bs}} such that A requires each of the Bs before it runs
         """
         return {A: set([B for B in self.computations
-                          if intersect(A.inputs, B.outputs)])
+                          if intersect(A.variable_inputs, B.outputs)])
                     for A in self.computations}
 
     def toposort(self):
@@ -163,7 +168,7 @@ def rm_identity(comp):
         if isinstance(c, Identity):
             others = [x for x in comp.computations if x != c]
             other_vars = set([v for other in others
-                                for v in chain(other.outputs, other.inputs)])
+                                for v in chain(other.outputs, other.variable_inputs)])
             vars = [v for v in c.outputs if v not in other_vars]
             if not vars:
                 return type(comp)(*others)
