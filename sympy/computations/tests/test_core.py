@@ -88,7 +88,7 @@ def test_canonicalize():
 
     I = Identity(f)
     assert I + A is A
-    assert CompositeComputation(A) is A
+    assert CompositeComputation(A).doit() is A
 
 def test_rm_identity():
     A = TComp('foo', (d,), (f,))

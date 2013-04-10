@@ -42,7 +42,7 @@ class Computation(Basic):
         return chain(self.variable_inputs, self.outputs)
 
     def __add__(self, other):
-        return CompositeComputation(self, other)
+        return CompositeComputation(self, other).doit()
 
     def __str__(self):
         ins  = "["+', '.join(map(str, self.variable_inputs)) +"]"
@@ -56,11 +56,6 @@ class Computation(Basic):
 
 class CompositeComputation(Computation):
     """ A computation composed of other computations """
-
-    def __new__(cls, *args):
-        obj = Basic.__new__(cls, *args)
-        obj = obj.canonicalize()
-        return obj
 
     computations = property(lambda self: self.args)
 
@@ -120,7 +115,7 @@ class CompositeComputation(Computation):
         from sympy.utilities.iterables import _toposort
         return _toposort(self.dag_io())
 
-    def canonicalize(self):
+    def doit(self):
         from sympy.rules import exhaust, do_one, flatten, unpack, typed, sort
         rl = do_one(rm_identity, flatten, unpack, canon_unique, sort(str))
         return exhaust(typed({CompositeComputation: rl}))(self)

@@ -91,7 +91,7 @@ def purify_one(comp, getname, **kwargs):
 
     newcomp = IOpComp(comp.op, inputs, comp.outputs, inplace(comp))  #.canonicalize() ??
 
-    return CompositeComputation(newcomp, *copies)
+    return CompositeComputation(newcomp, *copies).doit()
 
 def purify(comp, getname, **kwargs):
     """ Pure version of an impure computation
@@ -104,7 +104,7 @@ def purify(comp, getname, **kwargs):
     if not isinstance(comp, CompositeComputation):
         return purify_one(comp, getname, **kwargs)
     return CompositeComputation(*[purify_one(c, getname, **kwargs)
-                                    for c in comp.computations])
+                                    for c in comp.computations]).doit()
 
 class ExprToken(Basic):
     """ A pair of mathematical Expr and computational Token
@@ -147,7 +147,7 @@ def tokenize(mathcomp, tokenizer):
     if not isinstance(mathcomp, CompositeComputation):
         return tokenize_one(mathcomp, tokenizer)
     return CompositeComputation(*[tokenize_one(c, tokenizer)
-                                    for c in mathcomp.computations])
+                                    for c in mathcomp.computations]).doit()
 
 def inplace_tokenize(comp):
     """ Change tokens to be consistent with inplace dictionaries """
@@ -158,7 +158,7 @@ def inplace_tokenize(comp):
                 for k, v in inplace(c).items())
         if d:
             computations[i:] = map(subs(d), computations[i:])
-    return CompositeComputation(*computations)
+    return CompositeComputation(*computations).doit()
 
 def remove_single_copies(comp):
     """ Remove unnecessary copies
@@ -186,7 +186,7 @@ def remove_single_copies(comp):
                         for cp in single_copies))
 
     return CompositeComputation(*[subsrl(c) for c in computations
-                                            if c not in single_copies])
+                                            if c not in single_copies]).doit()
 
 def inplace_compile(comp, **kwargs):
     """ Compile a mathematical computation into a nice inplace one
