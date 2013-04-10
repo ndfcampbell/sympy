@@ -1,6 +1,6 @@
 from sympy import Basic, Tuple
 from sympy.computations.core import (Computation, CompositeComputation, OpComp)
-from sympy.rules.tools import subs
+from sympy.strategies.tools import subs
 
 default_varname= 'var_'
 

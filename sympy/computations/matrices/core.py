@@ -2,9 +2,9 @@ from sympy.computations import Computation
 from sympy.computations.core import unique
 from sympy import Symbol, Expr, Basic, ask, Tuple
 from sympy.matrices.expressions import MatrixExpr, MatMul
-from sympy.rules.tools import subs
-from sympy.rules import exhaust
-from sympy.rules.traverse import bottom_up
+from sympy.strategies.tools import subs
+from sympy.strategies import exhaust
+from sympy.strategies.traverse import bottom_up
 
 def is_number(x):
     return (isinstance(x, (int, float)) or
