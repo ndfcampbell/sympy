@@ -109,7 +109,7 @@ multioutrules = [multi_output_rule(sources, target, *wilds)
 multioutrule = multiplex(*multioutrules)
 
 
-from sympy.rules.branch import onaction
+from sympy.strategies.branch import onaction
 def makepdf(brl, expr, result):
     result.show()
 pdfdebug = partial(onaction, fn=makepdf)

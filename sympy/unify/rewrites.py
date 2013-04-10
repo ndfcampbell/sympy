@@ -2,7 +2,7 @@ from sympy.unify.usympy import construct, deconstruct
 from sympy.unify.core import unify, reify, Variable
 from sympy import Dummy
 from sympy.strategies.tools import subs
-from sympy.rules.branch import exhaust, multiplex
+from sympy.strategies.branch import exhaust, multiplex
 import functools
 import itertools as it
 
