@@ -116,7 +116,7 @@ class CompositeComputation(Computation):
         return _toposort(self.dag_io())
 
     def doit(self):
-        from sympy.rules import exhaust, do_one, flatten, unpack, typed, sort
+        from sympy.strategies import exhaust, do_one, flatten, unpack, typed, sort
         rl = do_one(rm_identity, flatten, unpack, sort(str))
         return exhaust(typed({CompositeComputation: rl}))(self)
 

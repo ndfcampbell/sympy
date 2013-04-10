@@ -10,8 +10,8 @@ from sympy.computations.core import Identity
 from sympy.unify import rewriterule
 from sympy.unify.usympy import subtypes as types
 from sympy.unify.rewrites import rewriterules
-from sympy.rules.branch import multiplex, exhaust, debug, sfilter, condition
-from sympy.rules.util import count
+from sympy.strategies.branch import multiplex, exhaust, debug, sfilter, condition
+from sympy.strategies.util import count
 from functools import partial
 
 basetypes = (Expr, MatrixExpr)

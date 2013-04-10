@@ -6,7 +6,7 @@ from sympy.computations.core import CompositeComputation
 
 from sympy import Symbol, symbols
 from sympy.computations.example import inc, minmax, flipflop
-from sympy.rules.strat_pure import debug
+from sympy.strategies import debug
 
 a,b,c,x,y,z = symbols('a,b,c,x,y,z')
 

@@ -1,7 +1,7 @@
 from sympy.computations.example import patterns, inc, add, double, incdec
 from sympy.computations.compile import (input_crunch, output_crunch,
         multi_input_rule, multi_output_rule)
-from sympy.rules.branch import multiplex, exhaust, debug
+from sympy.strategies.branch import multiplex, exhaust, debug
 from sympy.computations.core import Identity
 from sympy import Symbol, symbols, S, Dummy
 from sympy.unify import unify, rewriterule, rebuild
