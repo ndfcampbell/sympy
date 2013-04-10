@@ -11,6 +11,6 @@ with assuming(*assumptions):
 if __name__ == '__main__':
     from sympy.computations.dot import show
     show(mathcomp)
-    assert set(mathcomp.inputs) == set((mu, Sigma, H, R, data))
+    assert set(mathcomp.variable_inputs) == set((mu, Sigma, H, R, data))
     assert set(mathcomp.outputs).issuperset(set((newmu, newSigma)))
 
