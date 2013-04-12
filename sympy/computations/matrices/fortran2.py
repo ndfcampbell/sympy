@@ -112,9 +112,9 @@ def intent_str(isinput, isoutput):
 def declare_variable(v, input_vars, output_vars, types):
     typ = types[v.expr]
     intent = intent_str(v in input_vars, v in output_vars)
-    rv = typ + intent
+    rv = typ + intent + ' :: ' + v.token
     if isinstance(v.expr, MatrixExpr):
-        rv += ' :: ' + shape_str(v.expr.shape)
+        rv += shape_str(v.expr.shape)
     return rv
 
 def initialize_variable(v):
