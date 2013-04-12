@@ -15,6 +15,11 @@ class BLAS(MatrixCall):
 
 class MM(BLAS):
     """ Matrix Multiply """
+    def __new__(cls, alpha, A, B, beta, C, typecode='D'):
+        if isinstance(C, ZeroMatrix):
+            C = ZeroMatrix(A.rows, B.cols)
+        return BLAS.__new__(cls, alpha, A, B, beta, C, typecode)
+
     _inputs   = (alpha, A, B, beta, C)
     _outputs  = (alpha*A*B + beta*C,)
     inplace   = {0: 4}
