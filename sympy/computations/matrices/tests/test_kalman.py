@@ -1,8 +1,9 @@
 from kalman_comp import mathcomp, assumptions
-from kalman import mu, Sigma, H, R, data
+from kalman import mu, Sigma, H, R, data, inputs, outputs
 from sympy.computations.inplace import inplace_compile
 from sympy.computations.matrices.blas import COPY
 from sympy.computations.matrices.fortran import gen_fortran, build, dimensions
+from sympy.computations.matrices.fortran2 import generate_fortran
 from sympy.assumptions import assuming
 from sympy.computations.dot import writepdf
 
@@ -36,3 +37,13 @@ def test_kalman_run():
         print output
     except ImportError:
         pass
+
+def test_new_fortran():
+    ic = inplace_compile(mathcomp, Copy=COPY)
+    types = {v: 'real*8' for v in tuple(mathcomp.variables)}
+    with assuming(*assumptions):
+        s = generate_fortran(ic, inputs, outputs, types, [], 'kalman')
+    print s
+    assert isinstance(s, str)
+
+
