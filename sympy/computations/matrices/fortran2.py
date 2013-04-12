@@ -58,17 +58,10 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
 
     computations = comp.toposort()
     vars = list(comp.variables)
-    expr_token_dict = {v.expr: v.token for v in vars}
-    input_vars = sorted([v for v in comp.inputs  if v.expr in inputs],
-            key=lambda v: list(inputs).index(v.expr))
-    output_vars = sorted([v for v in comp.outputs if v.expr in outputs],
-            key=lambda v: list(outputs).index(v.expr))
-    input_tokens = map(lambda x: x.token, input_vars)
-    output_tokens = map(lambda x: x.token, output_vars)
-    tokens = set(v.token for v in vars)
-    token_var_dict = groupby(lambda v: v.token, vars)
-    token_expr_dict = {t: [v.expr for v in vs] for t, vs in
-            token_var_dict.items()}
+
+    input_tokens  = sorted_tokens(comp.inputs, inputs)
+    output_tokens = sorted_tokens(comp.outputs, outputs)
+    tokens = list(set(map(gettoken, vars)))
 
     function_definitions = join([c.comp.fortran_function_definition()
                                             for c in computations])
@@ -79,10 +72,9 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
     function_interfaces = join([c.comp.fortran_function_interface()
                                             for c in computations])
 
-    ted = token_expr_dict
     variable_declarations = join([
         declare_variable(token, comp, types, inputs, outputs)
-        for token in unique(input_tokens + output_tokens + list(tokens))])
+        for token in unique(input_tokens + output_tokens + tokens)])
 
     variable_initializations = join(map(initialize_variable, vars))
 
@@ -95,6 +87,13 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
     footer = comp.fortran_footer()
 
     return template % locals()
+
+
+gettoken = lambda x: x.token
+def sorted_tokens(source, exprs):
+    vars = sorted([v for v in source if v.expr in exprs],
+                            key=lambda v: list(exprs).index(v.expr))
+    return map(gettoken, vars)
 
 
 #####################
