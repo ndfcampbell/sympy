@@ -1,6 +1,6 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
-from sympy.computations.matrices.fftw import FFTW, FFTWPlan
+from sympy.computations.matrices.fftw import FFTW
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
 from sympy import Q, S, ask, Expr, Symbol, Dummy
@@ -72,7 +72,6 @@ multi_out_patterns = [
 
 other_patterns = [
     (DFT(n) * x, FFTW(x), (n, x), True),
-    (Symbol('plan'), FFTWPlan(), (), True),
 ]
 
 patterns = lapack_patterns + blas_patterns + other_patterns

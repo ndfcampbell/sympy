@@ -2,23 +2,23 @@
 
 %(use_statements)s
 
-implicit none
+  implicit none
+
+%(include_statements)s
 
 ! ===================== !
 ! Argument Declarations !
 ! ===================== !
-
 %(argument_declarations)s
 
 ! ===================== !
 ! Variable Declarations !
 ! ===================== !
-
 %(variable_declarations)s
 
-begin interface
+  interface
 %(function_interfaces)s
-end interface
+  end interface
 
 ! ======================== !
 ! Variable Initializations !
@@ -35,8 +35,7 @@ end interface
 ! ======================= !
 %(variable_destructions)s
 
-return
-
+  return
 %(footer)s
 
 %(function_definitions)s

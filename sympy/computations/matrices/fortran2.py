@@ -3,6 +3,7 @@ from sympy.computations.core import Computation, unique
 from sympy.computations.inplace import IOpComp, ExprToken
 from sympy.utilities.iterables import sift
 from functools import partial
+from sympy.computations.matrices.fftw import FFTW
 
 def groupby(key, coll):
     return sift(coll, key)
@@ -29,7 +30,17 @@ class FortranPrintableComputation(object):
         return 'subroutine %s(%s)'%(name, ', '.join(inputs+outputs))
 
     def fortran_use_statements(self):
-        return ''
+        uses = []
+        if self.has(FFTW):
+          uses.append("use, intrinsic :: iso_c_binding")
+        return join(uses)
+
+    def fortran_include_statements(self):
+        includes = []
+        if self.has(FFTW):
+          includes.append("include 'fftw3.f03'")
+        return join(includes)
+
 
     def fortran_footer(self, name):
         return 'end subroutine %s'%(name)
@@ -56,7 +67,7 @@ update_class(Computation, FortranPrintableComputation)
 update_class(IOpComp, FortranPrintableIOpComp)
 
 def join(L):
-    return '\n'.join([x for x in L if x])
+    return '  ' + '\n  '.join([x for x in L if x])
 
 def generate_fortran(comp, inputs, outputs, types, name='f'):
     """ Generate Fortran code from a computation
@@ -82,15 +93,19 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
     subroutine_header = comp.fortran_header(name, input_tokens, output_tokens)
 
     use_statements = comp.fortran_use_statements()
+    include_statements = comp.fortran_include_statements()
 
     function_interfaces = join([c.comp.fortran_function_interface()
                                             for c in computations])
     argument_declarations = ''
 
+    argument_declarations = join([
+        declare_variable(token, comp, types, inputs, outputs)
+        for token in unique(input_tokens + output_tokens)])
+
     variable_declarations = join([
         declare_variable(token, comp, types, inputs, outputs)
-        for token in unique(input_tokens + output_tokens + tokens)]
-         + map(dimension_declaration, dimens))
+        for token in (set(tokens) - set(input_tokens + output_tokens))])
 
     dimen_inits = map(dimension_initialization,
                       dimens,
