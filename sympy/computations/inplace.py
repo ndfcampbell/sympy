@@ -1,11 +1,12 @@
 from sympy import Basic, Tuple
 from sympy.computations.core import (Computation, CompositeComputation, OpComp)
 from sympy.strategies.tools import subs
+from functools import partial
 
 default_varname= 'var_'
 
 def valid_name(n):
-    return n and n[0].isalpha()
+    return n and isinstance(n, str) and n[0].isalpha()
 
 def make_getname():
     """ Make a new tokenizer
@@ -60,7 +61,8 @@ def inplace(x):
 
 class Copy(Computation):
     """ A Copy computation """
-    pass
+    inputs = property(lambda self: self.args)
+    outputs = inputs
 
 def copies_one(comp, getname, **kwargs):
     """ The necessary copies to make an impure computation pure """
@@ -69,7 +71,7 @@ def copies_one(comp, getname, **kwargs):
         requested = inp.token if default_varname not in inp.token else None
         newtoken = getname((inp.expr, out.expr), requested)
         out = ExprToken(inp.expr, newtoken)
-        return IOpComp(copy, (inp,), (out,), {})
+        return IOpComp(copy(inp.expr), [inp.token], [newtoken])
 
     return [new_comp(comp.inputs[v], comp.outputs[k])
                  for k, v in inplace(comp).items()]
@@ -83,13 +85,13 @@ def purify_one(comp, getname, **kwargs):
         purify
     """
     copies = copies_one(comp, getname, **kwargs)
-    d = dict((cp.inputs[0], cp.outputs[0]) for cp in copies)
+    d = dict((cp.input_tokens[0], cp.output_tokens[0]) for cp in copies)
     if not d:
         return comp
 
-    inputs = tuple(d[i] if i in d else i for i in comp.inputs)
+    input_tokens = tuple(d[i] if i in d else i for i in comp.input_tokens)
 
-    newcomp = IOpComp(comp.op, inputs, comp.outputs, inplace(comp))  #.canonicalize() ??
+    newcomp = IOpComp(comp.comp, input_tokens, comp.output_tokens)  #.canonicalize() ??
 
     return CompositeComputation(newcomp, *copies).doit()
 
@@ -129,10 +131,8 @@ def tokenize_one(mathcomp, tokenizer):
     See Also
         tokenize
     """
-    return IOpComp(type(mathcomp),
-                   tuple(ExprToken(i, tokenizer(i)) for i in mathcomp.inputs),
-                   tuple(ExprToken(o, tokenizer(o)) for o in mathcomp.outputs),
-                   inplace(mathcomp))
+    return IOpComp(mathcomp, map(tokenizer, mathcomp.inputs),
+                             map(tokenizer, mathcomp.outputs))
 
 def tokenize(mathcomp, tokenizer):
     """ Transform mathematical computation into a computation of ExprTokens
@@ -149,15 +149,29 @@ def tokenize(mathcomp, tokenizer):
     return CompositeComputation(*[tokenize_one(c, tokenizer)
                                     for c in mathcomp.computations]).doit()
 
+
+def replace_tokens(comp, switch):
+    """ Replace tokens in a computation
+
+    switch, a dictionary mapping source to target token """
+    if not any(tok in comp.input_tokens+comp.output_tokens for tok in switch):
+        return comp
+    intoks = [switch.get(t, t) for t in comp.input_tokens]
+    outtoks = [switch.get(t, t) for t in comp.output_tokens]
+    return IOpComp(comp.comp, intoks, outtoks)
+
 def inplace_tokenize(comp):
     """ Change tokens to be consistent with inplace dictionaries """
     computations = comp.toposort()
     for i in range(len(computations)):
         c = computations[i]
-        d = dict((c.outputs[k], ExprToken(c.outputs[k].expr, c.inputs[v].token))
-                for k, v in inplace(c).items())
-        if d:
-            computations[i:] = map(subs(d), computations[i:])
+        if not c.inplace:
+            continue
+        switch = dict((c.output_tokens[k], c.input_tokens[v])
+                            for k,v in c.inplace.items())
+        computations[i:] = map(partial(replace_tokens, switch=switch),
+                computations[i:])
+
     return CompositeComputation(*computations).doit()
 
 def remove_single_copies(comp):
@@ -182,10 +196,10 @@ def remove_single_copies(comp):
     single_copies = [cp for s in users.values() for cp in s
                         if len(s) == 1 and issubclass(cp.op, Copy)]
 
-    subsrl = subs(dict((cp.outputs[0].token, cp.inputs[0].token)
-                        for cp in single_copies))
+    switch = dict((cp.outputs[0].token, cp.inputs[0].token)
+                        for cp in single_copies)
 
-    return CompositeComputation(*[subsrl(c) for c in computations
+    return CompositeComputation(*[replace_tokens(c, switch) for c in computations
                                             if c not in single_copies]).doit()
 
 def inplace_compile(comp, **kwargs):
@@ -210,13 +224,22 @@ def inplace_compile(comp, **kwargs):
 class IOpComp(OpComp):
     """ Inplace version of OpComp """
 
-    def __new__(cls, op, inputs, outputs, inpl=None):
-        if inpl is None:
-            inpl = inplace(op) or {}
-        if isinstance(inpl, dict):
-            inpl = inpl.items()
+    def __new__(cls, comp, input_tokens, output_tokens):
 
-        return Basic.__new__(cls, op, Tuple(*inputs), Tuple(*outputs),
-                Tuple(*sorted(inpl)))
+        return Basic.__new__(cls, comp, Tuple(*input_tokens),
+                                        Tuple(*output_tokens))
 
-    inplace = property(lambda self: dict(self.args[3]))
+    comp = property(lambda self: self.args[0])
+    op = property(lambda self: type(self.comp))
+    input_tokens = property(lambda self: self.args[1])
+    output_tokens = property(lambda self: self.args[2])
+
+    @property
+    def inputs(self):
+        return tuple(ExprToken(e, t) for e, t in zip(self.comp.inputs, self.input_tokens))
+
+    @property
+    def outputs(self):
+        return tuple(ExprToken(e, t) for e, t in zip(self.comp.outputs, self.output_tokens))
+
+    inplace = property(lambda self: inplace(self.comp) or {})
