@@ -8,15 +8,13 @@ def test_simple():
     X = MatrixSymbol('X', n, n)
     y = MatrixSymbol('y', n, 1)
     inputs = [X, y]
-    outputs = [X*y]
+    outputs = [X.T*y]
     types = {q: 'real*8' for q in [X, y, X*y]}
 
     mathcomp = next(compile(inputs, outputs))
     ic = inplace_compile(mathcomp)
-    s = generate_fortran(ic, inputs, outputs, types, [], 'f')
+    s = generate_fortran(ic, inputs, outputs, types, 'f')
 
     print s
     assert isinstance(s, str)
-
-def test_declare_variables():
-    from kalman_comp import inputs, outputs, assumptions
+    assert 'call dgemm('N', 'N', n, 1, n, 1, X, n, y, n, 0,'  in s

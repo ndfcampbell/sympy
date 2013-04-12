@@ -54,7 +54,16 @@ update_class(IOpComp, FortranPrintableIOpComp)
 def join(L):
     return '\n'.join([x for x in L if x])
 
-def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
+def generate_fortran(comp, inputs, outputs, types, name='f'):
+    """ Generate Fortran code from a computation
+
+    comp - a tokenized computation from inplace_compile
+    inputs  - a list of SymPy (Matrix)Expressions
+    outputs - a list of SymPy (Matrix)Expressions
+    types   - a dictionary mapping expressions in your computation to types
+    name    - the name of your subroutine
+    """
+
 
     computations = comp.toposort()
     vars = list(comp.variables)
