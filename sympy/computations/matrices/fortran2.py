@@ -17,21 +17,25 @@ begin interface
 %(function_interfaces)s
 end interface
 
-! Variable Declarations
-! =====================
+! ===================== !
+! Variable Declarations !
+! ===================== !
 
 %(variable_declarations)s
 
-! Variable Initializations
-! ========================
+! ======================== !
+! Variable Initializations !
+! ======================== !
 %(variable_initializations)s
 
-! Statements
-! ==========
+! ========== !
+! Statements !
+! ========== !
 %(statements)s
 
-! Variable Deconstruction
-! =======================
+! ======================= !
+! Variable Deconstruction !
+! ======================= !
 %(variable_destructions)s
 
 return
@@ -40,6 +44,8 @@ return
 """
 
 class FortranPrintableComputation(object):
+
+    # DAG Functions
     def fortran_header(self, name, inputs, outputs):
         return 'subroutine %s(%s)'%(name, ', '.join(inputs+outputs))
 
@@ -49,6 +55,7 @@ class FortranPrintableComputation(object):
     def fortran_footer(self):
         return ''
 
+    # Atomic Computation Functions
     def fortran_call(self, input_names, output_names):
         # TODO
         return '%s = %s(%s)'%(', '.join(output_names),
@@ -68,6 +75,9 @@ def update_class(old, new):
 
 update_class(Computation, FortranPrintableComputation)
 
+def join(L):
+    return '\n'.join([x for x in L if x])
+
 def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
 
     computations = comp.toposort()
@@ -77,30 +87,36 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
     input_tokens = map(lambda x: x.token, input_vars)
     output_tokens = map(lambda x: x.token, output_vars)
 
-    function_definitions = '\n'.join([c.comp.fortran_function_definition()
+
+    function_definitions = join([c.comp.fortran_function_definition()
                                             for c in computations])
     subroutine_header = comp.fortran_header(name, input_tokens, output_tokens)
 
     use_statements = comp.fortran_use_statements()
 
-    function_interfaces = '\n'.join([c.comp.fortran_function_interface()
+    function_interfaces = join([c.comp.fortran_function_interface()
                                             for c in computations])
 
-    variable_declarations = '\n'.join([
+    variable_declarations = join([
         declare_variable(v, input_vars, output_vars, types) for v in vars
         if not constant_arg(v.expr)])
 
-    variable_initializations = '\n'.join(map(initialize_variable, vars))
+    variable_initializations = join(map(initialize_variable, vars))
 
-    statements = '\n'.join([
+    statements = join([
         c.comp.fortran_call(c.input_tokens, c.output_tokens)
         for c in computations])
 
-    variable_destructions = '\n'.join(map(destroy_variable, vars))
+    variable_destructions = join(map(destroy_variable, vars))
 
     footer = comp.comp.fortran_footer()
 
     return template % locals()
+
+
+#####################
+# Variable Printing #
+#####################
 
 def shape_str(shape):
     """ Fortran string for a shape.  Remove 1's from Python shapes """
@@ -120,7 +136,6 @@ def intent_str(isinput, isoutput):
         return ', intent(out)'
     else:
         return ''
-
 
 def declare_variable(v, input_vars, output_vars, types):
     typ = types[v.expr]
@@ -145,4 +160,3 @@ def constant_arg(arg):
 
     If so we don't want to include it as a parameter """
     return is_number(arg) or isinstance(arg, ZeroMatrix)
-
