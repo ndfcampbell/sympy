@@ -36,7 +36,8 @@ def test_GEMM_codemap():
     A = MatrixSymbol('A', n, m)
     B = MatrixSymbol('B', m, k)
     C = MatrixSymbol('C', n, k)
-    codemap = GEMM.codemap((a, A, B, c, C), 'aABcC', 'd', True)
+
+    codemap = GEMM(a, A, B, c, C).codemap('aABcC')
     call = GEMM.fortran_template % codemap
     assert "('N', 'N', n, k, m, a, A, n, B, m, c, C, n)" in call
     assert 'dgemm' in call.lower()
@@ -45,7 +46,7 @@ def test_SYMM_codemap():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, m)
     C = MatrixSymbol('C', n, m)
-    codemap = SYMM.codemap((a, A, B, c, C), 'aABcC', 'd', Q.symmetric(A))
+    codemap = SYMM(a, A, B, c, C).codemap('aABcC', Q.symmetric(A))
     call = SYMM.fortran_template % codemap
     assert "('L', 'U', n, m, a, A, n, B, n, c, C, n)" in call
     assert 'dsymm' in call.lower()
@@ -53,14 +54,14 @@ def test_SYMM_codemap():
 def test_AXPY_codemap():
     B = MatrixSymbol('B', n, m)
     C = MatrixSymbol('C', n, m)
-    codemap = AXPY.codemap((a, B, C), 'aBC', 'd', True)
+    codemap = AXPY(a, B, C).codemap('aBC', True)
     call = AXPY.fortran_template % codemap
     assert "(m*n, a, B, 1, C, 1)" in call
     assert 'daxpy' in call.lower()
 
 def test_COPY_codemap():
     X = MatrixSymbol('B', n, m)
-    codemap = COPY.codemap((X,), 'XY', 'd', True)
+    codemap = COPY(X).codemap('XY')
     call = COPY.fortran_template % codemap
     assert "(m*n, X, 1, Y, 1)" in call
     assert 'dcopy' in call.lower()

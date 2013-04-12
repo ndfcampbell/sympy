@@ -38,16 +38,15 @@ class MM(BLAS):
             C = ZeroMatrix(A.rows, B.cols)
         return (alpha*A*B + beta*C,)
 
-    @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions=True):
+    def codemap(self, names, assumptions=True):
         varnames = 'alpha A B beta C'.split()
-        alpha, A, B, beta, C = inputs
+        alpha, A, B, beta, C, typecode = self.args
 
         namemap  = dict(zip(varnames, names))
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
                  'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
-                 'fn': cls.fnname(typecode),
+                 'fn': self.fnname(typecode),
                  'SIDE': left_or_right(A, B, Q.symmetric, assumptions),
                  'DIAG': diag(A, assumptions),
                  'UPLO': 'U'} # TODO: symmetric matrices might be stored low
@@ -78,14 +77,13 @@ class AXPY(BLAS):
     fortran_template = ("call %(fn)s(%(N)s, %(alpha)s, %(A)s, "
                         "%(INCX)d, %(B)s, %(INCY)d)")
 
-    @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions=True):
+    def codemap(self, names, assumptions=True):
         varnames = 'alpha A B'.split()
-        alpha, A, B = inputs
+        alpha, A, B, typecode = self.args
 
         namemap  = dict(zip(varnames, names))
         other = {'N': A.rows*A.cols,
-                 'fn': cls.fnname(typecode),
+                 'fn': self.fnname(typecode),
                  'INCX': 1,
                  'INCY': 1}
         return merge(namemap, other)
@@ -97,14 +95,13 @@ class COPY(BLAS, Copy):
 
     fortran_template = "call %(fn)s(%(N)s, %(X)s, %(INCX)s, %(Y)s, %(INCY)s)"
 
-    @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions=True):
+    def codemap(self, names, assumptions=True):
         varnames = 'X Y'.split()
-        X, = inputs
+        X, typecode = self.args
 
         namemap  = dict(zip(varnames, names))
         other = {'N': X.rows*X.cols,
-                 'fn': cls.fnname(typecode),
+                 'fn': self.fnname(typecode),
                  'INCX': 1,
                  'INCY': 1}
         return merge(namemap, other)

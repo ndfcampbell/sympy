@@ -8,7 +8,7 @@ def test_simple():
     X = MatrixSymbol('X', n, n)
     y = MatrixSymbol('y', n, 1)
     inputs = [X, y]
-    outputs = [X.T*y]
+    outputs = [X*y]
     types = {q: 'real*8' for q in [X, y, X*y]}
 
     mathcomp = next(compile(inputs, outputs))
@@ -17,4 +17,4 @@ def test_simple():
 
     print s
     assert isinstance(s, str)
-    assert 'call dgemm('N', 'N', n, 1, n, 1, X, n, y, n, 0,'  in s
+    assert "call dgemm('N', 'N', n, 1, n, 1, X, n, y, n, 0,"  in s

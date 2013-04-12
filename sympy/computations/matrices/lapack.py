@@ -33,16 +33,15 @@ class GESV(LAPACK):
     fortran_template = ("call %(fn)s(%(N)s, %(NRHS)s, %(A)s, "
                         "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s)")
 
-    @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions=()):
+    def codemap(self, names, assumptions=()):
         varnames = 'A B IPIV INFO'.split()
-        A, B = inputs
+        A, B, typecode = self.args
         namemap  = dict(zip(varnames, names))
         other = {'LDA': LD(A),
                  'LDB': LD(B),
                  'N': str(A.shape[0]),
                  'NRHS': str(B.shape[1]),
-                 'fn': cls.fnname(typecode)}
+                 'fn': self.fnname(typecode)}
         return merge(namemap, other)
 
 
@@ -57,11 +56,10 @@ class LASWP(LAPACK):
     fortran_template = ("call %(fn)s(%(N)s, %(A)s, %(LDA)s, %(K1)s, %(K2)s, "
                         "%(IPIV)s, %(INCX)s)")
 
-    @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions=()):
+    def codemap(self, names, assumptions=()):
         varnames = 'A IPIV'.split()
 
-        Q, IPIV = inputs
+        Q, IPIV, typecode = self.args
         assert (isinstance(Q, MatMul) and
                 isinstance(Q.args[0], PermutationMatrix))
         A = MatMul(*Q.args[1:])  # A is everything other than the permutation
@@ -72,7 +70,7 @@ class LASWP(LAPACK):
                  'K2': str(A.rows),
                  'N': str(A.cols),
                  'INCX': str(1),
-                 'fn': cls.fnname(typecode)}
+                 'fn': self.fnname(typecode)}
         return merge(namemap, other)
 
 
@@ -86,17 +84,16 @@ class POSV(LAPACK):
     fortran_template = ("call %(fn)s('%(UPLO)s', %(N)s, %(NRHS)s, %(A)s, "
                         "%(LDA)s, %(B)s, %(LDB)s, %(INFO)s)")
 
-    @classmethod
-    def codemap(cls, inputs, names, typecode, assumptions=()):
+    def codemap(self, names, assumptions=()):
         varnames = 'A B INFO'.split()
-        A, B = inputs
+        A, B, typecode = self.args
         namemap  = dict(zip(varnames, names))
         other = {'LDA': LD(A),
                  'LDB': LD(B),
                  'N': str(A.shape[0]),
                  'NRHS': str(B.shape[1]),
                  'UPLO': 'U',
-                 'fn': cls.fnname(typecode)}
+                 'fn': self.fnname(typecode)}
         return merge(namemap, other)
 
     @staticmethod

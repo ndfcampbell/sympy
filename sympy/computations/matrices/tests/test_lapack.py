@@ -22,7 +22,7 @@ def test_POSV():
 def test_GESV_codemap():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, m)
-    codemap = GESV.codemap((A, B), 'A B IPIV INFO'.split(), 'd', True)
+    codemap = GESV(A, B).codemap('A B IPIV INFO'.split())
     call = GESV.fortran_template % codemap
     assert '(n, m, A, n, IPIV, B, n, INFO)' in call
     assert 'dgesv' in call.lower()
@@ -31,7 +31,7 @@ def test_POSV_codemap():
     A = MatrixSymbol('A', n, n)
     B = MatrixSymbol('B', n, m)
     assumptions = Q.positive_definite(A) & Q.symmetric(A)
-    codemap = POSV.codemap((A, B), 'A B INFO'.split(), 'd', assumptions)
+    codemap = POSV(A, B).codemap('A B INFO'.split(), assumptions)
     call = POSV.fortran_template % codemap
     assert "('U', n, m, A, n, B, n, INFO)" in call
     assert 'dposv' in call.lower()
@@ -40,7 +40,7 @@ def test_LASWP_codemap():
     A = MatrixSymbol('A', n, n)
     ipiv = IPIV(A)
     expr = PermutationMatrix(ipiv)*A
-    codemap = LASWP.codemap((expr, ipiv), 'A IPIV'.split(), 'd', True)
+    codemap = LASWP(expr, ipiv).codemap('A IPIV'.split())
     call = LASWP.fortran_template % codemap
     assert "(n, A, n, 1, n, IPIV, 1)" in call
     assert 'dlaswp' in call.lower()

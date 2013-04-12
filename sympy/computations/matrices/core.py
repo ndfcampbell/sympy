@@ -75,11 +75,10 @@ class MatrixCall(Computation):
         return inputs
 
     def fortran_call(self, input_names, output_names):
-        op = type(self)
-        args = op.arguments(self.inputs, self.outputs)
+        args = type(self).arguments(self.inputs, self.outputs)
         name_map = dict(zip(self.inputs+self.outputs, input_names+output_names))
         argnames = [a if is_number(a) else name_map[a] for a in args]
-        codemap = op.codemap(self.inputs, argnames, self.typecode)
+        codemap = self.codemap(argnames)
         return self.fortran_template % codemap
 
 def nameof(var):

@@ -18,9 +18,8 @@ def nameof(var):
 
 def call(x):
     """ Fortran string to compute x, a computation """
-    args = x.op.arguments(x.inputs, x.outputs)
-    codemap = x.op.codemap([i.expr for i in x.inputs],
-                           [nameof(a) for a in args], 'd')
+    args = x.comp.arguments(x.inputs, x.outputs)
+    codemap = x.comp.codemap(map(nameof, args))
     return x.op.fortran_template % codemap
 
 def intentsof(comp):
