@@ -74,6 +74,21 @@ class MatrixCall(Computation):
     def arguments(inputs, outputs):
         return inputs
 
+    def fortran_call(self, input_names, output_names):
+        op = type(self)
+        args = op.arguments(self.inputs, self.outputs)
+        name_map = dict(zip(self.inputs+self.outputs, input_names+output_names))
+        argnames = [a if is_number(a) else name_map[a] for a in args]
+        codemap = op.codemap(self.inputs, argnames, self.typecode)
+        return self.fortran_template % codemap
+
+def nameof(var):
+    """ Fortran name of variable """
+    if is_number(var.expr):
+        return var.expr
+    else:
+        return var.token
+
 def canonicalize(x):
     if isinstance(x, MatrixExpr):
         return x.doit()

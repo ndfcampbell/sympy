@@ -17,4 +17,3 @@ def test_simple():
 
     print s
     assert isinstance(s, str)
-
