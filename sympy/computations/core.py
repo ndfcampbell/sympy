@@ -39,7 +39,7 @@ class Computation(Basic):
 
     @property
     def variables(self):
-        return chain(self.variable_inputs, self.outputs)
+        return remove(is_constant, chain(self.variable_inputs, self.outputs))
 
     def __add__(self, other):
         return CompositeComputation(self, other).doit()
