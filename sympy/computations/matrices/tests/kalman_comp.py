@@ -1,4 +1,5 @@
-from kalman import newmu, newSigma, assumptions, mu, Sigma, R, H, data
+from kalman import (newmu, newSigma, assumptions, mu, Sigma, R, H, data, inputs,
+        outputs)
 
 from sympy.computations.matrices.compile import compile
 from sympy.computations.core import Identity
