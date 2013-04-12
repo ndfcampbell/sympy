@@ -1,5 +1,5 @@
 from sympy import MatrixExpr, Expr, ZeroMatrix
-from sympy.computations.core import Computation
+from sympy.computations.core import Computation, unique
 from sympy.computations.inplace import IOpComp
 
 with open('sympy/computations/matrices/fortran_template.f90') as f:
@@ -53,7 +53,7 @@ def join(L):
 def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
 
     computations = comp.toposort()
-    vars = comp.variables
+    vars = list(comp.variables)
     input_vars = [v for v in comp.inputs  if v.expr in inputs]
     output_vars = [v for v in comp.outputs if v.expr in outputs]
     input_tokens = map(lambda x: x.token, input_vars)
@@ -70,7 +70,8 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
                                             for c in computations])
 
     variable_declarations = join([
-        declare_variable(v, input_vars, output_vars, types) for v in vars
+        declare_variable(v, input_vars, output_vars, types)
+        for v in unique(input_vars+output_vars+vars)
         if not constant_arg(v.expr)])
 
     variable_initializations = join(map(initialize_variable, vars))
