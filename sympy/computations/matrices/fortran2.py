@@ -14,8 +14,8 @@ with open('sympy/computations/matrices/fortran_template.f90') as f:
     template = f.read()
 
 class FortranPrintableIOpComp(object):
-    def fortran_footer(self):
-        return self.comp.fortran_footer()
+    def fortran_footer(self, *args):
+        return self.comp.fortran_footer(*args)
     def fortran_header(self, *args):
         return self.comp.fortran_header(*args)
     def fortran_use_statements(self):
@@ -31,8 +31,8 @@ class FortranPrintableComputation(object):
     def fortran_use_statements(self):
         return ''
 
-    def fortran_footer(self):
-        return ''
+    def fortran_footer(self, name):
+        return 'end subroutine %s'%(name)
 
     # Atomic Computation Functions
     def fortran_call(self, input_names, output_names):
@@ -85,6 +85,7 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
 
     function_interfaces = join([c.comp.fortran_function_interface()
                                             for c in computations])
+    argument_declarations = ''
 
     variable_declarations = join([
         declare_variable(token, comp, types, inputs, outputs)
@@ -103,7 +104,7 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
 
     variable_destructions = join(map(destroy_variable, vars))
 
-    footer = comp.fortran_footer()
+    footer = comp.fortran_footer(name)
 
     return template % locals()
 

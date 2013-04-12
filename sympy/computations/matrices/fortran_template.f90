@@ -1,22 +1,24 @@
-%(function_definitions)s
-
 %(subroutine_header)s
 
 %(use_statements)s
 
 implicit none
 
-! args? what does this mean?
+! ===================== !
+! Argument Declarations !
+! ===================== !
 
-begin interface
-%(function_interfaces)s
-end interface
+%(argument_declarations)s
 
 ! ===================== !
 ! Variable Declarations !
 ! ===================== !
 
 %(variable_declarations)s
+
+begin interface
+%(function_interfaces)s
+end interface
 
 ! ======================== !
 ! Variable Initializations !
@@ -36,3 +38,6 @@ end interface
 return
 
 %(footer)s
+
+%(function_definitions)s
+
