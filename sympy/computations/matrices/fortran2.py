@@ -1,8 +1,18 @@
 from sympy import MatrixExpr, Expr, ZeroMatrix
 from sympy.computations.core import Computation
+from sympy.computations.inplace import IOpComp
 
 with open('sympy/computations/matrices/fortran_template.f90') as f:
     template = f.read()
+
+class FortranPrintableIOpComp(object):
+    def fortran_footer(self):
+        return self.comp.fortran_footer()
+    def fortran_header(self):
+        return self.comp.fortran_header()
+    def fortran_use_statements(self):
+        return self.comp.fortran_use_statements()
+
 
 class FortranPrintableComputation(object):
 
@@ -35,6 +45,7 @@ def update_class(old, new):
             setattr(old, k, v)
 
 update_class(Computation, FortranPrintableComputation)
+update_class(IOpComp, FortranPrintableIOpComp)
 
 def join(L):
     return '\n'.join([x for x in L if x])
@@ -70,7 +81,7 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
 
     variable_destructions = join(map(destroy_variable, vars))
 
-    footer = comp.comp.fortran_footer()
+    footer = comp.fortran_footer()
 
     return template % locals()
 
