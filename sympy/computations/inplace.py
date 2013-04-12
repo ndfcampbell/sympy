@@ -40,6 +40,7 @@ def make_getname():
 
         cache[key] = name
         seen.add(name)
+        assert isinstance(name, str)
         return name
     return getname
 
@@ -231,8 +232,8 @@ class IOpComp(OpComp):
 
     comp = property(lambda self: self.args[0])
     op = property(lambda self: type(self.comp))
-    input_tokens = property(lambda self: self.args[1])
-    output_tokens = property(lambda self: self.args[2])
+    input_tokens = property(lambda self: map(str, self.args[1]))
+    output_tokens = property(lambda self: map(str, self.args[2]))
 
     @property
     def inputs(self):
