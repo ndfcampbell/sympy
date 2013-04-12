@@ -1,47 +1,8 @@
 from sympy import MatrixExpr, Expr, ZeroMatrix
 from sympy.computations.core import Computation
 
-template = """
-
-%(function_definitions)s
-
-%(subroutine_header)s
-
-%(use_statements)s
-
-implicit none
-
-! args? what does this mean?
-
-begin interface
-%(function_interfaces)s
-end interface
-
-! ===================== !
-! Variable Declarations !
-! ===================== !
-
-%(variable_declarations)s
-
-! ======================== !
-! Variable Initializations !
-! ======================== !
-%(variable_initializations)s
-
-! ========== !
-! Statements !
-! ========== !
-%(statements)s
-
-! ======================= !
-! Variable Deconstruction !
-! ======================= !
-%(variable_destructions)s
-
-return
-
-%(footer)s
-"""
+with open('sympy/computations/matrices/fortran_template.f90') as f:
+    template = f.read()
 
 class FortranPrintableComputation(object):
 
