@@ -378,6 +378,7 @@ class AskDiagonalHandler(CommonHandler):
     def DiagonalMatrix(expr, assumptions):
         return True
 
+
 class AskIntegerElementsHandler(CommonHandler):
     @staticmethod
     def MatAdd(expr, assumptions):
