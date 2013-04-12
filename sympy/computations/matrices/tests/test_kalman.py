@@ -9,7 +9,6 @@ from sympy.computations.dot import writepdf
 
 
 def test_fortran_code_generation():
-    ic = inplace_compile(mathcomp, Copy=COPY)
 
     writepdf(mathcomp, 'kalman.math')
     writepdf(ic, 'kalman')
@@ -38,12 +37,21 @@ def test_kalman_run():
     except ImportError:
         pass
 
-def test_new_fortran():
-    ic = inplace_compile(mathcomp, Copy=COPY)
-    types = {v: 'real*8' for v in tuple(mathcomp.variables)}
-    with assuming(*assumptions):
-        s = generate_fortran(ic, inputs, outputs, types, [], 'kalman')
-    print s
+ic = inplace_compile(mathcomp, Copy=COPY)
+types = {v: 'real*8' for v in tuple(mathcomp.variables)}
+with assuming(*assumptions):
+    s = generate_fortran(ic, inputs, outputs, types, [], 'kalman')
+
+def test_declarations():
     assert isinstance(s, str)
+    assert \
+"""real*8, intent(in) :: mu(n)
+real*8, intent(in) :: Sigma(n, n)
+real*8, intent(in) :: H(k, n)
+real*8, intent(in) :: R(k, k)
+real*8, intent(in) :: data(k)
+real*8, intent(out) :: muvar_2(n)
+real*8, intent(out) :: Sigmavar_2(n, n)
+""" in s
 
-
+    assert "real*8 :: INFO" in s

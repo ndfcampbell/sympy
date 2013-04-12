@@ -1,6 +1,10 @@
 from sympy import MatrixExpr, Expr, ZeroMatrix
 from sympy.computations.core import Computation, unique
 from sympy.computations.inplace import IOpComp
+from sympy.utilities.iterables import sift
+
+def groupby(key, coll):
+    return sift(coll, key)
 
 with open('sympy/computations/matrices/fortran_template.f90') as f:
     template = f.read()
@@ -8,8 +12,8 @@ with open('sympy/computations/matrices/fortran_template.f90') as f:
 class FortranPrintableIOpComp(object):
     def fortran_footer(self):
         return self.comp.fortran_footer()
-    def fortran_header(self):
-        return self.comp.fortran_header()
+    def fortran_header(self, *args):
+        return self.comp.fortran_header(*args)
     def fortran_use_statements(self):
         return self.comp.fortran_use_statements()
 
@@ -54,11 +58,17 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
 
     computations = comp.toposort()
     vars = list(comp.variables)
-    input_vars = [v for v in comp.inputs  if v.expr in inputs]
-    output_vars = [v for v in comp.outputs if v.expr in outputs]
+    expr_token_dict = {v.expr: v.token for v in vars}
+    input_vars = sorted([v for v in comp.inputs  if v.expr in inputs],
+            key=lambda v: list(inputs).index(v.expr))
+    output_vars = sorted([v for v in comp.outputs if v.expr in outputs],
+            key=lambda v: list(outputs).index(v.expr))
     input_tokens = map(lambda x: x.token, input_vars)
     output_tokens = map(lambda x: x.token, output_vars)
-
+    tokens = set(v.token for v in vars)
+    token_var_dict = groupby(lambda v: v.token, vars)
+    token_expr_dict = {t: [v.expr for v in vs] for t, vs in
+            token_var_dict.items()}
 
     function_definitions = join([c.comp.fortran_function_definition()
                                             for c in computations])
@@ -69,10 +79,10 @@ def generate_fortran(comp, inputs, outputs, types, assumptions, name='f'):
     function_interfaces = join([c.comp.fortran_function_interface()
                                             for c in computations])
 
+    ted = token_expr_dict
     variable_declarations = join([
-        declare_variable(v, input_vars, output_vars, types)
-        for v in unique(input_vars+output_vars+vars)
-        if not constant_arg(v.expr)])
+        declare_variable(token, comp, types, inputs, outputs)
+        for token in unique(input_tokens + output_tokens + list(tokens))])
 
     variable_initializations = join(map(initialize_variable, vars))
 
@@ -110,12 +120,25 @@ def intent_str(isinput, isoutput):
     else:
         return ''
 
-def declare_variable(v, input_vars, output_vars, types):
-    typ = types[v.expr]
-    intent = intent_str(v in input_vars, v in output_vars)
-    rv = typ + intent + ' :: ' + v.token
-    if isinstance(v.expr, MatrixExpr):
-        rv += shape_str(v.expr.shape)
+def declare_variable(token, comp, types, inputs, outputs):
+    isinput  = any(token == v.token for v in comp.inputs if not
+            constant_arg(v.expr))
+    isoutput = any(token == v.token for v in comp.outputs if not
+            constant_arg(v.expr) and v.expr in outputs)
+    exprs = set(v.expr for v in comp.variables if v.token == token
+                                          and not constant_arg(v.expr))
+    if not exprs:
+        return ''
+    expr = exprs.pop()
+    typ = types[expr]
+    return declare_variable_string(token, expr, typ, isinput, isoutput)
+
+
+def declare_variable_string(token, expr, typ, is_input, is_output):
+    intent = intent_str(is_input, is_output)
+    rv = typ + intent + ' :: ' + token
+    if isinstance(expr, MatrixExpr):
+        rv += shape_str(expr.shape)
     return rv
 
 def initialize_variable(v):

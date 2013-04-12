@@ -17,3 +17,6 @@ def test_simple():
 
     print s
     assert isinstance(s, str)
+
+def test_declare_variables():
+    from kalman_comp import inputs, outputs, assumptions
