@@ -1,5 +1,6 @@
 from sympy.matrices.expressions import MatrixExpr
-from sympy import S, I, sqrt, exp
+from sympy.functions import exp, sqrt
+from sympy.core import S, I
 
 class DFT(MatrixExpr):
     """ Discrete Fourier Transform """

@@ -16,3 +16,4 @@ from adjoint import Adjoint
 from hadamard import hadamard_product, HadamardProduct
 from diagonal import DiagonalMatrix, DiagonalOf
 from permutation import PermutationMatrix
+from fourier import DFT, IDFT
