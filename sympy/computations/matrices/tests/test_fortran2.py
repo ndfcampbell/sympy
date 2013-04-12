@@ -21,3 +21,6 @@ def test_simple():
 def test_dimensions():
     assert set(dimensions(ic)) == set((n, ))
     assert 'integer :: n' in s
+
+def test_dimension_initialization():
+    assert dimension_initialization(n, y, 'yvar') == 'n = size(yvar, 1)'

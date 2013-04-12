@@ -172,6 +172,10 @@ def constant_arg(arg):
 def dimension_declaration(dimen):
     return "integer :: %s" % str(dimen)
 
+def dimension_initialization(dimen, matrix, matrix_token):
+    return str(dimen) + ' = size(%s, %d)'%(matrix_token,
+            matrix.shape.index(dimen)+1)
+
 def dimensions(comp):
     """ Collect all of the dimensions in a computation
 
