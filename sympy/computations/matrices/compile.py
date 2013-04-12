@@ -1,10 +1,12 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
+from sympy.computations.matrices.fftw import FFTW, FFTWPlan
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
 from sympy import Q, S, ask, Expr, Symbol, Dummy
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix, MatrixSlice)
+from sympy.matrices.expressions.fourier import DFT
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.computations.core import Identity
 from sympy.unify import rewriterule
@@ -68,8 +70,12 @@ lapack_patterns = [
 multi_out_patterns = [
 ]
 
+other_patterns = [
+    (DFT(n) * x, FFTW(x), (n, x), True),
+    (Symbol('plan'), FFTWPlan(), (), True),
+]
 
-patterns = lapack_patterns + blas_patterns
+patterns = lapack_patterns + blas_patterns + other_patterns
 
 def makecond(wilds, assume):
     """ Trasform a Sympy Predicate object into a function
