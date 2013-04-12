@@ -229,3 +229,16 @@ def compile(src, mod, flags):
     if 'error' in s:
         print s
         raise Exception("File %s did not compile" % src)
+
+def fortran_function(inputs, outputs, *assumptions, **kwargs):
+    """
+    Build a Python callable Fortran function from SymPy matrix expressions
+    """
+    from sympy.computations.matrices.compile import compile as mathcompile
+    from sympy.computations.inplace import inplace_compile
+    from sympy.assumptions import assuming
+    with assuming(*assumptions):
+        c = mathcompile(inputs, outputs)
+        ic = inplace_compile(next(c))
+        f = build(ic, **kwargs)
+    return f

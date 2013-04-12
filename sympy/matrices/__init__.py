@@ -23,6 +23,7 @@ from immutable import ImmutableMatrix, ImmutableSparseMatrix
 MutableSparseMatrix = SparseMatrix
 ImmutableDenseMatrix = ImmutableMatrix
 
+import expressions
 from expressions import (MatrixSlice, BlockDiagMatrix, BlockMatrix,
         FunctionMatrix, Identity, Inverse, MatAdd, MatMul, MatPow, MatrixExpr,
         MatrixSymbol, Trace, Transpose, ZeroMatrix, blockcut, block_collapse,

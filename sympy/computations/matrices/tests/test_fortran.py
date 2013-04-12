@@ -1,6 +1,7 @@
 from sympy.computations.inplace import ExprToken, inplace_compile
 from sympy.computations.matrices.fortran import (nameof, getdeclarations,
-        unique_tokened_variables, build, intentsof, sort_arguments, gen_fortran)
+        unique_tokened_variables, build, intentsof, sort_arguments,
+        gen_fortran, fortran_function)
 from sympy.computations.core import OpComp
 from sympy.core import Symbol, S
 from sympy.matrices.expressions import MatrixSymbol
@@ -135,3 +136,9 @@ def test_getdeclarations():
     assert 'real*8, intent(in) :: b  !  b'       in decs.values()
     assert 'real*8, intent(out) :: d  !  d'      in decs.values()
     assert not any('2' in dec for dec in decs.values())
+
+def test_fortran_function():
+    n = Symbol('n')
+    X = MatrixSymbol('X', n, n)
+    y = MatrixSymbol('y', n, 1)
+    assert callable(fortran_function([X, y], [X*y]))
