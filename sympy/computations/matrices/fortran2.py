@@ -6,6 +6,9 @@ from sympy.utilities.iterables import sift
 def groupby(key, coll):
     return sift(coll, key)
 
+def remove(pred, coll):
+    return [x for x in coll if not pred(x)]
+
 with open('sympy/computations/matrices/fortran_template.f90') as f:
     template = f.read()
 
@@ -83,7 +86,8 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
 
     variable_declarations = join([
         declare_variable(token, comp, types, inputs, outputs)
-        for token in unique(input_tokens + output_tokens + tokens)])
+        for token in unique(input_tokens + output_tokens + tokens)]
+         + map(dimension_declaration, dimensions(comp)))
 
     variable_initializations = join(map(initialize_variable, vars))
 
@@ -164,3 +168,14 @@ def constant_arg(arg):
 
     If so we don't want to include it as a parameter """
     return is_number(arg) or isinstance(arg, ZeroMatrix)
+
+def dimension_declaration(dimen):
+    return "integer :: %s" % str(dimen)
+
+def dimensions(comp):
+    """ Collect all of the dimensions in a computation
+
+    For example if a computation contains MatrixSymbol('X', n, m) then n and m
+    are in the set returned by this function """
+    return set(remove(constant_arg, sum([v.expr.shape for v in comp.variables
+                           if isinstance(v.expr, MatrixExpr)], ())))
