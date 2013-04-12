@@ -6,6 +6,7 @@ from sympy.computations.matrices.fortran import gen_fortran, build, dimensions
 from sympy.computations.matrices.fortran2 import generate_fortran
 from sympy.assumptions import assuming
 from sympy.computations.dot import writepdf
+from sympy import Symbol
 
 
 def test_fortran_code_generation():
@@ -39,8 +40,9 @@ def test_kalman_run():
 
 ic = inplace_compile(mathcomp, Copy=COPY)
 types = {v: 'real*8' for v in tuple(mathcomp.variables)}
+types[Symbol('INFO')] = 'integer'
 with assuming(*assumptions):
-    s = generate_fortran(ic, inputs, outputs, types, [], 'kalman')
+    s = generate_fortran(ic, inputs, outputs, types, 'kalman')
 
 def test_declarations():
     assert isinstance(s, str)
@@ -54,4 +56,4 @@ real*8, intent(out) :: muvar_2(n)
 real*8, intent(out) :: Sigmavar_2(n, n)
 """ in s
 
-    assert "real*8 :: INFO" in s
+    assert "integer :: INFO" in s
