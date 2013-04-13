@@ -3,21 +3,22 @@ from sympy import MatrixSymbol, Symbol
 from sympy.computations.inplace import inplace_compile
 from sympy.matrices.expressions.fourier import DFT
 from sympy.computations.matrices.compile import compile
+from sympy.computations.matrices.fftw import FFTW, Plan
 
-def test_simple():
-    n = Symbol('n')
-    x = MatrixSymbol('X', n, 1)
-    y = MatrixSymbol('y', n, 1)
-    inputs = [x]
-    outputs = [DFT(n)*x]
-    types = {q: 'complex(kind=8)' for q in [x, DFT(n), DFT(n)*x]}
-    types[Symbol('plan')] = 'type(C_PTR)'
+n = Symbol('n')
+x = MatrixSymbol('X', n, 1)
+c = FFTW(x)
 
-    mathcomp = next(compile(inputs, outputs))
-    ic = inplace_compile(mathcomp)
-    s = generate_fortran(ic, inputs, outputs, types, 'f')
+types = {q: 'complex(kind=8)' for q in [x, DFT(n), DFT(n)*x]}
+types[Plan()] = 'type(C_PTR)'
+
+def test_DAG_search():
+    assert next(compile([x], [DFT(n)*x])) == FFTW(x)
+
+
+def test_code_generation():
+    ic = inplace_compile(c)
+    s = generate_fortran(ic, c.inputs, c.outputs, types, 'f')
 
     print '\n' + s
     assert isinstance(s, str)
-
-
