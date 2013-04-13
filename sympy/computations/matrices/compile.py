@@ -31,16 +31,6 @@ def typecheck(wilds, variables):
     return all(basetype(v) == basetype(w)
                for v, w in zip(variables, wilds))
 
-def good_computation(c):
-    """ Our definition of an acceptable computation
-
-    Must:
-        contain only symbols and matrix symbols as inputs
-    """
-    return all(isinstance(inp, (Symbol, MatrixSymbol)) or
-               isinstance(inp, MatrixSlice) and
-                    isinstance(inp.parent, MatrixSymbol)
-               for inp in c.variable_inputs)
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
@@ -71,7 +61,7 @@ multi_out_patterns = [
 ]
 
 other_patterns = [
-    (DFT(n) * x, FFTW(x), (n, x), True),
+    (DFT(n) * x, FFTW(x), (x, n), True),
 ]
 
 patterns = lapack_patterns + blas_patterns + other_patterns
@@ -120,12 +110,10 @@ def makepdf(brl, expr, result):
 pdfdebug = partial(onaction, fn=makepdf)
 
 
-compile = sfilter(good_computation, exhaust(multiplex(multioutrule, inrule)))
-
 def compile(inputs, outputs):
     """
     Transform SymPy input/output expressions into sequence of Computations
     """
     incomp = Identity(*outputs)
-    outcomps = exhaust(multiplex(multioutrule, inrule))(incomp)
+    outcomps = exhaust((multiplex(multioutrule, inrule)))(incomp)
     return (c for c in outcomps if set(c.variable_inputs) == set(inputs))
