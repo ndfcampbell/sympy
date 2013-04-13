@@ -14,6 +14,10 @@ plan = fftw_plan_r2r_1d(N,
 class Plan(Basic):
     name = 'plan'
 
+    def fortran_destroy(self, token):
+        assert isinstance(token, str)
+        return '! destroy ' + token
+
 
 class FFTW(Computation):
     @property

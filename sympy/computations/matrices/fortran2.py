@@ -176,9 +176,13 @@ def declare_variable_string(token, expr, typ, is_input, is_output):
     return rv
 
 def initialize_variable(v):
+    if hasattr(v.expr, 'fortran_initialize'):
+        return v.expr.fortran_initialize(v.token)
     return ''
 
 def destroy_variable(v):
+    if hasattr(v.expr, 'fortran_destroy'):
+        return v.expr.fortran_destroy(v.token)
     return ''
 
 def is_number(x):
