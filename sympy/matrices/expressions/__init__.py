@@ -18,3 +18,4 @@ from diagonal import DiagonalMatrix, DiagonalOf
 from permutation import PermutationMatrix
 from fourier import DFT, IDFT
 from diagonal import DiagonalMatrix, DiagonalOf
+from eig import eig

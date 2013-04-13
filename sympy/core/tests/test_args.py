@@ -1766,6 +1766,18 @@ def test_sympy__matrices__expressions__diagonal__DiagonalOf():
     X = MatrixSymbol('x', 10, 10)
     assert _test_args(DiagonalOf(X))
 
+def test_sympy__matrices__expressions__eig__EigenVectors():
+    from sympy.matrices.expressions.eig import EigenVectors
+    from sympy.matrices.expressions import MatrixSymbol
+    X = MatrixSymbol('x', 10, 10)
+    assert _test_args(EigenVectors(X))
+
+def test_sympy__matrices__expressions__eig__EigenValues():
+    from sympy.matrices.expressions.eig import EigenValues
+    from sympy.matrices.expressions import MatrixSymbol
+    X = MatrixSymbol('x', 10, 10)
+    assert _test_args(EigenValues(X))
+    k
 def test_sympy__matrices__expressions__hadamard__HadamardProduct():
     from sympy.matrices.expressions.hadamard import HadamardProduct
     from sympy.matrices.expressions import MatrixSymbol
