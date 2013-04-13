@@ -22,3 +22,10 @@ def test_code_generation():
 
     print '\n' + s
     assert isinstance(s, str)
+
+def test_DAG_search_in_context():
+    A = MatrixSymbol('A', n, n)
+    c = next(compile([A, x], [A*DFT(n)*x]))
+    assert FFTW(x) in c.computations
+    cs = compile([A, x], [DFT(n)*A*x])
+    assert any(FFTW(A*x) in c.computations for c in cs)
