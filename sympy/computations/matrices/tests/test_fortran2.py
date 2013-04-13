@@ -23,4 +23,5 @@ def test_dimensions():
     assert 'integer :: n' in s
 
 def test_dimension_initialization():
-    assert dimension_initialization(n, y, 'yvar') == 'n = size(yvar, 1)'
+    assert dimension_initialization(n, ExprToken(y, 'yvar')) == 'n = size(yvar, 1)'
+    assert 'n = size(X, 1)' in s or 'n = size(y, 1)' in s

@@ -1,7 +1,8 @@
 from sympy import MatrixExpr, Expr, ZeroMatrix
 from sympy.computations.core import Computation, unique
-from sympy.computations.inplace import IOpComp
+from sympy.computations.inplace import IOpComp, ExprToken
 from sympy.utilities.iterables import sift
+from functools import partial
 
 def groupby(key, coll):
     return sift(coll, key)
@@ -74,6 +75,7 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
     input_tokens  = sorted_tokens(comp.inputs, inputs)
     output_tokens = sorted_tokens(comp.outputs, outputs)
     tokens = list(set(map(gettoken, vars)))
+    dimens = dimensions(comp)
 
     function_definitions = join([c.comp.fortran_function_definition()
                                             for c in computations])
@@ -87,9 +89,13 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
     variable_declarations = join([
         declare_variable(token, comp, types, inputs, outputs)
         for token in unique(input_tokens + output_tokens + tokens)]
-         + map(dimension_declaration, dimensions(comp)))
+         + map(dimension_declaration, dimens))
 
-    variable_initializations = join(map(initialize_variable, vars))
+    dimen_inits = map(dimension_initialization,
+                      dimens,
+                      map(partial(var_that_uses_dimension, vars=vars), dimens))
+    variable_initializations = join(map(initialize_variable, vars)
+                                  + dimen_inits)
 
     statements = join([
         c.comp.fortran_call(c.input_tokens, c.output_tokens)
@@ -172,9 +178,12 @@ def constant_arg(arg):
 def dimension_declaration(dimen):
     return "integer :: %s" % str(dimen)
 
-def dimension_initialization(dimen, matrix, matrix_token):
-    return str(dimen) + ' = size(%s, %d)'%(matrix_token,
-            matrix.shape.index(dimen)+1)
+def dimension_initialization(dimen, var):
+    return str(dimen) + ' = size(%s, %d)'%(var.token,
+            var.expr.shape.index(dimen)+1)
+
+def var_that_uses_dimension(dimen, vars):
+    return next(v for v in vars if v.expr.has(dimen))
 
 def dimensions(comp):
     """ Collect all of the dimensions in a computation
