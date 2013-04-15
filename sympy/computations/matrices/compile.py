@@ -1,10 +1,10 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.fftw import FFTW
-from sympy.computations.matrices.blocks import SeparateBlocks, JoinBlocks
+from sympy.computations.matrices.blocks import JoinBlocks, Slice
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
-from sympy import Q, S, ask, Expr, Symbol, Dummy
+from sympy import Q, S, ask, Expr, Symbol, Dummy, Integer
 from sympy.logic.boolalg import Boolean
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix, MatrixSlice, BlockMatrix)
@@ -62,9 +62,13 @@ lapack_patterns = [
 multi_out_patterns = [
 ]
 
+ints = start1, stop1, step1, start2, stop2, step2 = map(Dummy,
+        '_start1 _stop1 _step1 _start2 _stop2 _step2'.split())
 other_patterns = [
     (DFT(n) * x, FFTW(x), (x, n), True),
     (X, JoinBlocks(X), (X,), lambda x: isinstance(x, BlockMatrix)),
+    (X[start1:stop1:step1, start2:stop2:step2],
+        Slice(X[start1:stop1:step1, start2:stop2:step2]), (X,) + tuple(ints), True),
 ]
 
 patterns = lapack_patterns + blas_patterns + other_patterns

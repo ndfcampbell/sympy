@@ -29,7 +29,7 @@ class SeparateBlocks(Computation):
 class Slice(Computation):
     """ Slice sub-matrix """
     arg     = property(lambda self: self.args[0])
-    inputs  = property(lambda self: (self.arg.arg,))
+    inputs  = property(lambda self: (self.arg.parent,))
     outputs = property(lambda self: (self.arg,))
 
     def fortran_function_interface(self):
