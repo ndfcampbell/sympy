@@ -4,6 +4,7 @@ from sympy.computations.matrices.fftw import FFTW
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
 from sympy import Q, S, ask, Expr, Symbol, Dummy
+from sympy.logic.boolalg import Boolean
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
         MatrixSymbol, ZeroMatrix, MatrixSlice)
 from sympy.matrices.expressions.fourier import DFT
@@ -77,8 +78,18 @@ def makecond(wilds, assume):
         a python function
         in the example above it's equivalent to lambda x: x > 0
     """
-    return lambda *args: (typecheck(wilds, args) and
-            (assume==True or ask(assume.xreplace(dict(zip(wilds, args))))))
+    def cond(*args):
+        if not typecheck(wilds, args):
+            return False
+        if assume == True:
+            return True
+        if isinstance(assume, Boolean):
+            return ask(assume.xreplace(dict(zip(wilds, args))))
+        if callable(assume):
+            return assume(*args)
+        raise TypeError()
+
+    return cond
 
 
 replace = {MatrixSymbol: MatrixExpr, Symbol: Expr, Dummy: Expr,
