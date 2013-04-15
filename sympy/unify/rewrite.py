@@ -50,5 +50,8 @@ def rewriterule(source, target, variables=(), condition=None, assume=True):
             if isinstance(expr2, Expr):
                 expr2 = rebuild(expr2)
             yield expr2
-    rewrite_rl.func_name = '%s ==> %s'%(str(source), str(target))
+    try:
+        rewrite_rl.func_name = '%s ==> %s'%(str(source), str(target))
+    except:
+        pass
     return rewrite_rl
