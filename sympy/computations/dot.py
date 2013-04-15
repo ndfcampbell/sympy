@@ -2,16 +2,20 @@
 def declare_var(variable):
     if hasattr(variable, '_write_dot'):
         return variable._write_dot()
-    return '"%s" [shape=ellipse]'%str(variable)
+    return '"%s" [shape=ellipse]'%nstr(variable)
 
 def declare_comp(comp):
     if hasattr(comp, '_write_dot'):
         return comp._write_dot()
-    return '"%s" [shape=box, label="%s"]'%(str(comp), str(comp.__class__.__name__))
+    return '"%s" [shape=box, label="%s"]'%(nstr(comp), nstr(comp.__class__.__name__))
 
 def call(comp):
-    return '\n'.join(['"%s" -> "%s"' % tuple(map(str, edge)) for edge in
+    return '\n'.join(['"%s" -> "%s"' % tuple(map(nstr, edge)) for edge in
         comp.edges()])
+
+def nstr(o):
+    """ Normalized str """
+    return str(o).replace('\n', '')
 
 template =\
 '''
