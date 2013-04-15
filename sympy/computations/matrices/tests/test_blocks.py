@@ -1,5 +1,6 @@
 from sympy import Symbol
-from sympy.matrices.expressions import MatrixSymbol, BlockMatrix, blockcut
+from sympy.matrices.expressions import (MatrixSymbol, BlockMatrix, blockcut,
+        block_collapse)
 from sympy.computations.inplace import inplace_compile
 from sympy.computations.matrices.compile import compile
 from sympy.computations.matrices.blocks import JoinBlocks
@@ -15,3 +16,12 @@ def test_blockcut():
     X = MatrixSymbol('X', n, n)
     XX = blockcut(X, (n//2, n//2), (n//2, n//2))
     assert next(compile([X], [XX]))
+
+def test_block_matrixmultiply():
+    n = 1024
+    X = MatrixSymbol('X', n, n)
+    Y = MatrixSymbol('Y', n, n)
+    XX = blockcut(X, (n//2, n//2), (n//2, n//2))
+    YY = blockcut(Y, (n//2, n//2), (n//2, n//2))
+    out = block_collapse(XX*YY)
+    assert next(compile([X, Y], [out]))
