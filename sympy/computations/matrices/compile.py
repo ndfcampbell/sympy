@@ -1,12 +1,13 @@
 from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.fftw import FFTW
+from sympy.computations.matrices.blocks import SeparateBlocks, JoinBlocks
 from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
         x, a, b, X, Y, Z)
 from sympy import Q, S, ask, Expr, Symbol, Dummy
 from sympy.logic.boolalg import Boolean
 from sympy.matrices.expressions import (MatrixExpr, PermutationMatrix,
-        MatrixSymbol, ZeroMatrix, MatrixSlice)
+        MatrixSymbol, ZeroMatrix, MatrixSlice, BlockMatrix)
 from sympy.matrices.expressions.fourier import DFT
 from sympy.computations.compile import input_crunch, multi_output_rule
 from sympy.computations.core import Identity
@@ -63,6 +64,7 @@ multi_out_patterns = [
 
 other_patterns = [
     (DFT(n) * x, FFTW(x), (x, n), True),
+    (X, JoinBlocks(X), (X,), lambda x: isinstance(x, BlockMatrix)),
 ]
 
 patterns = lapack_patterns + blas_patterns + other_patterns
