@@ -16,7 +16,9 @@ def test_simple():
 
     print s
     assert isinstance(s, str)
-    assert "call dgemm('N', 'N', n, 1, n, 1, X, n, y, n, 0,"  in s
+    assert "call dgemm('N', 'N', n, 1, n" in s
+    assert "1.0" in s
+    assert "X, n, y, n,"  in s
 
 def test_dimensions():
     assert set(dimensions(ic)) == set((n, ))

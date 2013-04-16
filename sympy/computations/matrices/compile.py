@@ -37,21 +37,21 @@ def typecheck(wilds, variables):
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
     (alpha*A*B + beta*C, SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
-    (alpha*A*B + C, SYMM(alpha, A, B, S.One, C), (alpha, A, B, C), SYMM.condition),
-    (A*B + beta*C, SYMM(S.One, A, B, beta, C), (A, B, beta, C), SYMM.condition),
-    (A*B + C, SYMM(S.One, A, B, S.One, C), (A, B, C), SYMM.condition),
-    (alpha*A*B, SYMM(alpha, A, B, S.Zero, ZeroMatrix(A.rows, B.cols)), (alpha, A, B), SYMM.condition),
-    (A*B, SYMM(S.One, A, B, S.Zero, ZeroMatrix(A.rows, B.cols)), (A, B), SYMM.condition),
+    (alpha*A*B + C, SYMM(alpha, A, B, S(1.0), C), (alpha, A, B, C), SYMM.condition),
+    (A*B + beta*C, SYMM(S(1.0), A, B, beta, C), (A, B, beta, C), SYMM.condition),
+    (A*B + C, SYMM(S(1.0), A, B, S(1.0), C), (A, B, C), SYMM.condition),
+    (alpha*A*B, SYMM(alpha, A, B, S(0.0), ZeroMatrix(A.rows, B.cols)), (alpha, A, B), SYMM.condition),
+    (A*B, SYMM(S(1.0), A, B, S(0.0), ZeroMatrix(A.rows, B.cols)), (A, B), SYMM.condition),
 
     (alpha*A*B + beta*C, GEMM(*GEMM._inputs), GEMM._inputs, True),
-    (alpha*A*B + C, GEMM(alpha, A, B, S.One, C), (alpha, A, B, C), True),
-    (A*B + beta*C, GEMM(S.One, A, B, beta, C), (A, B, beta, C), True),
-    (A*B + C, GEMM(S.One, A, B, S.One, C), (A, B, C), True),
-    (alpha*A*B, GEMM(alpha, A, B, S.Zero, ZeroMatrix(A.rows, B.cols)), (alpha, A, B), True),
-    (A*B, GEMM(S.One, A, B, S.Zero, ZeroMatrix(A.rows, B.cols)), (A, B), True),
+    (alpha*A*B + C, GEMM(alpha, A, B, S(1.0), C), (alpha, A, B, C), True),
+    (A*B + beta*C, GEMM(S(1.0), A, B, beta, C), (A, B, beta, C), True),
+    (A*B + C, GEMM(S(1.0), A, B, S(1.0), C), (A, B, C), True),
+    (alpha*A*B, GEMM(alpha, A, B, S(0.0), ZeroMatrix(A.rows, B.cols)), (alpha, A, B), True),
+    (A*B, GEMM(S(1.0), A, B, S(0.0), ZeroMatrix(A.rows, B.cols)), (A, B), True),
 
     (alpha*X + Y, AXPY(*AXPY._inputs), AXPY._inputs, AXPY.condition),
-    (X + Y, AXPY(S.One, X, Y), (X, Y), True)
+    (X + Y, AXPY(S(1.0), X, Y), (X, Y), True)
 ]
 lapack_patterns = [
     (Z.I*X, POSV(Z, X), (Z, X), Q.symmetric(Z) & Q.positive_definite(Z)),

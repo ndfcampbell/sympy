@@ -39,6 +39,14 @@ def test_GEMM():
     expr = a*X*Y + b*Z
     _reduces(expr, (X, Y, Z, a, b))
 
+def test_patterns_use_floats_appropriately():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    expr = X*Y
+    c = next(compile([X, Y], [expr]))
+    assert '1.0' in str(c.inputs)
+    assert '1,' not in str(c.inputs)
+
 def test_basetype():
     x = Symbol('x')
     X = MatrixSymbol('X', 3, 3)
