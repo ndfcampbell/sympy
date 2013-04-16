@@ -234,10 +234,11 @@ def fortran_function(inputs, outputs, *assumptions, **kwargs):
     Build a Python callable Fortran function from SymPy matrix expressions
     """
     from sympy.computations.matrices.compile import compile as mathcompile
+    from sympy.computations.matrices.blas import COPY
     from sympy.computations.inplace import inplace_compile
     from sympy.assumptions import assuming
     with assuming(*assumptions):
         c = mathcompile(inputs, outputs)
-        ic = inplace_compile(next(c))
+        ic = inplace_compile(next(c), Copy=COPY)
         f = build(ic, **kwargs)
     return f
