@@ -13,9 +13,9 @@ class Send(MatrixCall):
     target = property(lambda self: self.args[1])
     tag    = property(lambda self: self.args[2])
 
-    def dot_nodes(self):
-        return ['"%s" [shape=diamond, label="%s-->%s"]' % (
-                str(self), str(self.__class__.__name__), str(self.target))]
+    def _write_dot(self):
+        return '"%s" [shape=diamond, label="%s-->%s"]' % (
+                str(self), str(self.__class__.__name__), str(self.target))
 
 class Recv(MatrixCall):
     _inputs = ()
@@ -26,9 +26,9 @@ class Recv(MatrixCall):
     source = property(lambda self: self.args[1])
     tag    = property(lambda self: self.args[2])
 
-    def dot_nodes(self):
-        return ['"%s" [shape=diamond, label="%s<--%s"]' % (
-                str(self), str(self.__class__.__name__), str(self.source))]
+    def _write_dot(self):
+        return '"%s" [shape=diamond, label="%s<--%s"]' % (
+                str(self), str(self.__class__.__name__), str(self.source))
 
 tagdb = dict()
 def gettag(a, b, expr):
