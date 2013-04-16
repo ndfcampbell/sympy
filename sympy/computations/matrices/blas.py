@@ -50,7 +50,7 @@ class MM(BLAS):
         namemap  = dict(zip(varnames, names))
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
                  'LDA': LD(A), 'LDB': LD(B), 'LDC': LD(C),
-                 'M':str(C.shape[0]), 'K':str(B.shape[0]), 'N':str(C.shape[1]),
+                 'M':str(A.shape[0]), 'K':str(B.shape[0]), 'N':str(B.shape[1]),
                  'fn': self.fnname(typecode),
                  'SIDE': left_or_right(A, B, Q.symmetric, assumptions),
                  'DIAG': diag(A, assumptions),
