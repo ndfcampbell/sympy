@@ -1,4 +1,5 @@
-from sympy.computations.matrices.core import MatrixCall, remove_numbers
+from sympy.computations.matrices.core import (MatrixCall, remove_numbers,
+        is_number)
 from sympy.computations.core import unique
 from sympy.computations.inplace import Copy
 from sympy.computations.matrices.shared import (detranspose, trans, LD,
@@ -46,6 +47,8 @@ class MM(BLAS):
     def codemap(self, names, assumptions=True):
         varnames = 'alpha A B beta C'.split()
         alpha, A, B, beta, C, typecode = self.args
+        if is_number(names[0]):     names[0] = float(names[0])
+        if is_number(names[3]):     names[3] = float(names[3])
 
         namemap  = dict(zip(varnames, names))
         other = {'TRANSA': trans(A), 'TRANSB': trans(B),
