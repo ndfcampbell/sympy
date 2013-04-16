@@ -96,6 +96,50 @@ class AXPY(BLAS):
                  'INCY': 1}
         return merge(namemap, other)
 
+class SYRK(BLAS):
+    """ Symmetric Rank-K Update `alpha X' X + beta Y' """
+    def __new__(cls, alpha, A, beta, C, typecode='D'):
+        if isinstance(C, ZeroMatrix):
+            C = ZeroMatrix(A.rows, A.rows)
+        return BLAS.__new__(cls, alpha, A, beta, C, typecode)
+
+
+    _inputs = (alpha, A, beta, C)
+    _outputs = (alpha * A * A.T + beta * C,)
+    inplace  = {0:3}
+    condition = True
+
+    @property
+    def inputs(self):
+        alpha, A, beta, C, typecode = self.args
+        if isinstance(C, ZeroMatrix):    # special case this
+            C = ZeroMatrix(A.rows, A.rows)
+        # Sometimes we use C only as an output. It should be detransposed
+        A = detranspose(A)
+        return alpha, A, beta, C
+
+    @property
+    def outputs(self):
+        alpha, A, beta, C, typecode = self.args
+        if isinstance(C, ZeroMatrix):    # special case this
+            C = ZeroMatrix(A.rows, A.rows)
+        return (alpha*A*A.T + beta*C,)
+
+    fortran_template = ("call %(fn)s('%(UPLO)s', '%(TRANS)s', %(N)s, %(K)s, "
+                        "%(alpha)s, %(A)s, %(LDA)s, "
+                        "%(beta)s, %(C)s, %(LDC)s)")
+
+    def codemap(self, names, assumptions=True):
+        varnames = 'alpha A beta C'.split()
+        alpha, A, beta, C, typecode = self.args
+
+        namemap  = dict(zip(varnames, names))
+        other = {'TRANS': trans(A), 'LDA': LD(A), 'LDC': LD(C),
+                 'N':str(A.shape[0]), 'K':str(A.shape[1]), 
+                 'fn': self.fnname(typecode),
+                 'UPLO': 'U'} # TODO: symmetric matrices might be stored low
+        return merge(namemap, other)    
+
 class COPY(BLAS, Copy):
     """ Array to array copy """
     _inputs   = (X,)

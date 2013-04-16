@@ -1,4 +1,4 @@
-from sympy.computations.matrices.blas import GEMM, SYMM, AXPY, COPY
+from sympy.computations.matrices.blas import GEMM, SYMM, SYRK, AXPY, COPY
 from sympy.matrices.expressions import MatrixSymbol
 from sympy.core import Symbol
 from sympy import Q, S
@@ -22,6 +22,20 @@ def test_transpose_GEMM():
     assert c.inputs == (1, X, Y, 0, Y)
     assert c.outputs == (X*Y.T,)
 
+def test_SYRK():
+    X = MatrixSymbol('X', n, k)
+    Z = MatrixSymbol('Z', k, k)
+    assert SYRK(a, X, b, Z).inputs == (a, X, b, Z)
+    assert SYRK(a, X, b, Z).outputs == (a*X*X.T+b*Z, )
+    assert SYRK(1, X, 0, Y).variable_inputs == (X,)
+
+def test_transpose_SYRK():
+    X = MatrixSymbol('X', 3, 3)
+    expr = X.T*X
+    c = SYRK(S.One, X.T, S.Zero, X.T)
+    assert c.variable_inputs == (X,)
+    assert c.inputs == (1, X.T, 0, X)
+    assert c.outputs == (X.T*X,)
 
 def test_valid():
     A = MatrixSymbol('A', n, n)
@@ -50,6 +64,15 @@ def test_SYMM_codemap():
     call = SYMM.fortran_template % codemap
     assert "('L', 'U', n, m, a, A, n, B, n, c, C, n)" in call
     assert 'dsymm' in call.lower()
+
+def test_SYRK_codemap():
+    A = MatrixSymbol('A', n, k)
+    C = MatrixSymbol('C', k, k)
+    codemap = SYRK(a, A, c, C).codemap('aAcC', )
+    call = SYRK.fortran_template % codemap
+    assert "('U', 'N', n, k, a, A, n, c, C, k)" in call
+    assert 'dsymm' in call.lower()
+
 
 def test_AXPY_codemap():
     B = MatrixSymbol('B', n, m)
