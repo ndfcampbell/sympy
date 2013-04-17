@@ -84,6 +84,7 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
     vars = list(comp.variables)
 
     input_tokens  = sorted_tokens(comp.inputs, inputs)
+    input_vars = [v for v in vars if v.token in input_tokens]
     output_tokens = sorted_tokens(comp.outputs, outputs)
     tokens = list(set(map(gettoken, vars)))
     dimens = dimensions(comp)
@@ -107,7 +108,7 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
 
     dimen_inits = map(dimension_initialization,
                       dimens,
-                      map(partial(var_that_uses_dimension, vars=vars), dimens))
+                      map(partial(var_that_uses_dimension, vars=input_vars), dimens))
     variable_initializations = join(map(initialize_variable, vars)
                                   + dimen_inits)
 
