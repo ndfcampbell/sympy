@@ -20,7 +20,6 @@ def test_code_generation():
     ic = inplace_compile(c)
     s = generate_fortran(ic, c.inputs, c.outputs, types, 'f')
 
-    print '\n' + s
     assert isinstance(s, str)
 
 def test_DAG_search_in_context():

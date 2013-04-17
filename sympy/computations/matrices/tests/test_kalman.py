@@ -34,7 +34,6 @@ def test_kalman_run():
         nR = np.array(np.random.rand(k, k), order='F')
         ndata = np.array(np.random.rand(k), order='F')
         output = f(nmu, nSigma, nH, nR, ndata)
-        print output
     except ImportError:
         pass
 
