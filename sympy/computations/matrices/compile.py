@@ -1,4 +1,4 @@
-from sympy.computations.matrices.blas import GEMM, SYMM, AXPY
+from sympy.computations.matrices.blas import GEMM, SYMM, AXPY, SYRK
 from sympy.computations.matrices.lapack import GESV, POSV, IPIV, LASWP
 from sympy.computations.matrices.fftw import FFTW
 from sympy.computations.matrices.blocks import JoinBlocks, Slice
@@ -36,6 +36,8 @@ def typecheck(wilds, variables):
 
 # pattern is (source expression, target expression, wilds, condition)
 blas_patterns = [
+    (A*A.T, SYRK(1.0, A, 0.0, ZeroMatrix(A.rows, A.rows)), (A,), True),
+    (A.T*A, SYRK(1.0, A.T, 0.0, ZeroMatrix(A.cols, A.cols)), (A,), True),
     (alpha*A*B + beta*C, SYMM(*SYMM._inputs), SYMM._inputs, SYMM.condition),
     (alpha*A*B + C, SYMM(alpha, A, B, 1.0, C), (alpha, A, B, C), SYMM.condition),
     (A*B + beta*C, SYMM(1.0, A, B, beta, C), (A, B, beta, C), SYMM.condition),
