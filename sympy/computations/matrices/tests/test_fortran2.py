@@ -44,6 +44,8 @@ def test_allocate_array():
     v = ExprToken(X, 'Xvar')
     assert allocate_array(v, ['Xvar'], []) == ''
     assert allocate_array(v, [], []) == 'allocate(Xvar(n,n))'
+    v = ExprToken(y, 'Yvar')
+    assert allocate_array(v, [], []) == 'allocate(Yvar(n))'
 
 def test_allocate_array():
     from sympy.computations.inplace import ExprToken

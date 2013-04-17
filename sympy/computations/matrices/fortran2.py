@@ -184,8 +184,12 @@ def declare_variable_string(token, expr, typ, is_input, is_output):
 def allocate_array(v, input_tokens, output_tokens):
     if (isinstance(v.expr, MatrixExpr) and
         v.token not in input_tokens + output_tokens):
-        return "allocate(%s(%s,%s))"%(v.token, str(v.expr.shape[0]),
-                                               str(v.expr.shape[1]))
+        root = "allocate(%s"%v.token
+        if v.expr.shape[0] == 1:
+            return root + '(%s))'%v.expr.shape[1]
+        if v.expr.shape[1] == 1:
+            return root + '(%s))'%v.expr.shape[0]
+        return root + "(%s,%s))"%(map(str, v.expr.shape))
     else:
         return ''
 
