@@ -33,6 +33,10 @@ class GESV(LAPACK):
     fortran_template = ("call %(fn)s(%(N)s, %(NRHS)s, %(A)s, "
                         "%(LDA)s, %(IPIV)s, %(B)s, %(LDB)s, %(INFO)s)")
 
+    @staticmethod
+    def arguments(inputs, outputs):
+        return inputs + outputs[1:]
+
     def codemap(self, names, assumptions=()):
         varnames = 'A B IPIV INFO'.split()
         A, B, typecode = self.args
