@@ -1,6 +1,6 @@
 from sympy.computations import Computation
 from sympy.computations.core import unique, constant_definitions
-from sympy import Symbol, Expr, Basic, ask, Tuple
+from sympy import Symbol, Expr, Basic, ask, Tuple, S
 from sympy.matrices.expressions import MatrixExpr, MatMul, ZeroMatrix
 from sympy.strategies.tools import subs
 from sympy.strategies import exhaust, chain
@@ -35,6 +35,8 @@ class MatrixCall(Computation):
         if args[-1] not in basetypes:
             typecode = 'D'
             args = args + (typecode,)
+        args = [S(arg) if isinstance(arg, (int, float)) else arg
+                for arg in args]
         return Basic.__new__(cls, *args)
 
     inputs = property(lambda self: tuple(self.args[:-1]))

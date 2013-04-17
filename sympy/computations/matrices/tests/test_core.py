@@ -1,7 +1,7 @@
 from sympy.computations.matrices.core import remove_numbers, canonicalize
 from sympy.computations.matrices.blas import GEMM
 from sympy.matrices.expressions import MatrixSymbol, MatAdd
-from sympy.core import Symbol, S
+from sympy.core import Symbol, S, Float
 
 def test_remove_numbers():
     X = MatrixSymbol('X', 1, 3)
@@ -19,3 +19,8 @@ def test_canonicalize():
     X = MatrixSymbol('X', 3, 3)
     assert canonicalize(MatAdd(X, X)) == 2*X
 
+def test_sympify_floats():
+    X = MatrixSymbol('X', 3, 3)
+    Y = MatrixSymbol('Y', 3, 3)
+    g = GEMM(2.0, X, Y, 0.0, Y)
+    assert isinstance(g.args[0], Float)
