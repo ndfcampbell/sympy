@@ -47,10 +47,7 @@ class FortranPrintableComputation(object):
 
     # Atomic Computation Functions
     def fortran_call(self, input_names, output_names):
-        # TODO
-        return '%s = %s(%s)'%(', '.join(output_names),
-                              self.__class__.__name__,
-                              ', '.join(input_names))
+        raise NotImplementedError()
 
     def fortran_function_interface(self):
         return ''
