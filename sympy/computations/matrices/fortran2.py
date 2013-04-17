@@ -189,7 +189,7 @@ def allocate_array(v, input_tokens, output_tokens):
             return root + '(%s))'%v.expr.shape[1]
         if v.expr.shape[1] == 1:
             return root + '(%s))'%v.expr.shape[0]
-        return root + "(%s,%s))"%(map(str, v.expr.shape))
+        return root + "(%s,%s))"%tuple(map(str, v.expr.shape))
     else:
         return ''
 
@@ -228,7 +228,8 @@ def dimension_initialization(dimen, var):
             var.expr.shape.index(dimen)+1)
 
 def var_that_uses_dimension(dimen, vars):
-    return next(v for v in vars if v.expr.has(dimen))
+    return next(v for v in vars if isinstance(v.expr, MatrixExpr)
+                               and dimen in v.expr.shape)
 
 def dimensions(comp):
     """ Collect all of the dimensions in a computation
