@@ -11,6 +11,7 @@ def test_Computation():
 
 def test_unique():
     assert tuple(unique((1, 3, 1, 2))) == (1, 3, 2)
+    assert tuple(unique((1, 3, 1, 2), key=lambda x: x%2)) == (1, 2)
 
 class TComp(Computation):
     """ Test Computation class """

@@ -1,11 +1,13 @@
 from sympy import Basic, Tuple
 from itertools import chain
 
-def unique(seq):
+identity = lambda x: x
+def unique(seq, key=identity):
     seen = set()
     for item in seq:
-        if item not in seen:
-            seen.add(item)
+        k = key(item)
+        if k not in seen:
+            seen.add(k)
             yield item
 
 def intersect(a, b):
