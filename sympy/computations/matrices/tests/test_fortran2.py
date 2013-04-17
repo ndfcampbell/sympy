@@ -27,3 +27,14 @@ def test_dimensions():
 def test_dimension_initialization():
     assert dimension_initialization(n, ExprToken(y, 'yvar')) == 'n = size(yvar, 1)'
     assert 'n = size(X, 1)' in s or 'n = size(y, 1)' in s
+
+def test_variable_declaration():
+    s = declare_variable_string('a', Symbol('a'), 'integer', True, False)
+    assert s == "integer, intent(in) :: a"
+
+    s = declare_variable_string('X', MatrixSymbol('X',n,n), 'real*4', True,True)
+    assert s == "real*4, intent(inout) :: X(:,:)"
+
+    s = declare_variable_string('X', MatrixSymbol('X',n,n), 'real*4',
+            False,False)
+    assert "allocatable" in s

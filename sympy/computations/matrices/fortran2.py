@@ -167,8 +167,12 @@ def declare_variable(token, comp, types, inputs, outputs):
 
 
 def declare_variable_string(token, expr, typ, is_input, is_output):
+    rv = typ
     intent = intent_str(is_input, is_output)
-    rv = typ + intent + ' :: ' + token
+    rv += intent
+    if isinstance(expr, MatrixExpr) and not is_input and not is_output:
+        rv += ", allocatable"
+    rv += ' :: ' + token
     if isinstance(expr, MatrixExpr):
         rv += shape_str(expr.shape)
     return rv
