@@ -137,12 +137,10 @@ def sorted_tokens(source, exprs):
 
 def shape_str(shape):
     """ Fortran string for a shape.  Remove 1's from Python shapes """
-    if shape[0] == 1:
-        return "(%s)"%str(shape[1])
-    elif shape[1] == 1:
-        return "(%s)"%str(shape[0])
+    if shape[0] == 1 or shape[1] == 1:
+        return "(:)"
     else:
-        return "(%s, %s)"%(str(shape[0]), str(shape[1]))
+        return "(:,:)"
 
 def intent_str(isinput, isoutput):
     if isinput and isoutput:
