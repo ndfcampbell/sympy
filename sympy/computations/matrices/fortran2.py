@@ -163,7 +163,7 @@ def declare_variable(token, comp, types, inputs, outputs):
     isoutput = any(token == v.token for v in comp.outputs if not
             constant_arg(v.expr) and v.expr in outputs)
     exprs = set(v.expr for v in comp.variables if v.token == token
-                                          and not constant_arg(v.expr))
+                                          and not is_number(v.expr))
     if not exprs:
         return ''
     expr = exprs.pop()
