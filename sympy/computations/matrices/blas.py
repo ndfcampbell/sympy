@@ -4,7 +4,7 @@ from sympy.computations.core import unique
 from sympy.computations.inplace import Copy
 from sympy.computations.matrices.shared import (detranspose, trans, LD,
         left_or_right, diag)
-from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C, D, 
+from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C, D,
         x, a, b, X, Y)
 from sympy import Q, S
 from sympy.utilities.iterables import dict_merge as merge
@@ -135,10 +135,10 @@ class SYRK(BLAS):
 
         namemap  = dict(zip(varnames, names))
         other = {'TRANS': trans(A), 'LDA': LD(A), 'LDD': LD(D),
-                 'N':str(A.shape[0]), 'K':str(A.shape[1]), 
+                 'N':str(A.shape[0]), 'K':str(A.shape[1]),
                  'fn': self.fnname(typecode),
                  'UPLO': 'U'} # TODO: symmetric matrices might be stored low
-        return merge(namemap, other)    
+        return merge(namemap, other)
 
 class COPY(BLAS, Copy):
     """ Array to array copy """
@@ -161,3 +161,6 @@ class COPY(BLAS, Copy):
     @staticmethod
     def arguments(inputs, outputs):
         return inputs + outputs
+
+    def fortran_call(self, input_names, output_names):
+        return type(self).fortran_template % self.codemap(input_names+output_names)

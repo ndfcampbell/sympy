@@ -91,9 +91,13 @@ def test_AXPY_codemap():
     assert "(m*n, a, B, 1, C, 1)" in call
     assert 'daxpy' in call.lower()
 
-def test_COPY_codemap():
+def test_COPY_fortran_call():
     X = MatrixSymbol('B', n, m)
-    codemap = COPY(X).codemap('XY')
+    c = COPY(X)
+    codemap = c.codemap('XY')
     call = COPY.fortran_template % codemap
     assert "(m*n, X, 1, Y, 1)" in call
     assert 'dcopy' in call.lower()
+
+    s = c.fortran_call(['X'], ['Y'])
+    assert "(m*n, X, 1, Y, 1)" in s
