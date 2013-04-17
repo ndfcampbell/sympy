@@ -14,7 +14,7 @@ types = {q: 'real*8' for q in [X, y, X*y]}
 s = generate_fortran(ic, inputs, outputs, types, 'f')
 def test_simple():
 
-    print s
+    print '\n' + s
     assert isinstance(s, str)
     assert "call dgemm('N', 'N', n, 1, n" in s
     assert "1.0" in s

@@ -4,11 +4,11 @@ from sympy.computations.core import unique
 from sympy.computations.inplace import Copy
 from sympy.computations.matrices.shared import (detranspose, trans, LD,
         left_or_right, diag)
-from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C,
+from sympy.computations.matrices.shared import (alpha, beta, n, m, k, A, B, C, D, 
         x, a, b, X, Y)
 from sympy import Q, S
 from sympy.utilities.iterables import dict_merge as merge
-from sympy.matrices.expressions import ZeroMatrix
+from sympy.matrices.expressions import ZeroMatrix, Transpose
 
 class BLAS(MatrixCall):
     """ Basic Linear Algebra Subroutine - Dense Matrix computation """
@@ -34,7 +34,6 @@ class MM(BLAS):
         # Sometimes we use C only as an output. It should be detransposed
         A = detranspose(A)
         B = detranspose(B)
-        C = detranspose(C)
         return alpha, A, B, beta, C
 
     @property
@@ -98,43 +97,44 @@ class AXPY(BLAS):
 
 class SYRK(BLAS):
     """ Symmetric Rank-K Update `alpha X' X + beta Y' """
-    def __new__(cls, alpha, A, beta, C, typecode='D'):
-        if isinstance(C, ZeroMatrix):
-            C = ZeroMatrix(A.rows, A.rows)
-        return BLAS.__new__(cls, alpha, A, beta, C, typecode)
+    def __new__(cls, alpha, A, beta, D, typecode='D'):
+        if isinstance(D, ZeroMatrix):
+            D = ZeroMatrix(A.rows, A.rows)
+        return BLAS.__new__(cls, alpha, A, beta, D, typecode)
 
 
-    _inputs = (alpha, A, beta, C)
-    _outputs = (alpha * A * A.T + beta * C,)
+    _inputs = (alpha, A, beta, D)
+    _outputs = (alpha * A * A.T + beta * D,)
     inplace  = {0:3}
     condition = True
 
     @property
     def inputs(self):
-        alpha, A, beta, C, typecode = self.args
-        if isinstance(C, ZeroMatrix):    # special case this
-            C = ZeroMatrix(A.rows, A.rows)
+        alpha, A, beta, D, typecode = self.args
+        if isinstance(D, ZeroMatrix):    # special case this
+            D = ZeroMatrix(A.rows, A.rows)
         # Sometimes we use C only as an output. It should be detransposed
-        A = detranspose(A)
-        return alpha, A, beta, C
+        if isinstance(A, Transpose) and not isinstance(D, Transpose):
+          A = detranspose(A)
+        return alpha, A, beta, D
 
     @property
     def outputs(self):
-        alpha, A, beta, C, typecode = self.args
-        if isinstance(C, ZeroMatrix):    # special case this
-            C = ZeroMatrix(A.rows, A.rows)
-        return (alpha*A*A.T + beta*C,)
+        alpha, A, beta, D, typecode = self.args
+        if isinstance(D, ZeroMatrix):    # special case this
+            D = ZeroMatrix(A.rows, A.rows)
+        return (alpha*A*A.T + beta*D,)
 
     fortran_template = ("call %(fn)s('%(UPLO)s', '%(TRANS)s', %(N)s, %(K)s, "
                         "%(alpha)s, %(A)s, %(LDA)s, "
-                        "%(beta)s, %(C)s, %(LDC)s)")
+                        "%(beta)s, %(D)s, %(LDD)s)")
 
     def codemap(self, names, assumptions=True):
-        varnames = 'alpha A beta C'.split()
-        alpha, A, beta, C, typecode = self.args
+        varnames = 'alpha A beta D'.split()
+        alpha, A, beta, D, typecode = self.args
 
         namemap  = dict(zip(varnames, names))
-        other = {'TRANS': trans(A), 'LDA': LD(A), 'LDC': LD(C),
+        other = {'TRANS': trans(A), 'LDA': LD(A), 'LDD': LD(D),
                  'N':str(A.shape[0]), 'K':str(A.shape[1]), 
                  'fn': self.fnname(typecode),
                  'UPLO': 'U'} # TODO: symmetric matrices might be stored low
