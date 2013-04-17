@@ -97,8 +97,6 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
 
     function_interfaces = join([c.comp.fortran_function_interface()
                                             for c in computations])
-    argument_declarations = ''
-
     argument_declarations = join([
         declare_variable(token, comp, types, inputs, outputs)
         for token in unique(input_tokens + output_tokens)])
@@ -113,11 +111,17 @@ def generate_fortran(comp, inputs, outputs, types, name='f'):
     variable_initializations = join(map(initialize_variable, vars)
                                   + dimen_inits)
 
+    array_allocations = join([allocate_array(v, input_tokens, output_tokens)
+                                for v in unique(vars, key=gettoken)])
+
     statements = join([
         c.comp.fortran_call(c.input_tokens, c.output_tokens)
         for c in computations])
 
     variable_destructions = join(map(destroy_variable, vars))
+
+    array_deallocations = join([deallocate_array(v, input_tokens, output_tokens)
+                                for v in unique(vars, key=gettoken)])
 
     footer = comp.fortran_footer(name)
 
@@ -176,6 +180,21 @@ def declare_variable_string(token, expr, typ, is_input, is_output):
     if isinstance(expr, MatrixExpr):
         rv += shape_str(expr.shape)
     return rv
+
+def allocate_array(v, input_tokens, output_tokens):
+    if (isinstance(v.expr, MatrixExpr) and
+        v.token not in input_tokens + output_tokens):
+        return "allocate(%s(%s,%s))"%(v.token, str(v.expr.shape[0]),
+                                               str(v.expr.shape[1]))
+    else:
+        return ''
+
+def deallocate_array(v, input_tokens, output_tokens):
+    if (isinstance(v.expr, MatrixExpr) and
+        v.token not in input_tokens + output_tokens):
+        return "deallocate(%s)"%v.token
+    else:
+        return ''
 
 def initialize_variable(v):
     if hasattr(v.expr, 'fortran_initialize'):

@@ -25,6 +25,8 @@
 ! ======================== !
 %(variable_initializations)s
 
+%(array_allocations)s
+
 ! ========== !
 ! Statements !
 ! ========== !
@@ -34,6 +36,8 @@
 ! Variable Deconstruction !
 ! ======================= !
 %(variable_destructions)s
+
+%(array_deallocations)s
 
   return
 %(footer)s

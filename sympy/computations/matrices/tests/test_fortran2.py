@@ -38,3 +38,15 @@ def test_variable_declaration():
     s = declare_variable_string('X', MatrixSymbol('X',n,n), 'real*4',
             False,False)
     assert "allocatable" in s
+
+def test_allocate_array():
+    from sympy.computations.inplace import ExprToken
+    v = ExprToken(X, 'Xvar')
+    assert allocate_array(v, ['Xvar'], []) == ''
+    assert allocate_array(v, [], []) == 'allocate(Xvar(n,n))'
+
+def test_allocate_array():
+    from sympy.computations.inplace import ExprToken
+    v = ExprToken(X, 'Xvar')
+    assert deallocate_array(v, ['Xvar'], []) == ''
+    assert deallocate_array(v, [], []) == 'deallocate(Xvar)'
