@@ -25,7 +25,6 @@ class Computation(Basic):
 
     Computations have inputs and outputs
     """
-
     inputs  = property(lambda self: self.args)
     variable_inputs = property(lambda self:
                                tuple(unique(remove(is_constant, self.inputs))))
@@ -61,9 +60,9 @@ class CompositeComputation(Computation):
 
     def _input_outputs(self):
         """ Find the inputs and outputs of the complete computation """
-        allin = tuple(unique(chain(
+        allin = map(canonicalize, unique(chain(
                         *[c.inputs  for c in self.computations])))
-        allout = tuple(unique(chain(
+        allout = map(canonicalize, unique(chain(
                         *[c.outputs for c in self.computations])))
         inputs  = [i for i in allin  if i not in allout]
         outputs = [o for o in allout if o not in allin]
@@ -171,3 +170,9 @@ class OpComp(Computation):
     def _write_dot(self):
         oname = self.op.__name__ if isinstance(self.op, type) else str(self.op)
         return '"%s" [shape=box, label=%s]' % (str(self), oname)
+
+def canonicalize(x):
+    try:
+        return x.doit()
+    except AttributeError:
+        return x
