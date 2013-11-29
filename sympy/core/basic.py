@@ -622,55 +622,6 @@ class Basic(with_metaclass(ManagedProperties)):
         else:
             return expr_to_call
 
-    def is_hypergeometric(self, k):
-        from sympy.simplify import hypersimp
-        return hypersimp(self, k) is not None
-
-    @property
-    def is_number(self):
-        """Returns ``True`` if 'self' contains no free symbols.
-
-        See Also
-        ========
-        is_comparable
-        sympy.core.expr.is_number
-
-        """
-        # should be overriden by subclasses
-        return False
-
-    @property
-    def is_comparable(self):
-        """Return True if self can be computed to a real number
-        with precision, else False.
-
-        Examples
-        ========
-
-        >>> from sympy import exp_polar, pi, I
-        >>> (I*exp_polar(I*pi/2)).is_comparable
-        True
-        >>> (I*exp_polar(I*pi*2)).is_comparable
-        False
-        """
-        is_real = self.is_real
-        if is_real is False:
-            return False
-        is_number = self.is_number
-        if is_number is False:
-            return False
-        if is_real and is_number:
-            return True
-        n, i = [p.evalf(2) for p in self.as_real_imag()]
-        if not i.is_Number or not n.is_Number:
-            return False
-        if i:
-            # if _prec = 1 we can't decide and if not,
-            # the answer is False so return False
-            return False
-        else:
-            return n._prec != 1
-
     @property
     def func(self):
         """
@@ -754,34 +705,6 @@ class Basic(with_metaclass(ManagedProperties)):
 
         """
         return iter(self.args)
-
-    def as_poly(self, *gens, **args):
-        """Converts ``self`` to a polynomial or returns ``None``.
-
-           >>> from sympy import sin
-           >>> from sympy.abc import x, y
-
-           >>> print((x**2 + x*y).as_poly())
-           Poly(x**2 + x*y, x, y, domain='ZZ')
-
-           >>> print((x**2 + x*y).as_poly(x, y))
-           Poly(x**2 + x*y, x, y, domain='ZZ')
-
-           >>> print((x**2 + sin(y)).as_poly(x, y))
-           None
-
-        """
-        from sympy.polys import Poly, PolynomialError
-
-        try:
-            poly = Poly(self, *gens, **args)
-
-            if not poly.is_Poly:
-                return None
-            else:
-                return poly
-        except PolynomialError:
-            return None
 
     def as_content_primitive(self, radical=False):
         """A stub to allow Basic args (like Tuple) to be skipped when computing

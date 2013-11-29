@@ -887,7 +887,6 @@ def test_is_number():
     assert (2 + log(x)).is_number is False
     assert (8 + log(2) + x).is_number is False
     assert (1 + x**2/x - x).is_number is True
-    assert Tuple(Integer(1)).is_number is False
     assert Add(2, x).is_number is False
     assert Mul(3, 4).is_number is True
     assert Pow(log(2), 2).is_number is True
@@ -902,7 +901,6 @@ def test_is_number():
     class A(Basic):
         pass
     a = A()
-    assert a.is_number is False
 
 
 def test_as_coeff_add():

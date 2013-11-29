@@ -4,6 +4,7 @@ from itertools import product
 
 from sympy.core.sympify import _sympify, sympify
 from sympy.core.basic import Basic
+from sympy.core.expr import Expr
 from sympy.core.singleton import Singleton, S
 from sympy.core.evalf import EvalfMixin
 from sympy.core.numbers import Float
@@ -45,7 +46,7 @@ class Set(Basic):
         """
         try:
             infimum = self.inf
-            if infimum.is_comparable:
+            if isinstance(infimum, Expr) and infimum.is_comparable:
                 return default_sort_key(infimum, order)
         except (NotImplementedError, ValueError):
             pass
