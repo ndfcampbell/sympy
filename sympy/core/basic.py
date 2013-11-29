@@ -1,7 +1,6 @@
 """Base class for all the objects in SymPy"""
 from __future__ import print_function, division
 
-from sympy.core.assumptions import ManagedProperties
 from sympy.core.cache import cacheit
 from sympy.core.core import BasicType, C
 from sympy.core.sympify import _sympify, sympify, SympifyError
@@ -12,7 +11,7 @@ from sympy.core.singleton import S
 
 from inspect import getmro
 
-class Basic(with_metaclass(ManagedProperties)):
+class Basic(object):
     """
     Base class for all objects in SymPy.
 
@@ -44,7 +43,6 @@ class Basic(with_metaclass(ManagedProperties)):
     """
     __slots__ = ['_mhash',              # hash value
                  '_args',               # arguments
-                 '_assumptions'
                 ]
 
     # To be overridden with True in the appropriate subclasses
@@ -74,7 +72,6 @@ class Basic(with_metaclass(ManagedProperties)):
 
     def __new__(cls, *args):
         obj = object.__new__(cls)
-        obj._assumptions = cls.default_assumptions
         obj._mhash = None  # will be set by __hash__ method.
 
         obj._args = args  # all items in args must be Basic objects
@@ -115,36 +112,6 @@ class Basic(with_metaclass(ManagedProperties)):
         Defining more than _hashable_content is necessary if __eq__ has
         been defined by a class. See note about this in Basic.__eq__."""
         return self._args
-
-    @property
-    def assumptions0(self):
-        """
-        Return object `type` assumptions.
-
-        For example:
-
-          Symbol('x', real=True)
-          Symbol('x', integer=True)
-
-        are different objects. In other words, besides Python type (Symbol in
-        this case), the initial assumptions are also forming their typeinfo.
-
-        Examples
-        ========
-
-        >>> from sympy import Symbol
-        >>> from sympy.abc import x
-        >>> x.assumptions0
-        {'commutative': True}
-        >>> x = Symbol("x", positive=True)
-        >>> x.assumptions0
-        {'commutative': True, 'complex': True, 'hermitian': True,
-        'imaginary': False, 'negative': False, 'nonnegative': True,
-        'nonpositive': False, 'nonzero': True, 'positive': True, 'real': True,
-        'zero': False}
-
-        """
-        return {}
 
     def compare(self, other):
         """
@@ -277,7 +244,7 @@ class Basic(with_metaclass(ManagedProperties)):
         return (a > b) - (a < b)
 
     @classmethod
-    def fromiter(cls, args, **assumptions):
+    def fromiter(cls, args):
         """
         Create a new object from an iterable.
 
@@ -292,7 +259,7 @@ class Basic(with_metaclass(ManagedProperties)):
         (0, 1, 2, 3, 4)
 
         """
-        return cls(*tuple(args), **assumptions)
+        return cls(*tuple(args))
 
     @classmethod
     def class_key(cls):

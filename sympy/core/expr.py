@@ -7,14 +7,73 @@ from .singleton import S
 from .evalf import EvalfMixin, pure_complex
 from .decorators import _sympifyit, call_highest_priority
 from .cache import cacheit
-from .compatibility import reduce, as_int, default_sort_key, xrange
+from .compatibility import (reduce, as_int, default_sort_key, xrange,
+        with_metaclass)
 from sympy.mpmath.libmp import mpf_log, prec_to_dps
+from sympy.core.assumptions import ManagedProperties
 
 from collections import defaultdict
 
 
-class Expr(Basic, EvalfMixin):
-    __slots__ = []
+class Expr(Basic, EvalfMixin, with_metaclass(ManagedProperties)):
+
+    __slots__ = ['_assumptions']
+
+    def __new__(cls, *args):
+        obj = object.__new__(cls)
+        obj._assumptions = cls.default_assumptions
+        obj._mhash = None  # will be set by __hash__ method.
+
+        obj._args = args  # all items in args must be Basic objects
+        return obj
+
+    @property
+    def assumptions0(self):
+        """
+        Return object `type` assumptions.
+
+        For example:
+
+          Symbol('x', real=True)
+          Symbol('x', integer=True)
+
+        are different objects. In other words, besides Python type (Symbol in
+        this case), the initial assumptions are also forming their typeinfo.
+
+        Examples
+        ========
+
+        >>> from sympy import Symbol
+        >>> from sympy.abc import x
+        >>> x.assumptions0
+        {'commutative': True}
+        >>> x = Symbol("x", positive=True)
+        >>> x.assumptions0
+        {'commutative': True, 'complex': True, 'hermitian': True,
+        'imaginary': False, 'negative': False, 'nonnegative': True,
+        'nonpositive': False, 'nonzero': True, 'positive': True, 'real': True,
+        'zero': False}
+
+        """
+        return {}
+
+    @classmethod
+    def fromiter(cls, args, **assumptions):
+        """
+        Create a new object from an iterable.
+
+        This is a convenience function that allows one to create objects from
+        any iterable, without having to convert to a list or tuple first.
+
+        Examples
+        ========
+
+        >>> from sympy import Tuple
+        >>> Tuple.fromiter(i for i in range(5))
+        (0, 1, 2, 3, 4)
+
+        """
+        return cls(*tuple(args), **assumptions)
 
     @property
     def _diff_wrt(self):
