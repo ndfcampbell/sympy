@@ -6,6 +6,7 @@ from sympy.strategies import (rm_id, unpack, condition, debug, flatten, exhaust,
 from sympy.matrices.expressions.matexpr import (MatrixExpr, ShapeError,
         Identity, ZeroMatrix)
 
+import pdb
 
 class MatMul(MatrixExpr):
     """
@@ -83,6 +84,7 @@ class MatMul(MatrixExpr):
         print (head)
         print (tail)
         print ([head.diff(x), tail])
+        pdb.set_trace()
         print ([head, MatMul(*tail).diff(x)])
 
         return (MatMul(head.diff(x), *tail) +
