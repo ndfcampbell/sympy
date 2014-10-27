@@ -6,7 +6,6 @@ from sympy.strategies import (rm_id, unpack, condition, debug, flatten, exhaust,
 from sympy.matrices.expressions.matexpr import (MatrixExpr, ShapeError,
         Identity, ZeroMatrix)
 
-import pdb
 
 class MatMul(MatrixExpr):
     """
@@ -73,22 +72,13 @@ class MatMul(MatrixExpr):
 
     def _eval_derivative(self, x):
 
-        print ('matmul _eval_derivative')
-        print (self)
-        print (self.args)
-        print (x)
-        print ([arg.diff(x) for arg in self.args])
-
         head, tail = self.args[0], self.args[1:]
 
-        print (head)
-        print (tail)
-        print ([head.diff(x), tail])
-        pdb.set_trace()
-        print ([head, MatMul(*tail).diff(x)])
+        #return (MatMul(head.diff(x), *tail).doit() +
+        #        MatMul(head, MatMul(*tail).doit().diff(x)).doit())
 
-        return (MatMul(head.diff(x), *tail) +
-                MatMul(head, MatMul(*tail).diff(x)))
+        return (MatMul(head.diff(x), *tail).doit() +
+                MatMul(head, MatMul(*tail).doit().diff(x)).doit())
 
     def _eval_transpose(self):
         return MatMul(*[transpose(arg) for arg in self.args[::-1]]).doit()
