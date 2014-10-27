@@ -50,6 +50,7 @@ class MatrixExpr(Basic):
     is_MatMul = False
     is_BlockMatrix = False
     is_Derivative = False
+    is_Trace = False
 
     is_commutative = False
 

@@ -1,8 +1,8 @@
 from sympy import Basic, Expr
-from matexpr import ShapeError
+from matexpr import ShapeError, MatrixExpr
 
 
-class Trace(Expr):
+class Trace(MatrixExpr):
     """Matrix Trace
 
     Represents the trace of a matrix expression.
@@ -29,6 +29,9 @@ class Trace(Expr):
         except (AttributeError, NotImplementedError):
             return Basic.__new__(cls, mat)
 
+    def _eval_derivative(self, x):
+        return Trace(self.arg.diff(x))
+
     def _eval_transpose(self):
         return self
 
@@ -39,3 +42,8 @@ class Trace(Expr):
     def doit(self):
         from sympy import Add
         return Add(*[self.arg[i, i] for i in range(self.arg.rows)])
+
+
+def trace(expr):
+    """ Matrix trace """
+    return Trace(expr).doit()

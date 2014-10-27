@@ -74,11 +74,8 @@ class MatMul(MatrixExpr):
 
         head, tail = self.args[0], self.args[1:]
 
-        #return (MatMul(head.diff(x), *tail).doit() +
-        #        MatMul(head, MatMul(*tail).doit().diff(x)).doit())
-
-        return (MatMul(head.diff(x), *tail).doit() +
-                MatMul(head, MatMul(*tail).doit().diff(x)).doit())
+        return MatAdd(*[MatMul(head.diff(x), *tail).doit(),
+                        MatMul(head, MatMul(*tail).doit().diff(x)).doit()]).doit()
 
     def _eval_transpose(self):
         return MatMul(*[transpose(arg) for arg in self.args[::-1]]).doit()
