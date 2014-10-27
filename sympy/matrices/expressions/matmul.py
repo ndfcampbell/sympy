@@ -85,7 +85,21 @@ class MatMul(MatrixExpr, Mul):
         return coeff, MatMul(*matrices)
 
     def _eval_derivative(self, x):
+
+        print ('matmul _eval_derivative')
+        print (self)
+        print (self.args)
+        print (x)
+        print ([arg.diff(x) for arg in self.args])
+
         head, tail = self.args[0], self.args[1:]
+
+        print (head)
+        print (tail)
+        print ([head.diff(x), tail])
+        print (MatMul(*tail))
+        print ([head, MatMul(*tail).diff(x)])
+
         return (MatMul(head.diff(x), *tail) +
                 MatMul(head, MatMul(*tail).diff(x)))
 
