@@ -1,6 +1,8 @@
 from matexpr import MatrixExpr, ShapeError, matrixify, Identity, ZeroMatrix
 from sympy.core import Mul, Add, Basic
 
+import pdb
+
 class MatMul(MatrixExpr, Mul):
     """A Product of Matrix Expressions
 
@@ -28,12 +30,15 @@ class MatMul(MatrixExpr, Mul):
             return ZeroMatrix(matrices[0].rows, matrices[-1].cols)
 
         expr = matrixify(Mul.__new__(cls, *args))
+        print (expr.is_Mul)
         if expr.is_Add:
             return MatAdd(*expr.args)
         if expr.is_Pow:
             assert expr.exp.is_Integer
             expr = Basic.__new__(MatMul, *[expr.base for i in range(expr.exp)])
         if not expr.is_Mul:
+            pdb.set_trace()
+            print ('Abort')
             return expr
 
         if any(arg.is_Matrix and arg.is_ZeroMatrix for arg in expr.args):
@@ -97,6 +102,7 @@ class MatMul(MatrixExpr, Mul):
         print (head)
         print (tail)
         print ([head.diff(x), tail])
+        pdb.set_trace()
         print (MatMul(*tail))
         print ([head, MatMul(*tail).diff(x)])
 
