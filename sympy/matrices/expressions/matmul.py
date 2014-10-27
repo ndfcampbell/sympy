@@ -71,7 +71,20 @@ class MatMul(MatrixExpr):
         return coeff, MatMul(*matrices)
 
     def _eval_derivative(self, x):
+
+        print ('matmul _eval_derivative')
+        print (self)
+        print (self.args)
+        print (x)
+        print ([arg.diff(x) for arg in self.args])
+
         head, tail = self.args[0], self.args[1:]
+
+        print (head)
+        print (tail)
+        print ([head.diff(x), tail])
+        print ([head, MatMul(*tail).diff(x)])
+
         return (MatMul(head.diff(x), *tail) +
                 MatMul(head, MatMul(*tail).diff(x)))
 
@@ -186,6 +199,6 @@ def only_squares(*matrices):
             start = i+1
     return out
 
-#from matadd import MatAdd
-#from inverse import Inverse
+from matadd import MatAdd
+from inverse import Inverse
 

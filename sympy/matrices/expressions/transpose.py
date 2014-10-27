@@ -77,5 +77,5 @@ def transpose(expr):
     return Transpose(expr).doit()
     
 #from matmul import MatMul
-#from matadd import MatAdd
+from matadd import MatAdd
 

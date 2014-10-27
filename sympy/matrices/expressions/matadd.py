@@ -45,6 +45,11 @@ class MatAdd(MatrixExpr):
         return MatAdd(*[Trace(arg) for arg in self.args]).doit()
 
     def _eval_derivative(self, x):
+        print ('matadd _eval_derivative')
+        print (self)
+        print (self.args)
+        print (x)
+        print ([arg.diff(x) for arg in self.args])
         return MatAdd(*[arg.diff(x) for arg in self.args])
 
     def doit(self, **ignored):
