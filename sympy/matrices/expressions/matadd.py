@@ -44,6 +44,9 @@ class MatAdd(MatrixExpr):
         from trace import Trace
         return MatAdd(*[Trace(arg) for arg in self.args]).doit()
 
+    def _eval_derivative(self, x):
+        return MatAdd(*[arg.diff(x) for arg in self.args])
+
     def doit(self, **ignored):
         return canonicalize(self)
 
@@ -73,8 +76,5 @@ rules = (rm_id(lambda x: x == 0 or isinstance(x, ZeroMatrix)),
 canonicalize = exhaust(condition(lambda x: isinstance(x, MatAdd),
                                  do_one(*rules)))
 
-    def _eval_derivative(self, x):
-        return MatAdd(*[arg.diff(x) for arg in self.args])
-
-from matmul import MatMul
+#from matmul import MatMul
 

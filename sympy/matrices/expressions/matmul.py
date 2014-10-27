@@ -186,6 +186,6 @@ def only_squares(*matrices):
             start = i+1
     return out
 
-from matadd import MatAdd
-from inverse import Inverse
+#from matadd import MatAdd
+#from inverse import Inverse
 

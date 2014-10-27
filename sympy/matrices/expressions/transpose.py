@@ -76,6 +76,6 @@ def transpose(expr):
     """ Matrix transpose """
     return Transpose(expr).doit()
     
-from matmul import MatMul
-from matadd import MatAdd
+#from matmul import MatMul
+#from matadd import MatAdd
 
