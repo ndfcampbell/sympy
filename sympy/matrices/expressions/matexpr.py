@@ -41,12 +41,15 @@ class MatrixExpr(Basic):
 
     is_Matrix = True
     is_MatrixExpr = True
+    is_MatrixSymbol = False
     is_Identity = None
     is_Inverse = False
     is_Transpose = False
     is_ZeroMatrix = False
     is_MatAdd = False
     is_MatMul = False
+    is_BlockMatrix = False
+    is_Derivative = False
 
     is_commutative = False
 
@@ -273,6 +276,9 @@ class MatrixExpr(Basic):
         """
         return self.as_explicit().equals(other)
 
+    def diff(self, x):
+        return self._eval_derivative(x)
+
     def canonicalize(self):
         return self
 
@@ -286,7 +292,7 @@ class MatrixElement(Expr):
     j = property(lambda self: self.args[2])
 
 
-class MatrixSymbol(MatrixExpr):
+class MatrixSymbol(MatrixExpr, Symbol):
     """Symbolic representation of a Matrix object
 
     Creates a SymPy Symbol to represent a Matrix. This matrix has a shape and
@@ -301,6 +307,7 @@ class MatrixSymbol(MatrixExpr):
     2*A*B + I
     """
     is_commutative = False
+    is_MatrixSymbol = True
 
     def __new__(cls, name, n, m):
         n, m = sympify(n), sympify(m)
@@ -339,6 +346,12 @@ class MatrixSymbol(MatrixExpr):
                     self.args[2].doit(**hints))
         else:
             return self
+
+    def _eval_derivative(self, x):
+        if x == self:
+            return MatrixDerivative(self, evaluate=False)
+        else:
+            return ZeroMatrix(*self.shape)
 
     def _eval_simplify(self, **kwargs):
         return self
@@ -440,3 +453,4 @@ from matadd import MatAdd
 from matpow import MatPow
 from transpose import Transpose
 from inverse import Inverse
+from derivative import MatrixDerivative

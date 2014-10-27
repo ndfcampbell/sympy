@@ -70,6 +70,11 @@ class MatMul(MatrixExpr):
         coeff, matrices = self.as_coeff_matrices()
         return coeff, MatMul(*matrices)
 
+    def _eval_derivative(self, x):
+        head, tail = self.args[0], self.args[1:]
+        return (MatMul(head.diff(x), *tail) +
+                MatMul(head, MatMul(*tail).diff(x)))
+
     def _eval_transpose(self):
         return MatMul(*[transpose(arg) for arg in self.args[::-1]]).doit()
 
@@ -180,3 +185,7 @@ def only_squares(*matrices):
             out.append(MatMul(*matrices[start:i+1]).doit())
             start = i+1
     return out
+
+from matadd import MatAdd
+from inverse import Inverse
+

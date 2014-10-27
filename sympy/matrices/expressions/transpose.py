@@ -52,6 +52,9 @@ class Transpose(MatrixExpr):
     def _entry(self, i, j):
         return self.arg._entry(j, i)
 
+    def _eval_derivative(self, x):
+        return self.arg.diff(x).T
+
     def _eval_adjoint(self):
         return conjugate(self.arg)
 
@@ -72,3 +75,7 @@ class Transpose(MatrixExpr):
 def transpose(expr):
     """ Matrix transpose """
     return Transpose(expr).doit()
+    
+from matmul import MatMul
+from matadd import MatAdd
+

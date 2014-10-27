@@ -401,7 +401,6 @@ def xsym(sym):
     else:
         return op[0]
 
-
 # SYMBOLS
 
 atoms_table = {

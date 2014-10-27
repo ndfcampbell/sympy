@@ -277,6 +277,15 @@ class PrettyPrinter(Printer):
         from sympy.combinatorics.permutations import Permutation
         return self._print_tuple(Permutation(dc.as_list()).cyclic_form)
 
+    def _print_MatrixDerivative(self, d):
+        expr = self._print(d.expr)
+        if d.expr.is_Add or d.expr.is_Mul:
+            expr = expr.parens()
+        f = prettyForm(binding=prettyForm.FUNC, *expr)
+        pform = prettyForm(U('PARTIAL DIFFERENTIAL'))
+        pform = prettyForm(*stringPict.next(pform, f))
+        return pform
+
     def _print_PDF(self, pdf):
         lim = self._print(pdf.pdf.args[0])
         lim = prettyForm(*lim.right(', '))
