@@ -9,7 +9,7 @@ from sympy.matrices.expressions.matmul import MatMul
 from sympy.matrices.expressions.matadd import MatAdd
 from sympy.matrices.expressions.matpow import MatPow
 from sympy.matrices.expressions.transpose import Transpose, transpose
-from sympy.matrices.expressions.trace import Trace
+from sympy.matrices.expressions.trace import Trace, trace
 from sympy.matrices.expressions.determinant import det, Determinant
 from sympy.matrices.expressions.slice import MatrixSlice
 from sympy.matrices.expressions.inverse import Inverse
@@ -106,7 +106,7 @@ class BlockMatrix(MatrixExpr):
 
     def _eval_trace(self):
         if self.rowblocksizes == self.colblocksizes:
-            return Add(*[Trace(self.blocks[i, i])
+            return Add(*[trace(self.blocks[i, i])
                         for i in range(self.blockshape[0])])
         raise NotImplementedError(
             "Can't perform trace of irregular blockshape")

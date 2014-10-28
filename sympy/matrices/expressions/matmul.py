@@ -1,6 +1,7 @@
 from sympy.core import Mul, Basic, sympify, Add
 from sympy.functions import transpose, adjoint
 from sympy.matrices.expressions.transpose import transpose
+from sympy.matrices.expressions.trace import trace
 from sympy.strategies import (rm_id, unpack, condition, debug, flatten, exhaust,
         do_one, new)
 from sympy.matrices.expressions.matexpr import (MatrixExpr, ShapeError,
@@ -86,8 +87,7 @@ class MatMul(MatrixExpr):
     def _eval_trace(self):
         factor, mmul = self.as_coeff_mmul()
         if factor != 1:
-            from trace import Trace
-            return factor * Trace(mmul)
+            return factor * trace(mmul)
         else:
             raise NotImplementedError("Can't simplify any further")
 

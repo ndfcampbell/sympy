@@ -1,6 +1,7 @@
 from sympy.core import Add, Basic, sympify
 from sympy.functions import adjoint
 from sympy.matrices.expressions.transpose import transpose
+from sympy.matrices.expressions.trace import trace
 from sympy.strategies import (rm_id, unpack, flatten, sort, condition, debug,
         exhaust, do_one, glom)
 from sympy.matrices.expressions.matexpr import MatrixExpr, ShapeError, ZeroMatrix
@@ -41,8 +42,9 @@ class MatAdd(MatrixExpr):
         return MatAdd(*[adjoint(arg) for arg in self.args]).doit()
 
     def _eval_trace(self):
-        from trace import Trace
-        return MatAdd(*[Trace(arg) for arg in self.args]).doit()
+        from sympy import Add
+        #return MatAdd(*[trace(arg) for arg in self.args]).doit()
+        Add(*[trace(arg) for arg in self.args]).doit()
 
     def _eval_derivative(self, x):
         return MatAdd(*[arg.diff(x) for arg in self.args]).doit()
@@ -51,6 +53,8 @@ class MatAdd(MatrixExpr):
         return canonicalize(self)
 
 def validate(*args):
+    import pdb
+    #pdb.set_trace()
     if not all(arg.is_Matrix for arg in args):
         raise TypeError("Mix of Matrix and Scalar symbols")
     A = args[0]
